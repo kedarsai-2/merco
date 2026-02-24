@@ -20,7 +20,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import tech.jhipster.web.util.HeaderUtil;
 import tech.jhipster.web.util.PaginationUtil;
@@ -197,6 +201,66 @@ public class TraderResource {
         return ResponseEntity.noContent()
             .headers(HeaderUtil.createEntityDeletionAlert(applicationName, true, ENTITY_NAME, id.toString()))
             .build();
+    }
+
+    /**
+     * {@code POST  /traders/:id/photos} : Upload one or more shop photos for a trader.
+     * Stores files on disk and saves comma-separated URLs in trader.shopPhotos.
+     */
+    @PostMapping("/{id}/photos")
+    public ResponseEntity<String[]> uploadTraderPhotos(@PathVariable("id") Long id, @RequestParam("files") MultipartFile[] files) {
+        LOG.debug("REST request to upload photos for Trader : {}", id);
+        Optional<TraderDTO> existingOpt = traderService.findOne(id);
+        if (existingOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        TraderDTO existing = existingOpt.get();
+        java.util.List<String> paths = new java.util.ArrayList<>();
+
+        java.nio.file.Path baseDir = java.nio.file.Paths.get("uploads", "traders", id.toString());
+        try {
+            java.nio.file.Files.createDirectories(baseDir);
+            for (MultipartFile file : files) {
+                if (file.isEmpty()) continue;
+                String original = file.getOriginalFilename() != null ? file.getOriginalFilename() : "photo";
+                String sanitized = original.replaceAll("[^a-zA-Z0-9._-]", "_");
+                java.nio.file.Path target = baseDir.resolve(System.currentTimeMillis() + "_" + sanitized);
+                java.nio.file.Files.copy(file.getInputStream(), target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                String url = "/api/traders/" + id + "/photos/" + target.getFileName();
+                paths.add(url);
+            }
+        } catch (Exception e) {
+            LOG.error("Failed to store trader photos", e);
+            return ResponseEntity.status(500).build();
+        }
+
+        String existingPhotos = existing.getShopPhotos();
+        String all = String.join(",", paths);
+        if (existingPhotos != null && !existingPhotos.isBlank()) {
+            all = existingPhotos + "," + all;
+        }
+        existing.setShopPhotos(all);
+        traderService.update(existing);
+
+        return ResponseEntity.ok(paths.toArray(new String[0]));
+    }
+
+    /**
+     * {@code GET  /traders/:id/photos/:filename} : Serve a trader photo from disk.
+     */
+    @GetMapping("/{id}/photos/{filename}")
+    public ResponseEntity<Resource> getTraderPhoto(@PathVariable("id") Long id, @PathVariable("filename") String filename) {
+        try {
+            java.nio.file.Path file = java.nio.file.Paths.get("uploads", "traders", id.toString()).resolve(filename);
+            Resource resource = new UrlResource(file.toUri());
+            if (!resource.exists() || !resource.isReadable()) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok().contentType(MediaType.IMAGE_JPEG).body(resource);
+        } catch (Exception e) {
+            LOG.error("Failed to read trader photo {}", filename, e);
+            return ResponseEntity.status(500).build();
+        }
     }
 
     /**

@@ -25,6 +25,21 @@ public class TraderDTO implements Serializable {
 
     private String address;
 
+    @Size(max = 20)
+    private String mobile;
+
+    @Size(max = 191)
+    private String email;
+
+    @Size(max = 100)
+    private String city;
+
+    @Size(max = 100)
+    private String state;
+
+    @Size(max = 20)
+    private String pinCode;
+
     @Size(max = 100)
     private String category;
 
@@ -38,6 +53,9 @@ public class TraderDTO implements Serializable {
     private Instant createdAt;
 
     private Instant updatedAt;
+
+    // Comma-separated URLs/paths
+    private String shopPhotos;
 
     public Long getId() {
         return id;
@@ -69,6 +87,46 @@ public class TraderDTO implements Serializable {
 
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    public String getMobile() {
+        return mobile;
+    }
+
+    public void setMobile(String mobile) {
+        this.mobile = mobile;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
+    }
+
+    public String getPinCode() {
+        return pinCode;
+    }
+
+    public void setPinCode(String pinCode) {
+        this.pinCode = pinCode;
     }
 
     public String getCategory() {
@@ -117,6 +175,14 @@ public class TraderDTO implements Serializable {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getShopPhotos() {
+        return shopPhotos;
+    }
+
+    public void setShopPhotos(String shopPhotos) {
+        this.shopPhotos = shopPhotos;
     }
 
     @Override

@@ -39,6 +39,26 @@ public class Trader implements Serializable {
     @Column(name = "address")
     private String address;
 
+    @Size(max = 20)
+    @Column(name = "mobile", length = 20)
+    private String mobile;
+
+    @Size(max = 191)
+    @Column(name = "email", length = 191)
+    private String email;
+
+    @Size(max = 100)
+    @Column(name = "city", length = 100)
+    private String city;
+
+    @Size(max = 100)
+    @Column(name = "state", length = 100)
+    private String state;
+
+    @Size(max = 20)
+    @Column(name = "pin_code", length = 20)
+    private String pinCode;
+
     @Size(max = 100)
     @Column(name = "category", length = 100)
     private String category;
@@ -60,6 +80,9 @@ public class Trader implements Serializable {
 
     @Column(name = "updated_at")
     private Instant updatedAt;
+
+    @Column(name = "shop_photos")
+    private String shopPhotos; // comma-separated URLs/paths
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
@@ -128,6 +151,46 @@ public class Trader implements Serializable {
         this.category = category;
     }
 
+    public String getMobile() {
+        return mobile;
+    }
+
+    public void setMobile(String mobile) {
+        this.mobile = mobile;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
+    }
+
+    public String getPinCode() {
+        return pinCode;
+    }
+
+    public void setPinCode(String pinCode) {
+        this.pinCode = pinCode;
+    }
+
     public ApprovalStatus getApprovalStatus() {
         return this.approvalStatus;
     }
@@ -191,6 +254,14 @@ public class Trader implements Serializable {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getShopPhotos() {
+        return shopPhotos;
+    }
+
+    public void setShopPhotos(String shopPhotos) {
+        this.shopPhotos = shopPhotos;
     }
 
     // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here

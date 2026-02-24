@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+        Extend Trader with Module 1 frontend-aligned fields.
+        Guarded with preConditions so it is safe to run on databases
+        where columns may already have been added manually.
+    -->
+    <changeSet id="20260224123000-1" author="cursor">
+        <preConditions onFail="MARK_RAN">
+            <!-- Only run if at least one of the new columns is missing -->
+            <not>
+                <columnExists tableName="trader" columnName="mobile"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="trader">
+            <column name="mobile" type="varchar(20)"/>
+        </addColumn>
+        <addColumn tableName="trader">
+            <column name="email" type="varchar(191)"/>
+        </addColumn>
+        <addColumn tableName="trader">
+            <column name="city" type="varchar(100)"/>
+        </addColumn>
+        <addColumn tableName="trader">
+            <column name="state" type="varchar(100)"/>
+        </addColumn>
+        <addColumn tableName="trader">
+            <column name="pin_code" type="varchar(20)"/>
+        </addColumn>
+        <!-- Comma-separated list of photo URLs/paths -->
+        <addColumn tableName="trader">
+            <column name="shop_photos" type="text"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>
+

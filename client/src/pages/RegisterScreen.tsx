@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { MercotraceIcon } from '@/components/MercotraceLogo';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
-import { categoryApi } from '@/services/api';
+import { categoryApi, traderApi } from '@/services/api';
 import type { BusinessCategory } from '@/types/models';
 import { cn } from '@/lib/utils';
 import loginBg from '@/assets/login-bg.jpg';
@@ -15,7 +15,7 @@ import loginBg from '@/assets/login-bg.jpg';
 const RegisterScreen = () => {
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
-  const { register, isLoading, error, clearError } = useAuth();
+  const { register, isLoading, error, clearError, trader } = useAuth() as any;
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState(1);
@@ -107,6 +107,10 @@ const RegisterScreen = () => {
     if (!step2Valid) return;
     try {
       await register({ ...form, shopPhotos: photoPreviews });
+      // After successful register, upload photos (if any) to backend
+      if (trader && photoFiles.length) {
+        await traderApi.uploadPhotos(trader.trader_id, photoFiles);
+      }
       navigate('/home', { replace: true });
     } catch {}
   };

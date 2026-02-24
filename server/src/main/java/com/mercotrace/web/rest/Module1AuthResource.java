@@ -9,8 +9,10 @@ import com.mercotrace.service.dto.Module1AuthDTO;
 import com.mercotrace.service.dto.TraderDTO;
 import com.mercotrace.web.rest.vm.LoginVM;
 import com.mercotrace.web.rest.vm.ManagedUserVM;
+import com.mercotrace.web.rest.vm.Module1RegisterVM;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import com.mercotrace.security.AuthoritiesConstants;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ResponseStatusException;
@@ -48,15 +50,110 @@ public class Module1AuthResource {
         this.traderService = traderService;
     }
 
-    /** Module 1 spec: POST /auth/register — Register Trader (Directory Listing only). */
+    /** Module 1 spec: POST /auth/register — Register Trader (Directory Listing only) + auto-login for module 1 UI. */
     @PostMapping("/register")
-    @ResponseStatus(HttpStatus.CREATED)
-    public void register(@Valid @RequestBody ManagedUserVM vm) {
-        if (vm.getPassword() == null || vm.getPassword().length() < 4 || vm.getPassword().length() > 100) {
+    public ResponseEntity<Module1AuthDTO> register(@Valid @RequestBody Module1RegisterVM vm) {
+        // Enforce same password policy as frontend (min 6 chars)
+        if (vm.getPassword() == null || vm.getPassword().length() < 6) {
             throw new com.mercotrace.service.InvalidPasswordException();
         }
-        var user = userService.registerUser(vm, vm.getPassword());
-        mailService.sendActivationEmail(user);
+
+        // 1) Create Trader (directory listing, pending approval)
+        TraderDTO traderDTO = new TraderDTO();
+        traderDTO.setBusinessName(vm.getBusinessName());
+        traderDTO.setOwnerName(vm.getOwnerName());
+        traderDTO.setAddress(vm.getAddress());
+        traderDTO.setMobile(vm.getMobile());
+        traderDTO.setEmail(vm.getEmail());
+        traderDTO.setCity(vm.getCity());
+        traderDTO.setState(vm.getState());
+        traderDTO.setPinCode(vm.getPinCode());
+        traderDTO.setCategory(vm.getCategory());
+        traderDTO.setApprovalStatus(com.mercotrace.domain.enumeration.ApprovalStatus.PENDING);
+        traderDTO.setBillPrefix("");
+        traderDTO = traderService.save(traderDTO);
+
+        // 2) Create User linked logically to this trader (login by email)
+        AdminUserDTO userDTO = new AdminUserDTO();
+        userDTO.setLogin(vm.getEmail());
+        userDTO.setEmail(vm.getEmail());
+        userDTO.setFirstName(vm.getOwnerName());
+        java.util.Set<String> auths = new java.util.HashSet<>();
+        auths.add(AuthoritiesConstants.USER);
+        userDTO.setAuthorities(auths);
+
+        var user = userService.registerUser(userDTO, vm.getPassword());
+        // Auto-activate user for module 1 (no email activation flow in UI)
+        user.setActivated(true);
+        user.setActivationKey(null);
+        userRepository.save(user);
+
+        AdminUserDTO account = new AdminUserDTO(user);
+
+        // 3) Authenticate to generate JWT token
+        LoginVM loginVM = new LoginVM();
+        loginVM.setUsername(vm.getEmail());
+        loginVM.setPassword(vm.getPassword());
+        loginVM.setRememberMe(false);
+
+        ResponseEntity<com.mercotrace.web.rest.AuthenticateController.JWTToken> jwtResponse;
+        try {
+            jwtResponse = authenticateController.authorize(loginVM);
+        } catch (Exception ex) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
+        }
+        if (jwtResponse.getBody() == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication failed");
+        }
+
+        String jwt = jwtResponse.getBody().getIdToken();
+
+        // 4) Build Module1AuthDTO aligned with frontend AuthState
+        Module1AuthDTO dto = new Module1AuthDTO();
+        dto.setToken(jwt);
+
+        Module1AuthDTO.UserPayload userPayload = new Module1AuthDTO.UserPayload();
+        if (account.getId() != null) {
+            userPayload.setUserId(account.getId().toString());
+        }
+        if (traderDTO.getId() != null) {
+            userPayload.setTraderId(traderDTO.getId().toString());
+        }
+        userPayload.setUsername(account.getLogin());
+        userPayload.setActive(account.isActivated());
+        userPayload.setCreatedAt(account.getCreatedDate() != null ? account.getCreatedDate().toString() : null);
+        StringBuilder nameBuilder = new StringBuilder();
+        if (account.getFirstName() != null) {
+            nameBuilder.append(account.getFirstName());
+        }
+        if (account.getLastName() != null) {
+            if (!nameBuilder.isEmpty()) {
+                nameBuilder.append(" ");
+            }
+            nameBuilder.append(account.getLastName());
+        }
+        userPayload.setName(nameBuilder.toString());
+        userPayload.setRole(account.getAuthorities() != null && !account.getAuthorities().isEmpty()
+            ? account.getAuthorities().iterator().next()
+            : "TRADER");
+        dto.setUser(userPayload);
+
+        Module1AuthDTO.TraderPayload traderPayload = new Module1AuthDTO.TraderPayload();
+        if (traderDTO.getId() != null) {
+            traderPayload.setTraderId(traderDTO.getId().toString());
+        }
+        traderPayload.setBusinessName(traderDTO.getBusinessName());
+        traderPayload.setOwnerName(traderDTO.getOwnerName());
+        traderPayload.setAddress(traderDTO.getAddress());
+        traderPayload.setCategory(traderDTO.getCategory());
+        traderPayload.setApprovalStatus(traderDTO.getApprovalStatus() != null ? traderDTO.getApprovalStatus().name() : "PENDING");
+        traderPayload.setBillPrefix(traderDTO.getBillPrefix());
+        traderPayload.setCreatedAt(traderDTO.getCreatedAt() != null ? traderDTO.getCreatedAt().toString() : null);
+        traderPayload.setUpdatedAt(traderDTO.getUpdatedAt() != null ? traderDTO.getUpdatedAt().toString() : null);
+        traderPayload.setShopPhotos(new String[0]);
+        dto.setTrader(traderPayload);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(dto);
     }
 
     /** Module 1 spec: POST /auth/login — Login User. Returns token + normalized user/trader payloads. */

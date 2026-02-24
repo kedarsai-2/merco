@@ -32,47 +32,72 @@ export const authApi = {
     password: string; address: string; city: string; state: string;
     pin_code: string; category: string;
   }): Promise<{ trader: Trader; user: User; token: string }> {
-    await delay();
-    const traderId = id();
-    const userId = id();
+    const res = await fetch(`${API_BASE}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+      let message = 'Registration failed. Please try again.';
+      try {
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const problem = await res.json();
+          if (typeof problem.detail === 'string' && problem.detail.includes('login already used')) {
+            message = 'Email is already registered';
+          } else if (typeof problem.detail === 'string' && problem.detail.includes('email address already used')) {
+            message = 'Email is already registered';
+          } else if (typeof problem.detail === 'string' && problem.detail.includes('Password must be at least 6 characters')) {
+            message = 'Password must be at least 6 characters';
+          } else if (typeof problem.detail === 'string' && problem.detail.trim().length > 0) {
+            message = problem.detail;
+          } else if (typeof problem.title === 'string' && problem.title.trim().length > 0) {
+            message = problem.title;
+          }
+        } else {
+          const text = await res.text();
+          if (text && text.length < 200) {
+            message = text;
+          }
+        }
+      } catch {
+        // ignore parse errors and keep default message
+      }
+      throw new Error(message);
+    }
+
+    const dataRes = await res.json();
+
+    const user: User = {
+      user_id: dataRes.user.user_id,
+      trader_id: dataRes.user.trader_id,
+      username: dataRes.user.username,
+      is_active: dataRes.user.is_active,
+      created_at: dataRes.user.created_at ?? new Date().toISOString(),
+      name: dataRes.user.name,
+      role: dataRes.user.role,
+    };
 
     const trader: Trader = {
-      trader_id: traderId,
-      business_name: data.business_name,
-      owner_name: data.owner_name,
+      trader_id: dataRes.trader.trader_id,
+      business_name: dataRes.trader.business_name,
+      owner_name: dataRes.trader.owner_name,
+      address: dataRes.trader.address ?? '',
+      category: dataRes.trader.category ?? '',
+      approval_status: dataRes.trader.approval_status ?? 'PENDING',
+      bill_prefix: dataRes.trader.bill_prefix ?? '',
+      created_at: dataRes.trader.created_at ?? new Date().toISOString(),
+      updated_at: dataRes.trader.updated_at ?? new Date().toISOString(),
       mobile: data.mobile,
       email: data.email,
-      address: data.address,
       city: data.city,
       state: data.state,
       pin_code: data.pin_code,
-      category: data.category,
-      approval_status: 'PENDING',
-      bill_prefix: '',
-      shop_photos: [],
-      created_at: now(),
-      updated_at: now(),
+      shop_photos: dataRes.trader.shop_photos ?? [],
     };
 
-    const user: User = {
-      user_id: userId,
-      trader_id: traderId,
-      username: data.email,
-      name: data.owner_name,
-      role: 'TRADER',
-      is_active: true,
-      created_at: now(),
-    };
-
-    const token = btoa(JSON.stringify({ userId, traderId, role: 'TRADER' }));
-
-    const traders = getStore<Trader>('mkt_traders');
-    traders.push(trader);
-    setStore('mkt_traders', traders);
-
-    const users = getStore<any>('mkt_users');
-    users.push({ ...user, password: data.password });
-    setStore('mkt_users', users);
+    const token: string = dataRes.token;
 
     return { trader, user, token };
   },
@@ -241,5 +266,24 @@ export const categoryApi = {
   async list(): Promise<BusinessCategory[]> {
     await delay(100);
     return getStore<BusinessCategory>('mkt_categories');
+  },
+};
+
+// ── Trader Photos ────────────────────────────────────────────
+
+export const traderApi = {
+  async uploadPhotos(traderId: string, files: File[]): Promise<string[]> {
+    const form = new FormData();
+    files.forEach(f => form.append('files', f));
+
+    const res = await fetch(`${API_BASE}/traders/${traderId}/photos`, {
+      method: 'POST',
+      body: form,
+    });
+
+    if (!res.ok) {
+      throw new Error('Failed to upload photos');
+    }
+    return await res.json();
   },
 };
