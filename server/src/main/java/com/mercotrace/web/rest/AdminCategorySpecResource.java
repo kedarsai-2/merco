@@ -55,6 +55,9 @@ public class AdminCategorySpecResource {
         if (dto.getId() != null) {
             throw new BadRequestAlertException("A new category cannot already have an ID", ENTITY_NAME, "idexists");
         }
+        if (businessCategoryRepository.findOneByCategoryName(dto.getCategoryName()).isPresent()) {
+            throw new BadRequestAlertException("A category with this name already exists", ENTITY_NAME, "categorynameexists");
+        }
         dto = businessCategoryService.save(dto);
         return ResponseEntity.created(new URI("/api/admin/categories/" + dto.getId()))
             .headers(HeaderUtil.createEntityCreationAlert("mercotrace", true, ENTITY_NAME, dto.getId().toString()))
@@ -72,6 +75,12 @@ public class AdminCategorySpecResource {
         if (!businessCategoryRepository.existsById(id)) {
             throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
         }
+        businessCategoryRepository
+            .findOneByCategoryName(dto.getCategoryName())
+            .filter(c -> !c.getId().equals(id))
+            .ifPresent(c -> {
+                throw new BadRequestAlertException("A category with this name already exists", ENTITY_NAME, "categorynameexists");
+            });
         dto = businessCategoryService.update(dto);
         return ResponseEntity.ok()
             .headers(HeaderUtil.createEntityUpdateAlert("mercotrace", true, ENTITY_NAME, dto.getId().toString()))

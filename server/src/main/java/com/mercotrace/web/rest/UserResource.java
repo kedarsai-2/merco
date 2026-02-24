@@ -140,12 +140,21 @@ public class UserResource {
         @Valid @RequestBody AdminUserDTO userDTO
     ) {
         LOG.debug("REST request to update User : {}", userDTO);
-        Optional<User> existingUser = userRepository.findOneByEmailIgnoreCase(userDTO.getEmail());
-        if (existingUser.isPresent() && (!existingUser.orElseThrow().getId().equals(userDTO.getId()))) {
+        // Resolve the user being updated: from path login if present, else from DTO id
+        Long currentUserId = userDTO.getId();
+        if (login != null) {
+            currentUserId = userRepository.findOneByLogin(login.toLowerCase()).map(User::getId).orElse(currentUserId);
+        }
+        if (currentUserId == null) {
+            throw new BadRequestAlertException("User id or login required for update", "userManagement", "idnull");
+        }
+        userDTO.setId(currentUserId);
+        Optional<User> existingByEmail = userRepository.findOneByEmailIgnoreCase(userDTO.getEmail());
+        if (existingByEmail.isPresent() && !existingByEmail.get().getId().equals(currentUserId)) {
             throw new EmailAlreadyUsedException();
         }
-        existingUser = userRepository.findOneByLogin(userDTO.getLogin().toLowerCase());
-        if (existingUser.isPresent() && (!existingUser.orElseThrow().getId().equals(userDTO.getId()))) {
+        Optional<User> existingByLogin = userRepository.findOneByLogin(userDTO.getLogin().toLowerCase());
+        if (existingByLogin.isPresent() && !existingByLogin.get().getId().equals(currentUserId)) {
             throw new LoginAlreadyUsedException();
         }
         Optional<AdminUserDTO> updatedUser = userService.updateUser(userDTO);

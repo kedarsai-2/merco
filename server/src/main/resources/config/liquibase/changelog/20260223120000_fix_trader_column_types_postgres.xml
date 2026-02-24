@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+        Ensure Trader columns use PostgreSQL-native types. Critical: address must be TEXT not OID/CLOB,
+        otherwise Hibernate @Lob + PG JDBC causes "Bad value for type long" when reading.
+    -->
+    <changeSet id="20260223120000-1" author="jhipster" dbms="postgresql">
+        <modifyDataType tableName="trader" columnName="business_name" newDataType="varchar(150)"/>
+        <modifyDataType tableName="trader" columnName="owner_name" newDataType="varchar(150)"/>
+        <modifyDataType tableName="trader" columnName="address" newDataType="text"/>
+        <modifyDataType tableName="trader" columnName="category" newDataType="varchar(100)"/>
+        <modifyDataType tableName="trader" columnName="approval_status" newDataType="varchar(255)"/>
+        <modifyDataType tableName="trader" columnName="business_mode" newDataType="varchar(255)"/>
+        <modifyDataType tableName="trader" columnName="bill_prefix" newDataType="varchar(20)"/>
+        <modifyDataType tableName="trader" columnName="created_at" newDataType="${datetimeType}"/>
+        <modifyDataType tableName="trader" columnName="updated_at" newDataType="${datetimeType}"/>
+    </changeSet>
+
+</databaseChangeLog>
+

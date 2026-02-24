@@ -2,7 +2,6 @@ package com.mercotrace.service.dto;
 
 import com.mercotrace.domain.enumeration.ApprovalStatus;
 import com.mercotrace.domain.enumeration.BusinessMode;
-import jakarta.persistence.Lob;
 import jakarta.validation.constraints.*;
 import java.io.Serializable;
 import java.time.Instant;
@@ -24,7 +23,6 @@ public class TraderDTO implements Serializable {
     @Size(max = 150)
     private String ownerName;
 
-    @Lob
     private String address;
 
     @Size(max = 100)

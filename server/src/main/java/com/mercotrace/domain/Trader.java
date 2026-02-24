@@ -36,7 +36,6 @@ public class Trader implements Serializable {
     @Column(name = "owner_name", length = 150, nullable = false)
     private String ownerName;
 
-    @Lob
     @Column(name = "address")
     private String address;
 

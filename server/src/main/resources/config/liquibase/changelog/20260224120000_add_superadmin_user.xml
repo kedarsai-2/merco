@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Seed a module-1 super admin user with email-based login -->
+    <changeSet id="20260224120000-1" author="cursor">
+        <insert tableName="jhi_user">
+            <column name="id" valueNumeric="3"/>
+            <column name="login" value="superadmin@mercotrace.com"/>
+            <column name="password_hash" value="$2a$10$NhXtdqjALIKniwO86E45MO82LbqX13LMJlCrYLU6RtjeR8HPE5G.e"/>
+            <column name="first_name" value="Super"/>
+            <column name="last_name" value="Admin"/>
+            <column name="email" value="superadmin@mercotrace.com"/>
+            <column name="activated" valueBoolean="true"/>
+            <column name="lang_key" value="en"/>
+            <column name="created_by" value="system"/>
+            <column name="created_date" valueDate="2025-01-01T00:00:00"/>
+            <column name="last_modified_by" value="system"/>
+            <column name="last_modified_date" valueDate="2025-01-01T00:00:00"/>
+        </insert>
+
+        <insert tableName="jhi_user_authority">
+            <column name="user_id" valueNumeric="3"/>
+            <column name="authority_name" value="ROLE_ADMIN"/>
+        </insert>
+
+        <insert tableName="jhi_user_authority">
+            <column name="user_id" valueNumeric="3"/>
+            <column name="authority_name" value="ROLE_USER"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>
+

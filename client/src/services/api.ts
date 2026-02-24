@@ -24,6 +24,8 @@ function setStore<T>(key: string, data: T[]) {
 
 // ── Auth Module ────────────────────────────────────────────
 
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api';
+
 export const authApi = {
   async register(data: {
     business_name: string; owner_name: string; mobile: string; email: string;
@@ -76,17 +78,73 @@ export const authApi = {
   },
 
   async login(email: string, password: string): Promise<{ trader: Trader; user: User; token: string }> {
-    await delay();
-    const users = getStore<any>('mkt_users');
-    const found = users.find((u: any) => (u.username === email || u.email === email) && u.password === password);
-    if (!found) throw new Error('Invalid email or password');
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: email, password }),
+    });
 
-    const traders = getStore<Trader>('mkt_traders');
-    const trader = traders.find(t => t.trader_id === found.trader_id);
-    if (!trader) throw new Error('Trader account not found');
+    if (!res.ok) {
+      // Try to parse JHipster Problem JSON and surface a clean, user-friendly message
+      let message = 'Login failed. Please try again.';
+      try {
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const problem = await res.json();
+          // Prefer our backend detail when available
+          if (typeof problem.detail === 'string' && problem.detail.includes('Invalid email or password')) {
+            message = 'Invalid email or password';
+          } else if (typeof problem.detail === 'string' && problem.detail.includes('Password must be at least 6 characters')) {
+            message = 'Password must be at least 6 characters';
+          } else if (typeof problem.detail === 'string' && problem.detail.trim().length > 0) {
+            message = problem.detail;
+          } else if (typeof problem.title === 'string' && problem.title.trim().length > 0) {
+            message = problem.title;
+          }
+        } else {
+          const text = await res.text();
+          if (text && text.length < 200) {
+            message = text;
+          }
+        }
+      } catch {
+        // ignore parse errors and keep default message
+      }
+      throw new Error(message);
+    }
 
-    const token = btoa(JSON.stringify({ userId: found.user_id, traderId: found.trader_id, role: found.role }));
-    const { password: _, ...user } = found;
+    const data = await res.json();
+
+    const user: User = {
+      user_id: data.user.user_id,
+      trader_id: data.user.trader_id,
+      username: data.user.username,
+      is_active: data.user.is_active,
+      created_at: data.user.created_at ?? new Date().toISOString(),
+      name: data.user.name,
+      role: data.user.role,
+    };
+
+    const trader: Trader = {
+      trader_id: data.trader.trader_id,
+      business_name: data.trader.business_name,
+      owner_name: data.trader.owner_name,
+      address: data.trader.address ?? '',
+      category: data.trader.category ?? '',
+      approval_status: data.trader.approval_status ?? 'PENDING',
+      bill_prefix: data.trader.bill_prefix ?? '',
+      created_at: data.trader.created_at ?? new Date().toISOString(),
+      updated_at: data.trader.updated_at ?? new Date().toISOString(),
+      mobile: data.trader.mobile,
+      email: data.trader.email,
+      city: data.trader.city,
+      state: data.trader.state,
+      pin_code: data.trader.pin_code,
+      shop_photos: data.trader.shop_photos ?? [],
+    };
+
+    const token: string = data.token;
+
     return { trader, user, token };
   },
 
