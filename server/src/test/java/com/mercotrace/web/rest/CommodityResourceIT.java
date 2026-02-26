@@ -38,6 +38,8 @@ class CommodityResourceIT {
 
     private static final String ENTITY_API_URL = "/api/commodities";
     private static final String ENTITY_API_URL_ID = ENTITY_API_URL + "/{id}";
+    private static final String ENTITY_API_FULL_CONFIGS_URL = ENTITY_API_URL + "/full-configs";
+    private static final String ENTITY_API_FULL_CONFIG_URL = ENTITY_API_URL + "/{id}/full-config";
 
     private static Random random = new Random();
     private static AtomicLong longCount = new AtomicLong(random.nextInt() + (2 * Integer.MAX_VALUE));
@@ -203,5 +205,100 @@ class CommodityResourceIT {
 
         assertThat(commodityRepository.count()).isEqualTo(databaseSizeBeforeDelete - 1);
         insertedCommodity = null;
+    }
+
+    @Test
+    @Transactional
+    void getFullConfigForExistingCommodityReturnsOk() throws Exception {
+        insertedCommodity = commodityRepository.saveAndFlush(commodity);
+
+        restCommodityMockMvc
+            .perform(get(ENTITY_API_FULL_CONFIG_URL, insertedCommodity.getId()))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
+            .andExpect(jsonPath("$.commodityId").value(insertedCommodity.getId().intValue()));
+    }
+
+    @Test
+    @Transactional
+    void getFullConfigForNonExistingCommodityReturnsBadRequest() throws Exception {
+        long nonExistingId = Long.MAX_VALUE;
+
+        restCommodityMockMvc
+            .perform(get(ENTITY_API_FULL_CONFIG_URL, nonExistingId))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @Transactional
+    void updateFullConfigWithMismatchedIdsReturnsBadRequest() throws Exception {
+        insertedCommodity = commodityRepository.saveAndFlush(commodity);
+
+        String body = """
+            {
+              "commodityId": 9999,
+              "config": {
+                "commodityId": 9999,
+                "ratePerUnit": 90,
+                "minWeight": 10,
+                "maxWeight": 500,
+                "govtDeductionEnabled": false,
+                "roundoffEnabled": false,
+                "commissionPercent": 2.5,
+                "userFeePercent": 1.0,
+                "hsnCode": "0703",
+                "weighingCharge": 50,
+                "billPrefix": "IN",
+                "hamaliEnabled": true
+              }
+            }
+            """;
+
+        restCommodityMockMvc
+            .perform(
+                put(ENTITY_API_FULL_CONFIG_URL, insertedCommodity.getId())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body)
+            )
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @Transactional
+    void updateFullConfigCreatesOrReplacesConfig() throws Exception {
+        insertedCommodity = commodityRepository.saveAndFlush(commodity);
+
+        String body = """
+            {
+              "commodityId": %d,
+              "config": {
+                "commodityId": %d,
+                "ratePerUnit": 90,
+                "minWeight": 10,
+                "maxWeight": 500,
+                "govtDeductionEnabled": false,
+                "roundoffEnabled": false,
+                "commissionPercent": 2.5,
+                "userFeePercent": 1.0,
+                "hsnCode": "0703",
+                "weighingCharge": 50,
+                "billPrefix": "IN",
+                "hamaliEnabled": true
+              },
+              "deductionRules": [],
+              "hamaliSlabs": [],
+              "dynamicCharges": []
+            }
+            """.formatted(insertedCommodity.getId(), insertedCommodity.getId());
+
+        restCommodityMockMvc
+            .perform(
+                put(ENTITY_API_FULL_CONFIG_URL, insertedCommodity.getId())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(body)
+            )
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.commodityId").value(insertedCommodity.getId().intValue()))
+            .andExpect(jsonPath("$.config.ratePerUnit").value(90.0));
     }
 }
