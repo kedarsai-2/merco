@@ -109,13 +109,19 @@ public class ContactServiceImpl implements ContactService {
     @Override
     @Transactional(readOnly = true)
     public List<ContactDTO> searchByMark(Long traderId, String markFragment) {
-        LOG.debug("Request to search Contacts by mark. traderId={}, markFragment={}", traderId, markFragment);
+        LOG.debug("Request to search Contacts by fragment. traderId={}, fragment={}", traderId, markFragment);
         if (markFragment == null || markFragment.isBlank()) {
             return findAllByTrader(traderId);
         }
+        final String lower = markFragment.toLowerCase();
         return contactRepository
-            .findAllByTraderIdAndMarkContainingIgnoreCase(traderId, markFragment)
+            .findAllByTraderId(traderId)
             .stream()
+            .filter(c ->
+                (c.getName() != null && c.getName().toLowerCase().contains(lower)) ||
+                (c.getPhone() != null && c.getPhone().contains(markFragment)) ||
+                (c.getMark() != null && c.getMark().toLowerCase().contains(lower))
+            )
             .map(contactMapper::toDto)
             .collect(Collectors.toList());
     }

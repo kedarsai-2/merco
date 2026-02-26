@@ -95,6 +95,15 @@ public class CacheConfiguration {
             createCache(cm, com.mercotrace.domain.DeductionRule.class.getName(), jcacheConfiguration);
             createCache(cm, com.mercotrace.domain.HamaliSlab.class.getName(), jcacheConfiguration);
             createCache(cm, com.mercotrace.domain.DynamicCharge.class.getName(), jcacheConfiguration);
+            // Arrivals & logistics aggregate
+            createCache(cm, com.mercotrace.domain.Vehicle.class.getName(), jcacheConfiguration);
+            createCache(cm, com.mercotrace.domain.VehicleWeight.class.getName(), jcacheConfiguration);
+            createCache(cm, com.mercotrace.domain.SellerInVehicle.class.getName(), jcacheConfiguration);
+            createCache(cm, com.mercotrace.domain.Lot.class.getName(), jcacheConfiguration);
+            createCache(cm, com.mercotrace.domain.FreightCalculation.class.getName(), jcacheConfiguration);
+            createCache(cm, com.mercotrace.domain.FreightDistribution.class.getName(), jcacheConfiguration);
+            createCache(cm, com.mercotrace.domain.Voucher.class.getName(), jcacheConfiguration);
+            createCache(cm, com.mercotrace.domain.DailySerial.class.getName(), jcacheConfiguration);
             // jhipster-needle-redis-add-entry
         };
     }

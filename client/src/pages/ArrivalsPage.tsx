@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import BottomNav from '@/components/BottomNav';
 import {
@@ -9,8 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { vehicleApi, contactApi } from '@/services/api';
-import type { Vehicle, Contact, FreightMethod } from '@/types/models';
+import { arrivalsApi, contactApi, commodityApi } from '@/services/api';
+import type { Commodity, Contact, FreightMethod } from '@/types/models';
+import type { FullCommodityConfigDto } from '@/services/api/commodities';
+import type { ArrivalSummary } from '@/services/api/arrivals';
 import { toast } from 'sonner';
 import { useDesktopMode } from '@/hooks/use-desktop';
 
@@ -28,15 +30,7 @@ import { useDesktopMode } from '@/hooks/use-desktop';
  *   3.3.6 Validation & Constraints
  */
 
-// ── Helper: localStorage persistence ──────────────────────
-function getStore<T>(key: string): T[] {
-  try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
-}
-function setStore<T>(key: string, data: T[]) {
-  localStorage.setItem(key, JSON.stringify(data));
-}
-
-// ── Types for local arrival data ──────────────────────────
+// ── Types for local arrival form data (frontend-only) ─────
 interface LotEntry {
   lot_id: string;
   lot_name: string;
@@ -54,30 +48,7 @@ interface SellerEntry {
   lots: LotEntry[];
 }
 
-interface ArrivalRecord {
-  vehicle: Vehicle;
-  loaded_weight: number;
-  empty_weight: number;
-  deducted_weight: number;
-  net_weight: number;       // REQ-ARR-001: LW - EW
-  final_billable_weight: number; // REQ-ARR-001: NW - DW
-  freight_method: FreightMethod;
-  freight_rate: number;
-  freight_total: number;
-  no_rental: boolean;
-  advance_paid: number;
-  broker_name: string;
-  sellers: SellerEntry[];
-  is_multi_seller: boolean;
-}
-
-// Get commodity configs for outlier validation (REQ-ARR-013)
-function getCommodityConfigs() {
-  try { return JSON.parse(localStorage.getItem('mkt_commodity_configs') || '[]'); } catch { return []; }
-}
-function getCommodities() {
-  try { return JSON.parse(localStorage.getItem('mkt_commodities') || '[]'); } catch { return []; }
-}
+type ArrivalRecord = ArrivalSummary;
 
 const FREIGHT_METHODS: { value: FreightMethod; label: string }[] = [
   { value: 'BY_WEIGHT', label: 'By Weight' },
@@ -93,12 +64,18 @@ const NARRATION_PRESETS = [
   'Rental charges — partial payment',
 ];
 
+const ARRIVALS_PAGE_SIZE = 10;
+
 const ArrivalsPage = () => {
   const navigate = useNavigate();
   const isDesktop = useDesktopMode();
   const [arrivals, setArrivals] = useState<ArrivalRecord[]>([]);
+  const [arrivalPage, setArrivalPage] = useState(0);
+  const [arrivalHasNextPage, setArrivalHasNextPage] = useState(false);
+  const [isArrivalsLoading, setIsArrivalsLoading] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [commodities, setCommodities] = useState<any[]>([]);
+  const [commodities, setCommodities] = useState<Commodity[]>([]);
+  const [commodityConfigs, setCommodityConfigs] = useState<FullCommodityConfigDto[]>([]);
   const [expandedArrival, setExpandedArrival] = useState<number | null>(null);
   const [desktopTab, setDesktopTab] = useState<'summary' | 'new-arrival'>('summary');
 
@@ -123,13 +100,81 @@ const ArrivalsPage = () => {
   const [sellers, setSellers] = useState<SellerEntry[]>([]);
   const [sellerSearch, setSellerSearch] = useState('');
   const [sellerDropdown, setSellerDropdown] = useState(false);
+  const [isSellerSearchLoading, setIsSellerSearchLoading] = useState(false);
+
+  const [hasLoadedCommodityData, setHasLoadedCommodityData] = useState(false);
+
+  const loadArrivalsPage = useCallback(async (page: number) => {
+    setIsArrivalsLoading(true);
+    try {
+      const data = await arrivalsApi.list(page, ARRIVALS_PAGE_SIZE);
+      setArrivals(data);
+      setArrivalPage(page);
+      setArrivalHasNextPage(data.length === ARRIVALS_PAGE_SIZE);
+    } catch (err) {
+      console.error('Failed to load arrivals', err);
+      setArrivals([]);
+      toast.error(err instanceof Error ? err.message : 'Failed to load arrivals');
+    } finally {
+      setIsArrivalsLoading(false);
+    }
+  }, []);
+
+  const loadCommodityData = useCallback(async () => {
+    if (hasLoadedCommodityData) return;
+    try {
+      const [commodityList, fullConfigs] = await Promise.all([
+        commodityApi.list(),
+        commodityApi.getAllFullConfigs(),
+      ]);
+      setCommodities(commodityList);
+      setCommodityConfigs(fullConfigs);
+      setHasLoadedCommodityData(true);
+    } catch (err) {
+      console.error('Failed to load commodity data for arrivals', err);
+    }
+  }, [hasLoadedCommodityData]);
 
   useEffect(() => {
-    const storedArrivals = getStore<ArrivalRecord>('mkt_arrival_records');
-    setArrivals(storedArrivals);
-    contactApi.list().then(setContacts);
-    setCommodities(getCommodities());
-  }, []);
+    // Initial arrivals list is paginated; other data is loaded lazily on interaction.
+    loadArrivalsPage(0);
+  }, [loadArrivalsPage]);
+
+  // Debounced seller search against backend contacts API
+  useEffect(() => {
+    const trimmed = sellerSearch.trim();
+
+    if (!trimmed) {
+      setContacts([]);
+      setIsSellerSearchLoading(false);
+      return;
+    }
+
+    setIsSellerSearchLoading(true);
+    const handle = setTimeout(() => {
+      contactApi.search(trimmed)
+        .then(results => {
+          let nextContacts: Contact[] = [];
+          if (Array.isArray(results)) {
+            nextContacts = results;
+          } else if (results && Array.isArray((results as any).content)) {
+            // Support paginated / wrapped responses from backend
+            nextContacts = (results as any).content;
+          }
+
+          setContacts(nextContacts);
+        })
+        .catch(err => {
+          console.error('Failed to search contacts for arrivals', err);
+          setContacts([]);
+        })
+        .finally(() => {
+          setIsSellerSearchLoading(false);
+        });
+    }, 200); // small debounce to avoid hammering backend
+
+    return () => clearTimeout(handle);
+  }, [sellerSearch]);
 
   // REQ-ARR-001: Tonnage Calculation
   const netWeight = useMemo(() => {
@@ -160,10 +205,18 @@ const ArrivalsPage = () => {
   }, [freightMethod, freightRate, noRental, finalBillableWeight, sellers]);
 
   // REQ-CON-004 / REQ-ARR-007: Unified contact search via mark or phone
+  // Derived filtered list is always computed from latest API response + current search query
   const filteredContacts = useMemo(() => {
-    if (!sellerSearch) return [];
-    const q = sellerSearch.toLowerCase();
-    return contacts.filter(c =>
+    const trimmedQuery = sellerSearch.trim().toLowerCase();
+
+    if (!trimmedQuery) {
+      return [];
+    }
+
+    const baseContacts = contacts || [];
+    const q = trimmedQuery;
+
+    return baseContacts.filter(c =>
       (c.name?.toLowerCase()?.includes(q)) ||
       (c.phone?.includes(q)) ||
       (c.mark?.toLowerCase()?.includes(q))
@@ -226,20 +279,21 @@ const ArrivalsPage = () => {
     }));
   };
 
-  // REQ-ARR-013: Outlier validation
+  // REQ-ARR-013: Outlier validation using backend commodity_config ranges
   const validateWeightOutliers = (): string[] => {
     const warnings: string[] = [];
-    const configs = getCommodityConfigs();
     sellers.forEach(seller => {
       seller.lots.forEach(lot => {
-        const cfg = configs.find((c: any) => {
-          const comm = commodities.find((cm: any) => cm.commodity_name === lot.commodity_name);
-          return comm && c.commodity_id === comm.commodity_id;
+        const cfgWrapper = commodityConfigs.find(fc => {
+          const commodity = commodities.find(c => Number(c.commodity_id) === fc.commodityId);
+          const cname = commodity?.commodity_name;
+          return cname === lot.commodity_name;
         });
-        if (cfg && cfg.min_weight > 0 && cfg.max_weight > 0) {
+        const cfg = cfgWrapper?.config;
+        if (cfg && cfg.minWeight > 0 && cfg.maxWeight > 0) {
           // Approximate per-lot weight by dividing total by lot count
           // In a real system this would use actual per-lot weight
-          if (lot.quantity < cfg.min_weight / 50 || lot.quantity > cfg.max_weight / 10) {
+          if (lot.quantity < cfg.minWeight / 50 || lot.quantity > cfg.maxWeight / 10) {
             warnings.push(`⚠️ ${lot.lot_name || 'Unnamed lot'} (${lot.commodity_name}): Quantity ${lot.quantity} bags may be outside normal range`);
           }
         }
@@ -282,136 +336,43 @@ const ArrivalsPage = () => {
     }
 
     try {
-      // Create vehicle
-      const vehicle = await vehicleApi.create({
-        vehicle_number: vehicleNumber.trim().toUpperCase() || 'SINGLE-SELLER',
-        trader_id: '',
-        arrival_datetime: new Date().toISOString(),
-      });
-
-      const record: ArrivalRecord = {
-        vehicle,
+      const created = await arrivalsApi.create({
+        vehicle_number: vehicleNumber.trim().toUpperCase() || undefined,
+        is_multi_seller: isMultiSeller,
         loaded_weight: parseFloat(loadedWeight) || 0,
         empty_weight: parseFloat(emptyWeight) || 0,
         deducted_weight: parseFloat(deductedWeight) || 0,
-        net_weight: netWeight,
-        final_billable_weight: finalBillableWeight,
         freight_method: freightMethod,
         freight_rate: parseFloat(freightRate) || 0,
-        freight_total: freightTotal,
         no_rental: noRental,
         advance_paid: parseFloat(advancePaid) || 0,
-        broker_name: brokerName,
-        sellers,
-        is_multi_seller: isMultiSeller,
-      };
-
-      // REQ-ARR-006: Create inventory (lots in localStorage)
-      const existingLots = getStore<any>('mkt_lots');
-      const dailySerial = getStore<any>('mkt_daily_serials');
-      let sellerSerial = dailySerial.length > 0 ? dailySerial[dailySerial.length - 1].seller_serial || 0 : 0;
-
-      sellers.forEach(seller => {
-        sellerSerial++;
-        seller.lots.forEach(lot => {
-          existingLots.push({
-            lot_id: lot.lot_id,
-            seller_vehicle_id: seller.seller_vehicle_id,
-            commodity_id: commodities.find((c: any) => c.commodity_name === lot.commodity_name)?.commodity_id || '',
-            lot_name: lot.lot_name,
-            bag_count: lot.quantity,
-            seller_serial_no: sellerSerial,
-            created_at: new Date().toISOString(),
-            commodity_name: lot.commodity_name,
-            seller_name: seller.seller_name,
-          });
-        });
+        broker_name: brokerName || undefined,
+        narration: narration || undefined,
+        sellers: sellers.map(s => ({
+          contact_id: s.contact_id,
+          seller_name: s.seller_name,
+          seller_phone: s.seller_phone,
+          seller_mark: s.seller_mark,
+          lots: s.lots.map(l => ({
+            lot_name: l.lot_name,
+            quantity: l.quantity,
+            commodity_name: l.commodity_name,
+            broker_tag: l.broker_tag,
+          })),
+        })),
       });
-      setStore('mkt_lots', existingLots);
 
-      // REQ-ARR-008: Freight Voucher
-      if (freightTotal > 0 && !noRental) {
-        const vouchers = getStore<any>('mkt_vouchers');
-        vouchers.push({
-          voucher_id: crypto.randomUUID(),
-          trader_id: '',
-          reference_type: 'FREIGHT',
-          reference_id: vehicle.vehicle_id,
-          amount: freightTotal,
-          status: 'OPEN',
-          narration: narration || 'Freight for vehicle arrival',
-          created_at: new Date().toISOString(),
-        });
-        setStore('mkt_vouchers', vouchers);
-      }
-
-      // REQ-ARR-011: Advance Recording
-      if ((parseFloat(advancePaid) || 0) > 0) {
-        const vouchers = getStore<any>('mkt_vouchers');
-        vouchers.push({
-          voucher_id: crypto.randomUUID(),
-          trader_id: '',
-          reference_type: 'ADVANCE',
-          reference_id: vehicle.vehicle_id,
-          amount: parseFloat(advancePaid) || 0,
-          status: 'OPEN',
-          narration: 'Advance paid to driver',
-          created_at: new Date().toISOString(),
-        });
-        setStore('mkt_vouchers', vouchers);
-      }
-
-      // REQ-ARR-009: Coolie Voucher
-      const coolieConfig = (() => {
-        try { return JSON.parse(localStorage.getItem('mkt_tenant_config') || '{}'); } catch { return {}; }
-      })();
-      if (coolieConfig.coolie_charges_enabled && (coolieConfig.coolie_rate || 0) > 0) {
-        const coolieAmount = (coolieConfig.coolie_rate || 0) * sellers.reduce((s, sel) => s + sel.lots.reduce((ls, l) => ls + l.quantity, 0), 0);
-        const vouchers = getStore<any>('mkt_vouchers');
-        vouchers.push({
-          voucher_id: crypto.randomUUID(),
-          trader_id: '',
-          reference_type: 'COOLIE',
-          reference_id: vehicle.vehicle_id,
-          amount: coolieAmount,
-          status: 'OPEN',
-          narration: 'Coolie charges for unloading',
-          created_at: new Date().toISOString(),
-        });
-        setStore('mkt_vouchers', vouchers);
-      }
-
-      // REQ-ARR-002: Freight Distribution
-      if (freightMethod === 'DIVIDE_BY_WEIGHT' && sellers.length > 1) {
-        const totalLotQty = sellers.reduce((s, sel) => s + sel.lots.reduce((ls, l) => ls + l.quantity, 0), 0);
-        const freightDist = getStore<any>('mkt_freight_distribution');
-        sellers.forEach(seller => {
-          seller.lots.forEach(lot => {
-            freightDist.push({
-              freight_distribution_id: crypto.randomUUID(),
-              freight_id: vehicle.vehicle_id,
-              lot_id: lot.lot_id,
-              allocated_amount: totalLotQty > 0 ? (lot.quantity / totalLotQty) * freightTotal : 0,
-            });
-          });
-        });
-        setStore('mkt_freight_distribution', freightDist);
-      }
-
-      // Save arrival record
-      const allArrivals = getStore<ArrivalRecord>('mkt_arrival_records');
-      allArrivals.push(record);
-      setStore('mkt_arrival_records', allArrivals);
-      setArrivals(allArrivals);
+      // Reload first page to keep summary in sync with server-side pagination
+      await loadArrivalsPage(0);
 
       // Reset form
       resetForm();
       setShowAdd(false);
       setDesktopTab('summary');
-      toast.success(`✅ Vehicle ${vehicle.vehicle_number} registered with ${sellers.length} seller(s) and ${sellers.reduce((s, sel) => s + sel.lots.length, 0)} lot(s)`);
+      toast.success(`✅ Vehicle ${created.vehicleNumber} registered with ${sellers.length} seller(s) and ${sellers.reduce((s, sel) => s + sel.lots.length, 0)} lot(s)`);
     } catch (err) {
       console.error('Submit arrival error:', err);
-      toast.error('Failed to submit arrival. Please try again.');
+      toast.error(err instanceof Error ? err.message : 'Failed to submit arrival. Please try again.');
     }
   };
 
@@ -458,7 +419,7 @@ const ArrivalsPage = () => {
                   <p className="text-white/70 text-xs">{arrivals.length} vehicles · Inward Logistics</p>
                 </div>
               </div>
-              <button onClick={() => { resetForm(); setShowAdd(true); }} className="w-10 h-10 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
+              <button onClick={() => { resetForm(); setShowAdd(true); loadCommodityData(); }} className="w-10 h-10 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
                 <Plus className="w-5 h-5 text-white" />
               </button>
             </div>
@@ -490,7 +451,7 @@ const ArrivalsPage = () => {
               )}
             </button>
             <button
-              onClick={() => { setDesktopTab('new-arrival'); resetForm(); }}
+              onClick={() => { setDesktopTab('new-arrival'); resetForm(); loadCommodityData(); }}
               className={cn(
                 "px-5 py-3 text-sm font-semibold transition-all relative",
                 desktopTab === 'new-arrival'
@@ -522,7 +483,7 @@ const ArrivalsPage = () => {
                     </div>
                     <h3 className="text-lg font-bold text-foreground mb-1">No Arrivals Yet</h3>
                     <p className="text-sm text-muted-foreground mb-4">Record your first vehicle arrival to start operations</p>
-                    <Button onClick={() => { resetForm(); setDesktopTab('new-arrival'); }} className="bg-gradient-to-r from-blue-500 to-violet-500 text-white rounded-xl shadow-lg">
+                    <Button onClick={() => { resetForm(); setDesktopTab('new-arrival'); loadCommodityData(); }} className="bg-gradient-to-r from-blue-500 to-violet-500 text-white rounded-xl shadow-lg">
                       <Plus className="w-4 h-4 mr-2" /> New Arrival
                     </Button>
                   </div>
@@ -542,16 +503,25 @@ const ArrivalsPage = () => {
                       </thead>
                       <tbody>
                         {arrivals.map((arr, i) => (
-                          <motion.tr key={arr.vehicle.vehicle_id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}
+                          <motion.tr
+                            key={String(arr.vehicleId)}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: i * 0.04 }}
                             className="border-b border-border/20 hover:bg-muted/20 transition-colors cursor-pointer"
-                            onClick={() => setExpandedArrival(expandedArrival === i ? null : i)}>
-                            <td className="px-4 py-3 font-semibold text-foreground">{arr.vehicle.vehicle_number}</td>
-                            <td className="px-4 py-3 text-muted-foreground">{arr.sellers.length}</td>
-                            <td className="px-4 py-3 text-muted-foreground">{arr.sellers.reduce((s, sel) => s + sel.lots.length, 0)}</td>
-                            <td className="px-4 py-3 text-right font-medium text-foreground">{arr.net_weight}kg</td>
-                            <td className="px-4 py-3 text-right font-medium text-foreground">{arr.final_billable_weight}kg</td>
-                            <td className="px-4 py-3 text-right font-medium text-amber-600 dark:text-amber-400">{arr.freight_total > 0 ? `₹${arr.freight_total.toLocaleString()}` : '—'}</td>
-                            <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(arr.vehicle.arrival_datetime).toLocaleDateString()}</td>
+                            onClick={() => setExpandedArrival(expandedArrival === i ? null : i)}
+                          >
+                            <td className="px-4 py-3 font-semibold text-foreground">{arr.vehicleNumber}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{arr.sellerCount}</td>
+                            <td className="px-4 py-3 text-muted-foreground">{arr.lotCount}</td>
+                            <td className="px-4 py-3 text-right font-medium text-foreground">{arr.netWeight}kg</td>
+                            <td className="px-4 py-3 text-right font-medium text-foreground">{arr.finalBillableWeight}kg</td>
+                            <td className="px-4 py-3 text-right font-medium text-amber-600 dark:text-amber-400">
+                              {arr.freightTotal > 0 ? `₹${arr.freightTotal.toLocaleString()}` : '—'}
+                            </td>
+                            <td className="px-4 py-3 text-muted-foreground text-xs">
+                              {new Date(arr.arrivalDatetime).toLocaleDateString()}
+                            </td>
                           </motion.tr>
                         ))}
                       </tbody>
@@ -723,40 +693,52 @@ const ArrivalsPage = () => {
                       <div className="flex-1 h-px bg-border/30" />
                     </div>
 
-                    <div className="glass-card rounded-2xl p-4">
-                      <label className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-2 block flex items-center gap-1.5">
-                        <Search className="w-3.5 h-3.5" /> Add Seller
-                      </label>
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
-                          placeholder="Search by name, phone, or mark…"
-                          value={sellerSearch}
-                          onChange={e => { setSellerSearch(e.target.value); setSellerDropdown(true); }}
-                          onFocus={() => sellerSearch && setSellerDropdown(true)}
-                          className="h-11 rounded-xl pl-10 text-sm"
-                        />
-                        <AnimatePresence>
-                          {sellerDropdown && filteredContacts.length > 0 && (
-                            <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
-                              className="absolute top-14 left-0 right-0 z-20 bg-card border border-border/50 rounded-xl shadow-xl max-h-48 overflow-y-auto">
-                              {filteredContacts.map(c => (
-                                <button key={c.contact_id} onClick={() => addSeller(c)}
-                                  className="w-full px-3 py-2.5 text-left text-sm hover:bg-muted/50 transition-colors flex items-center gap-2 border-b border-border/20 last:border-0">
-                                  <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center flex-shrink-0">
-                                    <span className="text-white text-[10px] font-bold">{c.mark || c.name.charAt(0)}</span>
-                                  </div>
-                                  <div>
-                                    <span className="text-foreground font-medium">{c.name}</span>
-                                    {c.mark && <span className="text-muted-foreground text-xs ml-1">({c.mark})</span>}
-                                  </div>
-                                  <span className="ml-auto text-xs text-muted-foreground">{c.phone}</span>
-                                </button>
-                              ))}
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
+                    <div className="relative">
+                      <div className="glass-card rounded-2xl p-4">
+                        <label className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-2 block flex items-center gap-1.5">
+                          <Search className="w-3.5 h-3.5" /> Add Seller
+                        </label>
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Search by name, phone, or mark…"
+                            value={sellerSearch}
+                            onChange={e => {
+                              const next = e.target.value;
+                              setSellerSearch(next);
+                              setSellerDropdown(true);
+                            }}
+                            onFocus={() => {
+                              if (sellerSearch) setSellerDropdown(true);
+                            }}
+                            className="h-11 rounded-xl pl-10 text-sm"
+                          />
+                        </div>
                       </div>
+                      <AnimatePresence>
+                        {filteredContacts.length > 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -5 }}
+                            className="absolute left-4 right-4 top-[calc(100%-0.5rem)] z-50 bg-background text-foreground border border-border/80 rounded-xl shadow-2xl max-h-60 overflow-y-auto"
+                          >
+                            {filteredContacts.map(c => (
+                              <button key={c.contact_id} onClick={() => addSeller(c)}
+                                className="w-full px-3 py-2.5 text-left text-sm hover:bg-muted/50 transition-colors flex items-center gap-2 border-b border-border/20 last:border-0">
+                                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-white text-[10px] font-bold">{c.mark || c.name.charAt(0)}</span>
+                                </div>
+                                <div>
+                                  <span className="text-foreground font-medium">{c.name}</span>
+                                  {c.mark && <span className="text-muted-foreground text-xs ml-1">({c.mark})</span>}
+                                </div>
+                                <span className="ml-auto text-xs text-muted-foreground">{c.phone}</span>
+                              </button>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
 
                     {sellers.length === 0 && (
@@ -813,11 +795,15 @@ const ArrivalsPage = () => {
                                 </div>
                                 <div>
                                   <label className="text-[9px] text-muted-foreground mb-0.5 block">Commodity</label>
-                                  <select value={lot.commodity_name}
+                                  <select
+                                    value={lot.commodity_name}
                                     onChange={e => updateLot(si, li, { commodity_name: e.target.value })}
-                                    className="h-9 w-full rounded-lg bg-background border border-input text-sm px-2">
-                                    {commodities.map((c: any) => (
-                                      <option key={c.commodity_id} value={c.commodity_name}>{c.commodity_name}</option>
+                                    className="h-9 w-full rounded-lg bg-background border border-input text-sm px-2"
+                                  >
+                                    {commodities.map(c => (
+                                      <option key={c.commodity_id} value={c.commodity_name}>
+                                        {c.commodity_name}
+                                      </option>
                                     ))}
                                     {commodities.length === 0 && <option value="">No commodities</option>}
                                   </select>
@@ -863,13 +849,18 @@ const ArrivalsPage = () => {
                 </div>
                 <h3 className="text-lg font-bold text-foreground mb-1">No Arrivals Yet</h3>
                 <p className="text-sm text-muted-foreground mb-4">Record your first vehicle arrival to start operations</p>
-                <Button onClick={() => { resetForm(); setShowAdd(true); }} className="bg-gradient-to-r from-blue-500 to-violet-500 text-white rounded-xl shadow-lg">
+                <Button onClick={() => { resetForm(); setShowAdd(true); loadCommodityData(); }} className="bg-gradient-to-r from-blue-500 to-violet-500 text-white rounded-xl shadow-lg">
                   <Plus className="w-4 h-4 mr-2" /> New Arrival
                 </Button>
               </motion.div>
             ) : (
               arrivals.map((arr, i) => (
-                <motion.div key={arr.vehicle.vehicle_id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.06 }}>
+                <motion.div
+                  key={String(arr.vehicleId)}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.06 }}
+                >
                   <div className="glass-card rounded-2xl overflow-hidden">
                     <button onClick={() => setExpandedArrival(expandedArrival === i ? null : i)}
                       className="w-full p-3.5 flex items-center justify-between">
@@ -878,16 +869,22 @@ const ArrivalsPage = () => {
                           <Truck className="w-4 h-4 text-white" />
                         </div>
                         <div className="text-left">
-                          <p className="font-semibold text-sm text-foreground">{arr.vehicle.vehicle_number}</p>
+                          <p className="font-semibold text-sm text-foreground">{arr.vehicleNumber}</p>
                           <p className="text-xs text-muted-foreground">
-                            {arr.sellers.length} seller(s) · {arr.sellers.reduce((s, sel) => s + sel.lots.length, 0)} lot(s)
-                            {arr.final_billable_weight > 0 && ` · ${arr.final_billable_weight}kg`}
+                            {arr.sellerCount} seller(s) · {arr.lotCount} lot(s)
+                            {arr.finalBillableWeight > 0 && ` · ${arr.finalBillableWeight}kg`}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">{new Date(arr.vehicle.arrival_datetime).toLocaleDateString()}</span>
-                        {expandedArrival === i ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(arr.arrivalDatetime).toLocaleDateString()}
+                        </span>
+                        {expandedArrival === i ? (
+                          <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                        )}
                       </div>
                     </button>
                     <AnimatePresence>
@@ -898,30 +895,25 @@ const ArrivalsPage = () => {
                             <div className="grid grid-cols-2 gap-2">
                               <div className="rounded-lg bg-blue-50 dark:bg-blue-950/20 p-2 text-center">
                                 <p className="text-[10px] text-muted-foreground">Net Weight</p>
-                                <p className="font-bold text-foreground">{arr.net_weight}kg</p>
+                                <p className="font-bold text-foreground">{arr.netWeight}kg</p>
                               </div>
                               <div className="rounded-lg bg-violet-50 dark:bg-violet-950/20 p-2 text-center">
                                 <p className="text-[10px] text-muted-foreground">Billable</p>
-                                <p className="font-bold text-foreground">{arr.final_billable_weight}kg</p>
+                                <p className="font-bold text-foreground">{arr.finalBillableWeight}kg</p>
                               </div>
                             </div>
-                            {arr.freight_total > 0 && (
+                            {arr.freightTotal > 0 && (
                               <div className="rounded-lg bg-amber-50 dark:bg-amber-950/20 p-2 flex justify-between">
-                                <span className="text-muted-foreground text-xs">Freight ({FREIGHT_METHODS.find(m => m.value === arr.freight_method)?.label})</span>
-                                <span className="font-bold text-foreground">₹{arr.freight_total.toLocaleString()}</span>
+                                <span className="text-muted-foreground text-xs">
+                                  Freight (
+                                  {FREIGHT_METHODS.find(m => m.value === arr.freightMethod)?.label}
+                                  )
+                                </span>
+                                <span className="font-bold text-foreground">
+                                  ₹{arr.freightTotal.toLocaleString()}
+                                </span>
                               </div>
                             )}
-                            {arr.sellers.map((seller) => (
-                              <div key={seller.seller_vehicle_id} className="rounded-lg border border-border/30 p-2">
-                                <p className="font-semibold text-foreground text-xs mb-1">{seller.seller_name} {seller.seller_mark && `(${seller.seller_mark})`}</p>
-                                {seller.lots.map(lot => (
-                                  <div key={lot.lot_id} className="flex justify-between text-xs text-muted-foreground pl-3">
-                                    <span>{lot.lot_name} — {lot.commodity_name}</span>
-                                    <span>{lot.quantity} bags</span>
-                                  </div>
-                                ))}
-                              </div>
-                            ))}
                           </div>
                         </motion.div>
                       )}
@@ -1114,37 +1106,52 @@ const ArrivalsPage = () => {
 
                     {step === 2 && (
                       <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
-                        <div className="glass-card rounded-2xl p-4">
-                          <label className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-2 block flex items-center gap-1.5">
-                            <Users className="w-3.5 h-3.5" /> Add Seller
-                          </label>
-                          <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                            <Input placeholder="Search by name, phone, or mark…" value={sellerSearch}
-                              onChange={e => { setSellerSearch(e.target.value); setSellerDropdown(true); }}
-                              onFocus={() => sellerSearch && setSellerDropdown(true)}
-                              className="h-12 rounded-xl pl-10" />
-                            <AnimatePresence>
-                              {sellerDropdown && filteredContacts.length > 0 && (
-                                <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
-                                  className="absolute top-14 left-0 right-0 z-20 bg-card border border-border/50 rounded-xl shadow-xl max-h-48 overflow-y-auto">
-                                  {filteredContacts.map(c => (
-                                    <button key={c.contact_id} onClick={() => addSeller(c)}
-                                      className="w-full px-3 py-2.5 text-left text-sm hover:bg-muted/50 transition-colors flex items-center gap-2 border-b border-border/20 last:border-0">
-                                      <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center flex-shrink-0">
-                                        <span className="text-white text-[10px] font-bold">{c.mark || c.name.charAt(0)}</span>
-                                      </div>
-                                      <div>
-                                        <span className="text-foreground font-medium">{c.name}</span>
-                                        {c.mark && <span className="text-muted-foreground text-xs ml-1">({c.mark})</span>}
-                                      </div>
-                                      <span className="ml-auto text-xs text-muted-foreground">{c.phone}</span>
-                                    </button>
-                                  ))}
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
+                        <div className="relative">
+                          <div className="glass-card rounded-2xl p-4">
+                            <label className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-2 block flex items-center gap-1.5">
+                              <Users className="w-3.5 h-3.5" /> Add Seller
+                            </label>
+                            <div className="relative">
+                              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                              <Input
+                                placeholder="Search by name, phone, or mark…"
+                                value={sellerSearch}
+                                onChange={e => {
+                                  const next = e.target.value;
+                                  setSellerSearch(next);
+                                  setSellerDropdown(true);
+                                }}
+                                onFocus={() => {
+                                  if (sellerSearch) setSellerDropdown(true);
+                                }}
+                                className="h-12 rounded-xl pl-10"
+                              />
+                            </div>
                           </div>
+                          <AnimatePresence>
+                            {filteredContacts.length > 0 && (
+                              <motion.div
+                                initial={{ opacity: 0, y: -5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -5 }}
+                                className="absolute left-4 right-4 top-[calc(100%-0.5rem)] z-50 bg-background text-foreground border border-border/80 rounded-xl shadow-2xl max-h-60 overflow-y-auto"
+                              >
+                                {filteredContacts.map(c => (
+                                  <button key={c.contact_id} onClick={() => addSeller(c)}
+                                    className="w-full px-3 py-2.5 text-left text-sm hover:bg-muted/50 transition-colors flex items-center gap-2 border-b border-border/20 last:border-0">
+                                    <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center flex-shrink-0">
+                                      <span className="text-white text-[10px] font-bold">{c.mark || c.name.charAt(0)}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-foreground font-medium">{c.name}</span>
+                                      {c.mark && <span className="text-muted-foreground text-xs ml-1">({c.mark})</span>}
+                                    </div>
+                                    <span className="ml-auto text-xs text-muted-foreground">{c.phone}</span>
+                                  </button>
+                                ))}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
 
                         {sellers.length === 0 && (
@@ -1201,11 +1208,15 @@ const ArrivalsPage = () => {
                                     </div>
                                     <div>
                                       <label className="text-[9px] text-muted-foreground mb-0.5 block">Commodity</label>
-                                      <select value={lot.commodity_name}
+                                      <select
+                                        value={lot.commodity_name}
                                         onChange={e => updateLot(si, li, { commodity_name: e.target.value })}
-                                        className="h-10 w-full rounded-lg bg-background border border-input text-sm px-2">
-                                        {commodities.map((c: any) => (
-                                          <option key={c.commodity_id} value={c.commodity_name}>{c.commodity_name}</option>
+                                        className="h-10 w-full rounded-lg bg-background border border-input text-sm px-2"
+                                      >
+                                        {commodities.map(c => (
+                                          <option key={c.commodity_id} value={c.commodity_name}>
+                                            {c.commodity_name}
+                                          </option>
                                         ))}
                                         {commodities.length === 0 && <option value="">No commodities</option>}
                                       </select>

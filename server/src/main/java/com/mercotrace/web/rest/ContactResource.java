@@ -224,11 +224,16 @@ public class ContactResource {
         LOG.debug("REST request to search Contacts by mark. traderId={}, mark={}", traderId, mark);
         List<ContactDTO> list;
         if (traderId == null) {
-            // Fallback: search across all traders if traderId is not provided.
+            // Fallback: generic search across all traders by name, phone, or mark.
+            final String lower = mark.toLowerCase();
             list = contactRepository
                 .findAll()
                 .stream()
-                .filter(c -> c.getMark() != null && c.getMark().toLowerCase().contains(mark.toLowerCase()))
+                .filter(c ->
+                    (c.getName() != null && c.getName().toLowerCase().contains(lower)) ||
+                    (c.getPhone() != null && c.getPhone().contains(mark)) ||
+                    (c.getMark() != null && c.getMark().toLowerCase().contains(lower))
+                )
                 .map(c -> contactService.findOne(c.getId()).orElse(null))
                 .filter(java.util.Objects::nonNull)
                 .toList();

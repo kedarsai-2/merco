@@ -29,5 +29,7 @@
     <include file="config/liquibase/changelog/20260224130000_added_entity_Contact.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260225120000_added_entity_Commodity.xml" relativeToChangelogFile="false"/>
     <include file="config/liquibase/changelog/20260226120000_commodity_config_and_audit.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260226130000_arrivals_logistics_and_finance.xml" relativeToChangelogFile="false"/>
+    <include file="config/liquibase/changelog/20260226135000_arrivals_audit_columns.xml" relativeToChangelogFile="false"/>
     <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>

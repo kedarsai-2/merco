@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+        Arrivals & Inward Logistics schema
+        Aligned with client/src/types/models.ts (PART 5, 10, 11)
+        and ArrivalsPage.tsx localStorage keys.
+    -->
+
+    <!-- 5.1 vehicle -->
+    <changeSet id="20260226130000-1" author="mercotrace">
+        <createTable tableName="vehicle">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="trader_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+            <column name="vehicle_number" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="arrival_datetime" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="varchar(50)"/>
+            <column name="created_at" type="${datetimeType}"/>
+        </createTable>
+
+        <createIndex tableName="vehicle" indexName="idx_vehicle_trader">
+            <column name="trader_id"/>
+        </createIndex>
+        <createIndex tableName="vehicle" indexName="idx_vehicle_number">
+            <column name="vehicle_number"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- 5.2 vehicle_weight -->
+    <changeSet id="20260226130000-2" author="mercotrace">
+        <createTable tableName="vehicle_weight">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="vehicle_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="loaded_weight" type="double precision">
+                <constraints nullable="false"/>
+            </column>
+            <column name="empty_weight" type="double precision">
+                <constraints nullable="false"/>
+            </column>
+            <column name="deducted_weight" type="double precision" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="net_weight" type="double precision">
+                <constraints nullable="false"/>
+            </column>
+            <column name="recorded_by" type="varchar(50)"/>
+            <column name="recorded_at" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="vehicle_weight" baseColumnNames="vehicle_id"
+                                 referencedTableName="vehicle" referencedColumnNames="id"
+                                 constraintName="fk_vehicle_weight_vehicle"/>
+
+        <createIndex tableName="vehicle_weight" indexName="idx_vehicle_weight_vehicle">
+            <column name="vehicle_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- 5.3 seller_in_vehicle -->
+    <changeSet id="20260226130000-3" author="mercotrace">
+        <createTable tableName="seller_in_vehicle">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="vehicle_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="contact_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="broker_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="seller_in_vehicle" baseColumnNames="vehicle_id"
+                                 referencedTableName="vehicle" referencedColumnNames="id"
+                                 constraintName="fk_seller_vehicle_vehicle"/>
+
+        <addForeignKeyConstraint baseTableName="seller_in_vehicle" baseColumnNames="contact_id"
+                                 referencedTableName="contact" referencedColumnNames="id"
+                                 constraintName="fk_seller_vehicle_contact"/>
+
+        <addForeignKeyConstraint baseTableName="seller_in_vehicle" baseColumnNames="broker_id"
+                                 referencedTableName="contact" referencedColumnNames="id"
+                                 constraintName="fk_seller_vehicle_broker"/>
+
+        <createIndex tableName="seller_in_vehicle" indexName="idx_seller_vehicle_vehicle">
+            <column name="vehicle_id"/>
+        </createIndex>
+        <createIndex tableName="seller_in_vehicle" indexName="idx_seller_vehicle_contact">
+            <column name="contact_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- 5.4 lot -->
+    <changeSet id="20260226130000-4" author="mercotrace">
+        <createTable tableName="lot">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="seller_vehicle_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="commodity_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="lot_name" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="bag_count" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="seller_serial_no" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="lot" baseColumnNames="seller_vehicle_id"
+                                 referencedTableName="seller_in_vehicle" referencedColumnNames="id"
+                                 constraintName="fk_lot_seller_vehicle"/>
+
+        <addForeignKeyConstraint baseTableName="lot" baseColumnNames="commodity_id"
+                                 referencedTableName="commodity" referencedColumnNames="id"
+                                 constraintName="fk_lot_commodity"/>
+
+        <createIndex tableName="lot" indexName="idx_lot_seller_vehicle">
+            <column name="seller_vehicle_id"/>
+        </createIndex>
+        <createIndex tableName="lot" indexName="idx_lot_commodity">
+            <column name="commodity_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- 5.5 freight_calculation -->
+    <changeSet id="20260226130000-5" author="mercotrace">
+        <createTable tableName="freight_calculation">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="vehicle_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="method" type="varchar(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rate" type="double precision">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_amount" type="double precision">
+                <constraints nullable="false"/>
+            </column>
+            <column name="no_rental" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="advance_paid" type="double precision" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="freight_calculation" baseColumnNames="vehicle_id"
+                                 referencedTableName="vehicle" referencedColumnNames="id"
+                                 constraintName="fk_freight_calculation_vehicle"/>
+
+        <createIndex tableName="freight_calculation" indexName="idx_freight_calculation_vehicle">
+            <column name="vehicle_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- 5.6 freight_distribution -->
+    <changeSet id="20260226130000-6" author="mercotrace">
+        <createTable tableName="freight_distribution">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="freight_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="lot_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="allocated_amount" type="double precision">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="freight_distribution" baseColumnNames="freight_id"
+                                 referencedTableName="freight_calculation" referencedColumnNames="id"
+                                 constraintName="fk_freight_distribution_freight"/>
+
+        <addForeignKeyConstraint baseTableName="freight_distribution" baseColumnNames="lot_id"
+                                 referencedTableName="lot" referencedColumnNames="id"
+                                 constraintName="fk_freight_distribution_lot"/>
+
+        <createIndex tableName="freight_distribution" indexName="idx_freight_distribution_freight">
+            <column name="freight_id"/>
+        </createIndex>
+        <createIndex tableName="freight_distribution" indexName="idx_freight_distribution_lot">
+            <column name="lot_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- 10.1 voucher (subset needed for arrivals: FREIGHT, ADVANCE, COOLIE) -->
+    <changeSet id="20260226130000-7" author="mercotrace">
+        <createTable tableName="voucher">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="trader_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reference_type" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reference_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="amount" type="numeric(19,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="voucher" indexName="idx_voucher_trader">
+            <column name="trader_id"/>
+        </createIndex>
+        <createIndex tableName="voucher" indexName="idx_voucher_reference">
+            <column name="reference_type"/>
+            <column name="reference_id"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- 11.1 daily_serial -->
+    <changeSet id="20260226130000-8" author="mercotrace">
+        <createTable tableName="daily_serial">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="trader_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="serial_date" type="date">
+                <constraints nullable="false"/>
+            </column>
+            <column name="seller_serial" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="lot_serial" type="integer">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="daily_serial" indexName="idx_daily_serial_trader_date">
+            <column name="trader_id"/>
+            <column name="serial_date"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
+

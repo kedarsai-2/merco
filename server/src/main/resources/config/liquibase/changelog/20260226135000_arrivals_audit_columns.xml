@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+        Audit columns for arrivals & logistics tables.
+        Pattern matches commodity audit: created_by, created_date, last_modified_by, last_modified_date.
+    -->
+
+    <changeSet id="20260226135000-1" author="mercotrace">
+        <addColumn tableName="vehicle">
+            <column name="last_modified_by" type="varchar(50)"/>
+            <column name="last_modified_date" type="${datetimeType}"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260226135000-2" author="mercotrace">
+        <addColumn tableName="vehicle_weight">
+            <column name="created_by" type="varchar(50)"/>
+            <column name="created_date" type="${datetimeType}"/>
+            <column name="last_modified_by" type="varchar(50)"/>
+            <column name="last_modified_date" type="${datetimeType}"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260226135000-3" author="mercotrace">
+        <addColumn tableName="seller_in_vehicle">
+            <column name="created_by" type="varchar(50)"/>
+            <column name="created_date" type="${datetimeType}"/>
+            <column name="last_modified_by" type="varchar(50)"/>
+            <column name="last_modified_date" type="${datetimeType}"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260226135000-4" author="mercotrace">
+        <addColumn tableName="lot">
+            <column name="created_by" type="varchar(50)"/>
+            <column name="created_date" type="${datetimeType}"/>
+            <column name="last_modified_by" type="varchar(50)"/>
+            <column name="last_modified_date" type="${datetimeType}"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260226135000-5" author="mercotrace">
+        <addColumn tableName="freight_calculation">
+            <column name="created_by" type="varchar(50)"/>
+            <column name="created_date" type="${datetimeType}"/>
+            <column name="last_modified_by" type="varchar(50)"/>
+            <column name="last_modified_date" type="${datetimeType}"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260226135000-6" author="mercotrace">
+        <addColumn tableName="freight_distribution">
+            <column name="created_by" type="varchar(50)"/>
+            <column name="created_date" type="${datetimeType}"/>
+            <column name="last_modified_by" type="varchar(50)"/>
+            <column name="last_modified_date" type="${datetimeType}"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260226135000-7" author="mercotrace">
+        <addColumn tableName="voucher">
+            <column name="last_modified_by" type="varchar(50)"/>
+            <column name="last_modified_date" type="${datetimeType}"/>
+        </addColumn>
+    </changeSet>
+
+    <!-- Additional audit columns added after initial execution; new changesets to avoid checksum mismatch -->
+
+    <changeSet id="20260226135000-9" author="mercotrace">
+        <addColumn tableName="vehicle">
+            <column name="created_date" type="${datetimeType}"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260226135000-10" author="mercotrace">
+        <addColumn tableName="voucher">
+            <column name="created_date" type="${datetimeType}"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260226135000-8" author="mercotrace">
+        <addColumn tableName="daily_serial">
+            <column name="created_by" type="varchar(50)"/>
+            <column name="created_date" type="${datetimeType}"/>
+            <column name="last_modified_by" type="varchar(50)"/>
+            <column name="last_modified_date" type="${datetimeType}"/>
+        </addColumn>
+    </changeSet>
+
+    <!-- Ensure voucher has full auditing columns expected by AbstractAuditingEntity (including created_by) -->
+    <changeSet id="20260226135000-11" author="mercotrace">
+        <addColumn tableName="voucher">
+            <column name="created_by" type="varchar(50)"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>
+
