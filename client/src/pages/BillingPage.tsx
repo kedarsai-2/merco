@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import BottomNav from '@/components/BottomNav';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
 
 // ── localStorage helpers ──────────────────────────────────
 function getStore<T>(key: string): T[] {
@@ -91,13 +92,7 @@ interface BillData {
 }
 
 // REQ-BIL bill number generation (isolated by prefix)
-function generateBillNumber(): string {
-  const prefix = (() => {
-    try {
-      const auth = JSON.parse(localStorage.getItem('mkt_auth') || '{}');
-      return auth.trader?.bill_prefix || 'MT';
-    } catch { return 'MT'; }
-  })();
+function generateBillNumber(prefix: string): string {
   const counter = parseInt(localStorage.getItem(`mkt_bill_counter_${prefix}`) || '0') + 1;
   localStorage.setItem(`mkt_bill_counter_${prefix}`, String(counter));
   return `${prefix}-${String(counter).padStart(5, '0')}`;
@@ -106,6 +101,7 @@ function generateBillNumber(): string {
 const BillingPage = () => {
   const navigate = useNavigate();
   const isDesktop = useDesktopMode();
+  const { trader } = useAuth();
   const [buyers, setBuyers] = useState<BuyerPurchase[]>([]);
   const [selectedBuyer, setSelectedBuyer] = useState<BuyerPurchase | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -340,7 +336,8 @@ const BillingPage = () => {
   const saveBill = () => {
     if (!bill) return;
     // Bill number generated on print only
-    const billNumber = generateBillNumber();
+    const billPrefix = trader?.bill_prefix || 'MT';
+    const billNumber = generateBillNumber(billPrefix);
     const finalBill = { ...bill, billNumber, savedAt: new Date().toISOString() };
     
     const bills = getStore<any>('mkt_bills');
