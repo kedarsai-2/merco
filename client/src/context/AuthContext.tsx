@@ -16,7 +16,6 @@ const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   user: null,
   trader: null,
-  token: null,
   login: async () => {},
   register: async () => {},
   logout: () => {},
@@ -28,13 +27,12 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, setState] = useState<AuthState>(() => {
-    const saved = localStorage.getItem('mkt_auth');
-    if (saved) {
-      try { return JSON.parse(saved); } catch {}
-    }
-    return { isAuthenticated: false, user: null, trader: null, token: null };
+  const [state, setState] = useState<AuthState>({
+    isAuthenticated: false,
+    user: null,
+    trader: null,
   });
+  const [hasBootstrapped, setHasBootstrapped] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,8 +41,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('mkt_auth', JSON.stringify(state));
-  }, [state]);
+    let cancelled = false;
+    const bootstrap = async () => {
+      try {
+        const profile = await authApi.getProfile();
+        if (!cancelled && profile) {
+          setState({
+            isAuthenticated: true,
+            user: profile.user,
+            trader: profile.trader,
+          });
+        }
+      } catch {
+        // ignore bootstrap errors; user will be treated as logged out
+      } finally {
+        if (!cancelled) {
+          setHasBootstrapped(true);
+        }
+      }
+    };
+    bootstrap();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const login = useCallback(async (email: string, password: string) => {
     setIsLoading(true);
@@ -55,7 +75,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: true,
         user: result.user,
         trader: result.trader,
-        token: result.token,
       });
     } catch (e: any) {
       setError(e.message || 'Login failed');
@@ -85,7 +104,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: true,
         user: result.user,
         trader: result.trader,
-        token: result.token,
       });
     } catch (e: any) {
       setError(e.message || 'Registration failed');
@@ -96,8 +114,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const logout = useCallback(() => {
-    setState({ isAuthenticated: false, user: null, trader: null, token: null });
-    localStorage.removeItem('mkt_auth');
+    setState({ isAuthenticated: false, user: null, trader: null });
   }, []);
 
   const clearError = useCallback(() => setError(null), []);

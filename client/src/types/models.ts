@@ -556,13 +556,12 @@ export interface VoucherStatusLog {
   changed_by?: string;
 }
 
-// ── App-level Auth State ───────────────────────────────────
+// ── App-level Auth State (frontend session only, no tokens) ─────────────────
 
 export interface AuthState {
   isAuthenticated: boolean;
   user: User | null;
   trader: Trader | null;
-  token: string | null;
 }
 
 // ── Reports (App-level summary) ────────────────────────────

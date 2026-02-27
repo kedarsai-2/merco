@@ -1,10 +1,63 @@
 import type { BusinessCategory } from '@/types/models';
-import { delay, getStore } from '../storage';
+import { apiFetch } from './http';
+
+type BusinessCategoryDto = {
+  id?: string | number;
+  categoryName?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  created_at?: string;
+  updatedAt?: string;
+  updated_at?: string;
+};
+
+function mapDtoToCategory(dto: BusinessCategoryDto): BusinessCategory {
+  const id = dto.id;
+  return {
+    category_id: id != null ? String(id) : '',
+    category_name: dto.categoryName ?? '',
+    is_active: dto.isActive ?? true,
+    created_at: dto.created_at ?? dto.createdAt ?? new Date().toISOString(),
+    updated_at: dto.updated_at ?? dto.updatedAt ?? dto.created_at ?? dto.createdAt ?? new Date().toISOString(),
+  };
+}
+
+async function handleResponse<T>(res: Response, defaultMessage: string): Promise<T> {
+  if (res.ok) {
+    return res.json() as Promise<T>;
+  }
+
+  let message = defaultMessage;
+  try {
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const problem = await res.json();
+      if (typeof problem.detail === 'string' && problem.detail.trim().length > 0) {
+        message = problem.detail;
+      } else if (typeof problem.title === 'string' && problem.title.trim().length > 0) {
+        message = problem.title;
+      }
+    } else {
+      const text = await res.text();
+      if (text && text.length < 200) {
+        message = text;
+      }
+    }
+  } catch {
+    // ignore parse errors and keep default message
+  }
+  throw new Error(message);
+}
 
 export const categoryApi = {
   async list(): Promise<BusinessCategory[]> {
-    await delay(100);
-    return getStore<BusinessCategory>('mkt_categories');
+    const params = new URLSearchParams({ page: '0', size: '1000' });
+    const res = await apiFetch(`/business-categories?${params.toString()}`, {
+      method: 'GET',
+    });
+    const data = await handleResponse<BusinessCategoryDto[]>(res, 'Failed to load categories');
+    return data.map(mapDtoToCategory);
   },
 };
+
 

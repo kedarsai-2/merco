@@ -1,5 +1,5 @@
-import type { Trader, User, AuthState } from '@/types/models';
-import { API_BASE } from './http';
+import type { Trader, User } from '@/types/models';
+import { apiFetch } from './http';
 
 export const authApi = {
   async register(data: {
@@ -13,10 +13,9 @@ export const authApi = {
     state: string;
     pin_code: string;
     category: string;
-  }): Promise<{ trader: Trader; user: User; token: string }> {
-    const res = await fetch(`${API_BASE}/auth/register`, {
+  }): Promise<{ trader: Trader; user: User }> {
+    const res = await apiFetch('/auth/register', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
 
@@ -79,15 +78,12 @@ export const authApi = {
       shop_photos: dataRes.trader.shop_photos ?? [],
     };
 
-    const token: string = dataRes.token;
-
-    return { trader, user, token };
+    return { trader, user };
   },
 
-  async login(email: string, password: string): Promise<{ trader: Trader; user: User; token: string }> {
-    const res = await fetch(`${API_BASE}/auth/login`, {
+  async login(email: string, password: string): Promise<{ trader: Trader; user: User }> {
+    const res = await apiFetch('/auth/login', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: email, password }),
     });
 
@@ -148,17 +144,52 @@ export const authApi = {
       shop_photos: data.trader.shop_photos ?? [],
     };
 
-    const token: string = data.token;
-
-    return { trader, user, token };
+    return { trader, user };
   },
 
   async getProfile(): Promise<{ trader: Trader; user: User } | null> {
-    const saved = localStorage.getItem('mkt_auth');
-    if (!saved) return null;
-    const auth: AuthState = JSON.parse(saved);
-    if (!auth.user || !auth.trader) return null;
-    return { trader: auth.trader, user: auth.user };
+    const res = await apiFetch('/auth/me', {
+      method: 'GET',
+    });
+
+    if (res.status === 401) {
+      return null;
+    }
+
+    if (!res.ok) {
+      throw new Error('Failed to load profile');
+    }
+
+    const data = await res.json();
+
+    const user: User = {
+      user_id: data.user.user_id,
+      trader_id: data.user.trader_id,
+      username: data.user.username,
+      is_active: data.user.is_active,
+      created_at: data.user.created_at ?? new Date().toISOString(),
+      name: data.user.name,
+      role: data.user.role,
+    };
+
+    const trader: Trader = {
+      trader_id: data.trader.trader_id,
+      business_name: data.trader.business_name,
+      owner_name: data.trader.owner_name,
+      address: data.trader.address ?? '',
+      category: data.trader.category ?? '',
+      approval_status: data.trader.approval_status ?? 'PENDING',
+      bill_prefix: data.trader.bill_prefix ?? '',
+      created_at: data.trader.created_at ?? new Date().toISOString(),
+      updated_at: data.trader.updated_at ?? new Date().toISOString(),
+      mobile: data.trader.mobile,
+      email: data.trader.email,
+      city: data.trader.city,
+      state: data.trader.state,
+      pin_code: data.trader.pin_code,
+      shop_photos: data.trader.shop_photos ?? [],
+    };
+
+    return { trader, user };
   },
 };
-
