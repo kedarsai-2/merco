@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { commodityApi, type FullCommodityConfigDto } from '@/services/api';
-import type { Commodity, CommodityConfiguration, ChargeType, AppliesTo } from '@/types/models';
+import { commodityApi } from '@/services/api';
+import type { Commodity, CommodityConfiguration, DynamicCharge, DeductionRule, HamaliSlab, ChargeType, AppliesTo } from '@/types/models';
 import { useDesktopMode } from '@/hooks/use-desktop';
 import { toast } from 'sonner';
 
@@ -21,11 +21,19 @@ const commodityImages: Record<string, string> = { 'Onion': onionImg, 'Potato': p
 interface LocalCommodityConfig {
   commodity: Commodity;
   config: CommodityConfiguration;
-  charges: Array<{ charge_name: string; charge_type: ChargeType; value: string; applies_to: AppliesTo; percent_basis?: string; fixed_basis?: string }>;
+  charges: Array<{ charge_name: string; charge_type: ChargeType; value: string; applies_to: AppliesTo }>;
   deductionRules: Array<{ min_weight: string; max_weight: string; deduction_value: string }>;
   hamaliSlabs: Array<{ threshold_weight: string; fixed_rate: string; per_kg_rate: string }>;
   hamaliEnabled: boolean;
   billPrefix: string;
+  gstApplicable: boolean;
+}
+
+function getStore<T>(key: string): T[] {
+  try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
+}
+function setStore<T>(key: string, data: T[]) {
+  localStorage.setItem(key, JSON.stringify(data));
 }
 
 const CommoditySettings = () => {
@@ -39,77 +47,43 @@ const CommoditySettings = () => {
 
   useEffect(() => {
     const load = async () => {
-      try {
-        const commodities = await commodityApi.list();
-        const result: LocalCommodityConfig[] = await Promise.all(
-          commodities.map(async (c) => {
-            const full = await commodityApi.getFullConfig(c.commodity_id);
-            const cfg = full.config
-              ? {
-                  config_id: String(full.config.id ?? crypto.randomUUID()),
-                  commodity_id: c.commodity_id,
-                  rate_per_unit: full.config.ratePerUnit ?? 0,
-                  min_weight: full.config.minWeight ?? 0,
-                  max_weight: full.config.maxWeight ?? 0,
-                  govt_deduction_enabled: full.config.govtDeductionEnabled ?? false,
-                  roundoff_enabled: full.config.roundoffEnabled ?? false,
-                  commission_percent: full.config.commissionPercent ?? 0,
-                  user_fee_percent: full.config.userFeePercent ?? 0,
-                  hsn_code: full.config.hsnCode ?? '',
-                  weighing_charge: full.config.weighingCharge,
-                  created_at: full.config.createdDate ?? new Date().toISOString(),
-                }
-              : {
-                  config_id: crypto.randomUUID(),
-                  commodity_id: c.commodity_id,
-                  rate_per_unit: 0,
-                  min_weight: 0,
-                  max_weight: 0,
-                  govt_deduction_enabled: false,
-                  roundoff_enabled: false,
-                  commission_percent: 0,
-                  user_fee_percent: 0,
-                  hsn_code: '',
-                  created_at: new Date().toISOString(),
-                };
-            const cCharges = (full.dynamicCharges ?? []).map((ch) => ({
-              charge_name: ch.chargeName,
-              charge_type: ch.chargeType as ChargeType,
-              value: String(ch.valueAmount),
-              applies_to: (ch.appliesTo as AppliesTo) || ('BUYER' as AppliesTo),
-              percent_basis: ch.percentBasis,
-              fixed_basis: ch.fixedBasis,
-            }));
-            const cDeductions = (full.deductionRules ?? []).map((d) => ({
-              min_weight: String(d.minWeight),
-              max_weight: String(d.maxWeight),
-              deduction_value: String(d.deductionValue),
-            }));
-            const cHamalis = (full.hamaliSlabs ?? []).map((h) => ({
-              threshold_weight: String(h.thresholdWeight),
-              fixed_rate: String(h.fixedRate),
-              per_kg_rate: String(h.perKgRate ?? 0),
-            }));
-            const billPrefix = full.config?.billPrefix ?? '';
-            const hamaliEnabled = full.config?.hamaliEnabled ?? false;
-            return {
-              commodity: c,
-              config: { ...cfg, weighing_charge: full.config?.weighingCharge } as CommodityConfiguration & { weighing_charge?: number },
-              charges: cCharges,
-              deductionRules: cDeductions,
-              hamaliSlabs: cHamalis,
-              hamaliEnabled,
-              billPrefix,
-            };
-          })
-        );
-        setItems(result);
-      } catch (error) {
-        console.error('Failed to load commodities', error);
-        toast.error('Failed to load commodities');
-      } finally {
-        setLoading(false);
-      }
+      const commodities = await commodityApi.list();
+      const configs = getStore<CommodityConfiguration>('mkt_commodity_configs');
+      const charges = getStore<DynamicCharge & { applies_to?: AppliesTo; commodity_id?: string }>('mkt_dynamic_charges');
+      const deductions = getStore<DeductionRule>('mkt_deduction_rules');
+      const hamalis = getStore<HamaliSlab>('mkt_hamali_slabs');
+      const hamaliToggles = getStore<{ commodity_id: string; enabled: boolean }>('mkt_hamali_toggles');
+      const billPrefixes = getStore<{ commodity_id: string; prefix: string }>('mkt_bill_prefixes');
+
+      const result: LocalCommodityConfig[] = commodities.map((c) => {
+        const cfg = configs.find(x => x.commodity_id === c.commodity_id) || {
+          config_id: crypto.randomUUID(), commodity_id: c.commodity_id,
+          rate_per_unit: 0, min_weight: 0, max_weight: 0,
+          govt_deduction_enabled: false, roundoff_enabled: false,
+          commission_percent: 0, user_fee_percent: 0, hsn_code: '',
+          created_at: new Date().toISOString(),
+        };
+        const cCharges = charges.filter(ch => ch.commodity_id === c.commodity_id).map(ch => ({
+          charge_name: ch.charge_name, charge_type: ch.charge_type, value: String(ch.value), applies_to: (ch as any).applies_to || 'BUYER' as AppliesTo,
+        }));
+        const cDeductions = deductions.filter(d => d.commodity_id === c.commodity_id).map(d => ({
+          min_weight: String(d.min_weight), max_weight: String(d.max_weight), deduction_value: String(d.deduction_value),
+        }));
+        const cHamalis = hamalis.filter(h => h.commodity_id === c.commodity_id).map(h => ({
+          threshold_weight: String(h.threshold_weight), fixed_rate: String(h.fixed_rate), per_kg_rate: String(h.per_kg_rate),
+        }));
+        const hamaliToggle = hamaliToggles.find(t => t.commodity_id === c.commodity_id);
+        const bp = billPrefixes.find(b => b.commodity_id === c.commodity_id);
+        return {
+          commodity: c, config: cfg, charges: cCharges,
+          deductionRules: cDeductions, hamaliSlabs: cHamalis,
+          hamaliEnabled: hamaliToggle?.enabled ?? false,
+          billPrefix: bp?.prefix ?? '',
+          gstApplicable: !!cfg.hsn_code,
+        };
+      });
+      setItems(result);
+      setLoading(false);
     };
     load();
   }, []);
@@ -183,7 +157,7 @@ const CommoditySettings = () => {
         created_at: new Date().toISOString(),
       },
       charges: [], deductionRules: [], hamaliSlabs: [],
-      hamaliEnabled: false, billPrefix: '',
+      hamaliEnabled: false, billPrefix: '', gstApplicable: false,
     };
     setItems(prev => [...prev, newItem]);
     setNewCommodityName('');
@@ -196,16 +170,23 @@ const CommoditySettings = () => {
     const item = items[index];
     const name = item.commodity.commodity_name || 'this commodity';
     await commodityApi.remove(item.commodity.commodity_id);
+    // Also clean up localStorage entries
+    const cid = item.commodity.commodity_id;
+    setStore('mkt_commodity_configs', getStore<CommodityConfiguration>('mkt_commodity_configs').filter(c => c.commodity_id !== cid));
+    setStore('mkt_deduction_rules', getStore<DeductionRule>('mkt_deduction_rules').filter(d => d.commodity_id !== cid));
+    setStore('mkt_hamali_slabs', getStore<HamaliSlab>('mkt_hamali_slabs').filter(h => h.commodity_id !== cid));
+    setStore('mkt_hamali_toggles', getStore<any>('mkt_hamali_toggles').filter((t: any) => t.commodity_id !== cid));
+    setStore('mkt_bill_prefixes', getStore<any>('mkt_bill_prefixes').filter((b: any) => b.commodity_id !== cid));
+    setStore('mkt_dynamic_charges', getStore<any>('mkt_dynamic_charges').filter((ch: any) => ch.commodity_id !== cid));
     setItems(prev => prev.filter((_, i) => i !== index));
     if (expanded === index) setExpanded(null);
     toast.success(`"${name}" removed`);
   };
 
-  const saveSettings = async (index: number) => {
+  const saveSettings = (index: number) => {
     const item = items[index];
     const cfg = item.config;
     const commodityName = item.commodity.commodity_name || 'Commodity';
-    const commodityId = Number(item.commodity.commodity_id);
 
     // Validation
     if (cfg.rate_per_unit <= 0) { toast.error(`${commodityName}: Rate Per Unit must be greater than 0`); return; }
@@ -213,6 +194,7 @@ const CommoditySettings = () => {
     if (cfg.min_weight > 0 && cfg.max_weight > 0 && cfg.min_weight > cfg.max_weight) { toast.error(`${commodityName}: Min weight cannot exceed Max weight`); return; }
     if (cfg.commission_percent < 0 || cfg.commission_percent > 100) { toast.error(`${commodityName}: Commission must be between 0% and 100%`); return; }
     if (cfg.user_fee_percent < 0 || cfg.user_fee_percent > 100) { toast.error(`${commodityName}: User fee must be between 0% and 100%`); return; }
+    if (item.gstApplicable && !cfg.hsn_code.trim()) { toast.error(`${commodityName}: HSN/SAC Code is required when GST is applicable`); return; }
 
     for (let ri = 0; ri < item.deductionRules.length; ri++) {
       const rule = item.deductionRules[ri];
@@ -220,6 +202,7 @@ const CommoditySettings = () => {
       if (!rule.min_weight || !rule.max_weight || !rule.deduction_value) { toast.error(`${commodityName}: All deduction rule fields are required`); return; }
       if (min < 0 || max < 0 || ded < 0) { toast.error(`${commodityName}: Deduction values cannot be negative`); return; }
       if (min > max) { toast.error(`${commodityName}: Deduction min weight cannot exceed max`); return; }
+      // Validate no overlapping ranges
       for (let rj = ri + 1; rj < item.deductionRules.length; rj++) {
         const other = item.deductionRules[rj];
         const oMin = Number(other.min_weight), oMax = Number(other.max_weight);
@@ -244,55 +227,60 @@ const CommoditySettings = () => {
       if (charge.charge_type === 'PERCENT' && Number(charge.value) > 100) { toast.error(`${commodityName}: "${charge.charge_name}" percent cannot exceed 100`); return; }
     }
 
-    const payload: FullCommodityConfigDto = {
-      commodityId,
-      config: {
-        commodityId,
-        ratePerUnit: cfg.rate_per_unit,
-        minWeight: cfg.min_weight,
-        maxWeight: cfg.max_weight,
-        govtDeductionEnabled: cfg.govt_deduction_enabled,
-        roundoffEnabled: cfg.roundoff_enabled,
-        commissionPercent: cfg.commission_percent,
-        userFeePercent: cfg.user_fee_percent,
-        hsnCode: cfg.hsn_code ?? '',
-        weighingCharge: (cfg as { weighing_charge?: number }).weighing_charge,
-        billPrefix: item.billPrefix ?? '',
-        hamaliEnabled: item.hamaliEnabled,
-      },
-      deductionRules: item.deductionRules.map((r) => ({
-        commodityId,
-        minWeight: Number(r.min_weight),
-        maxWeight: Number(r.max_weight),
-        deductionValue: Number(r.deduction_value),
-      })),
-      hamaliSlabs: item.hamaliEnabled
-        ? item.hamaliSlabs.map((s) => ({
-            commodityId,
-            thresholdWeight: Number(s.threshold_weight),
-            fixedRate: Number(s.fixed_rate),
-            perKgRate: Number(s.per_kg_rate || 0),
-          }))
-        : [],
-      dynamicCharges: item.charges.map((c) => ({
-        commodityId,
-        traderId: item.commodity.trader_id ? Number(item.commodity.trader_id) : undefined,
-        chargeName: c.charge_name,
-        chargeType: c.charge_type,
-        valueAmount: Number(c.value),
-        appliesTo: c.applies_to,
-        percentBasis: c.percent_basis,
-        fixedBasis: c.fixed_basis,
-      })),
-    };
+    // Save commodity config
+    const allConfigs = getStore<CommodityConfiguration>('mkt_commodity_configs');
+    const existingIdx = allConfigs.findIndex(c => c.commodity_id === cfg.commodity_id);
+    if (existingIdx >= 0) allConfigs[existingIdx] = cfg;
+    else allConfigs.push(cfg);
+    setStore('mkt_commodity_configs', allConfigs);
 
-    try {
-      await commodityApi.saveFullConfig(item.commodity.commodity_id, payload);
-      toast.success(`✅ ${commodityName} settings saved successfully!`);
-    } catch (err) {
-      console.error('Failed to save commodity config', err);
-      toast.error('Failed to save settings');
+    // Save deduction rules
+    const allDeductions = getStore<DeductionRule>('mkt_deduction_rules').filter(d => d.commodity_id !== item.commodity.commodity_id);
+    item.deductionRules.forEach(rule => {
+      allDeductions.push({
+        deduction_rule_id: crypto.randomUUID(), commodity_id: item.commodity.commodity_id,
+        min_weight: Number(rule.min_weight), max_weight: Number(rule.max_weight),
+        deduction_value: Number(rule.deduction_value), created_at: new Date().toISOString(),
+      });
+    });
+    setStore('mkt_deduction_rules', allDeductions);
+
+    // Save hamali slabs
+    const allHamalis = getStore<HamaliSlab>('mkt_hamali_slabs').filter(h => h.commodity_id !== item.commodity.commodity_id);
+    if (item.hamaliEnabled) {
+      item.hamaliSlabs.forEach(slab => {
+        allHamalis.push({
+          slab_id: crypto.randomUUID(), commodity_id: item.commodity.commodity_id,
+          threshold_weight: Number(slab.threshold_weight), fixed_rate: Number(slab.fixed_rate),
+          per_kg_rate: Number(slab.per_kg_rate || 0), created_at: new Date().toISOString(),
+        });
+      });
     }
+    setStore('mkt_hamali_slabs', allHamalis);
+
+    // Save hamali toggle
+    const allToggles = getStore<{ commodity_id: string; enabled: boolean }>('mkt_hamali_toggles').filter(t => t.commodity_id !== item.commodity.commodity_id);
+    allToggles.push({ commodity_id: item.commodity.commodity_id, enabled: item.hamaliEnabled });
+    setStore('mkt_hamali_toggles', allToggles);
+
+    // Save bill prefix
+    const allPrefixes = getStore<{ commodity_id: string; prefix: string }>('mkt_bill_prefixes').filter(b => b.commodity_id !== item.commodity.commodity_id);
+    if (item.billPrefix) allPrefixes.push({ commodity_id: item.commodity.commodity_id, prefix: item.billPrefix });
+    setStore('mkt_bill_prefixes', allPrefixes);
+
+    // Save dynamic charges
+    const allCharges = getStore<any>('mkt_dynamic_charges').filter((ch: any) => ch.commodity_id !== item.commodity.commodity_id);
+    item.charges.forEach(charge => {
+      allCharges.push({
+        charge_id: crypto.randomUUID(), trader_id: item.commodity.trader_id,
+        commodity_id: item.commodity.commodity_id, charge_name: charge.charge_name,
+        charge_type: charge.charge_type, value: Number(charge.value),
+        applies_to: charge.applies_to, created_at: new Date().toISOString(),
+      });
+    });
+    setStore('mkt_dynamic_charges', allCharges);
+
+    toast.success(`✅ ${commodityName} settings saved successfully!`);
   };
 
   if (loading) {
@@ -351,7 +339,7 @@ const CommoditySettings = () => {
               <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{items.filter(i => i.config.hsn_code).length}</p>
             </div>
             <div className="glass-card rounded-2xl p-4 border-l-4 border-l-violet-500">
-              <p className="text-[10px] text-muted-foreground uppercase font-semibold">Govt Deduction</p>
+              <p className="text-[10px] text-muted-foreground uppercase font-semibold">Deduction Enabled</p>
               <p className="text-2xl font-black text-violet-600 dark:text-violet-400">{items.filter(i => i.config.govt_deduction_enabled).length}</p>
             </div>
             <div className="glass-card rounded-2xl p-4 border-l-4 border-l-amber-500">
@@ -515,12 +503,31 @@ const CommoditySettings = () => {
                         </div>
                       </div>
 
-                      {/* HSN Code */}
-                      <div>
-                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 block flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-slate-400" /> HSN Code
-                        </label>
-                        <Input type="text" value={item.config.hsn_code} onChange={e => updateConfig(index, { hsn_code: e.target.value })} placeholder="e.g., 0703" className="h-12 rounded-xl bg-white dark:bg-white/10 border-2 border-slate-200 dark:border-slate-700/50 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-base" />
+                      {/* GST Applicable Toggle & HSN Code */}
+                      <div className="rounded-xl bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900/30 dark:to-gray-900/30 p-4 border border-slate-200/50 dark:border-slate-700/30">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex-1">
+                            <label className="text-xs font-bold text-slate-700 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-slate-500" /> Is GST applicable to this commodity?
+                            </label>
+                          </div>
+                          <button
+                            onClick={() => {
+                              const newGst = !item.gstApplicable;
+                              updateItem(index, { gstApplicable: newGst });
+                              if (!newGst) updateConfig(index, { hsn_code: '' });
+                            }}
+                            className={cn("w-14 h-8 rounded-full transition-all relative shadow-inner", item.gstApplicable ? 'bg-gradient-to-r from-emerald-500 to-green-600 shadow-emerald-500/30' : 'bg-slate-300 dark:bg-slate-600')}
+                          >
+                            <motion.div className="w-6 h-6 rounded-full bg-white shadow-md absolute top-1" animate={{ x: item.gstApplicable ? 28 : 4 }} transition={{ type: 'spring', stiffness: 500, damping: 30 }} />
+                          </button>
+                        </div>
+                        {item.gstApplicable && (
+                          <div>
+                            <label className="text-[10px] text-slate-600/80 dark:text-slate-400/60 mb-1 block font-semibold">HSN/SAC Code <span className="text-red-500">*</span></label>
+                            <Input type="text" value={item.config.hsn_code} onChange={e => updateConfig(index, { hsn_code: e.target.value })} placeholder="e.g., 0703" className="h-12 rounded-xl bg-white dark:bg-white/10 border-2 border-slate-200 dark:border-slate-700/50 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-base" />
+                          </div>
+                        )}
                       </div>
 
                       {/* Bill Prefix */}
@@ -542,12 +549,12 @@ const CommoditySettings = () => {
                       {/* Deduction & Round-off Toggles */}
                       <div className="rounded-xl bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/30 p-4 border border-violet-200/50 dark:border-violet-800/30">
                         <label className="text-xs font-bold text-violet-700 dark:text-violet-400 uppercase tracking-wider mb-3 block flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-violet-500" /> Deduction & Round-off
+                          <span className="w-2 h-2 rounded-full bg-violet-500" /> Calculation Type
                         </label>
 
                         <div className="flex items-center justify-between py-3 border-b border-violet-200/30 dark:border-violet-700/30">
                           <div className="flex-1">
-                            <span className="text-sm font-medium text-foreground">Government Stipulated Deduction</span>
+                            <span className="text-sm font-medium text-foreground">Deduction</span>
                             <p className="text-xs text-violet-600/70 dark:text-violet-400/60 mt-0.5">If ON → Round-off auto OFF</p>
                           </div>
                           <button
@@ -561,7 +568,7 @@ const CommoditySettings = () => {
                         <div className="flex items-center justify-between py-3">
                           <div className="flex-1">
                             <span className="text-sm font-medium text-foreground">Round-off</span>
-                            <p className="text-xs text-violet-600/70 dark:text-violet-400/60 mt-0.5">Rounds Amount & Weight decimals</p>
+                            <p className="text-xs text-violet-600/70 dark:text-violet-400/60 mt-0.5">If ON → Deduction auto OFF. Configure weight-range rules below.</p>
                           </div>
                           <button
                             onClick={() => updateConfig(index, { roundoff_enabled: !item.config.roundoff_enabled })}
@@ -572,20 +579,47 @@ const CommoditySettings = () => {
                         </div>
                       </div>
 
-                      {/* Government Deduction Rules */}
-                      {item.config.govt_deduction_enabled && (
+                      {/* Deduction Rules — only when Deduction or Round-off is ON */}
+                      {(item.config.govt_deduction_enabled || item.config.roundoff_enabled) && (
                         <div className="rounded-xl border border-amber-300/40 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 p-4">
                           <div className="flex items-center justify-between mb-3">
                             <div>
                               <label className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
                                 <span className="w-2 h-2 rounded-full bg-amber-500" /> Deduction Rules
                               </label>
-                              <p className="text-xs text-amber-600/70 dark:text-amber-400/60 mt-0.5">e.g., If 1≤W≤35 → Net Weight = W − 1.5kg</p>
+                              <p className="text-xs text-amber-600/70 dark:text-amber-400/60 mt-0.5">Define weight-range based deduction rules. Ranges must not overlap.</p>
                             </div>
                             <button onClick={() => addDeductionRule(index)} className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30 hover:scale-105 transition-transform">
                               <Plus className="w-4 h-4 text-white" />
                             </button>
                           </div>
+
+                          {/* Inline overlap warnings */}
+                          {(() => {
+                            const conflicts: string[] = [];
+                            for (let ri = 0; ri < item.deductionRules.length; ri++) {
+                              const r = item.deductionRules[ri];
+                              const rMin = Number(r.min_weight), rMax = Number(r.max_weight);
+                              if (!r.min_weight || !r.max_weight || isNaN(rMin) || isNaN(rMax)) continue;
+                              for (let rj = ri + 1; rj < item.deductionRules.length; rj++) {
+                                const o = item.deductionRules[rj];
+                                const oMin = Number(o.min_weight), oMax = Number(o.max_weight);
+                                if (!o.min_weight || !o.max_weight || isNaN(oMin) || isNaN(oMax)) continue;
+                                if (rMin <= oMax && oMin <= rMax) {
+                                  conflicts.push(`Rule #${ri + 1} (${rMin}–${rMax}) overlaps with Rule #${rj + 1} (${oMin}–${oMax})`);
+                                }
+                              }
+                            }
+                            return conflicts.length > 0 ? (
+                              <div className="rounded-lg bg-red-100/80 dark:bg-red-900/20 px-3 py-2 mb-3 flex items-start gap-2">
+                                <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
+                                <div className="text-xs text-red-700 dark:text-red-400 space-y-0.5">
+                                  {conflicts.map((c, ci) => <p key={ci}>{c}</p>)}
+                                </div>
+                              </div>
+                            ) : null;
+                          })()}
+
                           {item.deductionRules.map((rule, ri) => (
                             <div key={ri} className="flex items-center gap-2 mb-2">
                               <Input type="number" placeholder="Min kg" value={rule.min_weight} onChange={e => {
@@ -608,7 +642,12 @@ const CommoditySettings = () => {
                           {item.deductionRules.length === 0 && <p className="text-xs text-amber-600/60 text-center py-3 italic">No deduction rules yet. Tap + to add one.</p>}
                           {item.deductionRules.length > 0 && (
                             <div className="rounded-lg bg-amber-100/60 dark:bg-amber-900/20 px-3 py-2 mt-2">
-                              <p className="text-xs font-mono text-amber-700 dark:text-amber-400">Formula: If {item.deductionRules[0]?.min_weight || '?'} ≤ W ≤ {item.deductionRules[0]?.max_weight || '?'} → Net = W − {item.deductionRules[0]?.deduction_value || '?'}kg</p>
+                              <p className="text-[10px] text-amber-600/80 dark:text-amber-400/60 mb-1 font-semibold uppercase tracking-wider">Rule Preview</p>
+                              {item.deductionRules.map((r, ri) => (
+                                <p key={ri} className="text-xs font-mono text-amber-700 dark:text-amber-400">
+                                  Rule #{ri + 1}: If {r.min_weight || '?'} ≤ W ≤ {r.max_weight || '?'} → Net = W − {r.deduction_value || '?'}kg
+                                </p>
+                              ))}
                             </div>
                           )}
                         </div>
@@ -696,9 +735,8 @@ const CommoditySettings = () => {
                         </div>
                         {item.charges.map((charge, ci) => (
                           <motion.div key={ci} initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="rounded-xl bg-white/80 dark:bg-white/5 border-2 border-cyan-200/50 dark:border-cyan-700/30 p-3 mb-2">
-                            <div className="flex items-center gap-2 mb-2">
-                              <label className="text-[10px] text-cyan-600/80 dark:text-cyan-400/60 font-semibold uppercase tracking-wider shrink-0 self-center">Charge name</label>
-                              <Input
+                            <div className="flex items-center justify-between mb-2">
+                              <input
                                 type="text"
                                 placeholder="e.g., Association Fee, Weighment Fee…"
                                 value={charge.charge_name}
@@ -706,9 +744,9 @@ const CommoditySettings = () => {
                                   const nc = [...item.charges]; nc[ci] = { ...nc[ci], charge_name: e.target.value };
                                   updateItem(index, { charges: nc });
                                 }}
-                                className="h-10 rounded-xl bg-white dark:bg-white/10 border-2 border-cyan-200 dark:border-cyan-700/50 text-sm flex-1 focus:border-cyan-500 placeholder:text-cyan-400/60"
+                                className="bg-transparent text-sm font-medium text-foreground placeholder:text-cyan-400/60 focus:outline-none flex-1"
                               />
-                              <button type="button" onClick={() => removeCharge(index, ci)} className="text-red-500 hover:text-red-600 shrink-0 p-1" title="Remove charge"><Trash2 className="w-4 h-4" /></button>
+                              <button onClick={() => removeCharge(index, ci)} className="text-red-500 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
                             </div>
                             <div className="flex items-center gap-2 mb-2">
                               <Input

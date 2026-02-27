@@ -2,6 +2,7 @@ import { ArrowLeft, Moon, Sun } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '@/context/ThemeContext';
 import { useDesktopMode } from '@/hooks/use-desktop';
+import FontSizeControls from '@/components/FontSizeControls';
 
 interface AppHeaderProps {
   title?: string;
@@ -32,22 +33,26 @@ const AppHeader = ({ title, showBack = true, transparent = false }: AppHeaderPro
         {showBack && (
           <button
             onClick={handleBack}
-            className="w-10 h-10 rounded-2xl glass-panel flex items-center justify-center text-foreground hover:primary-glow transition-all duration-300"
+            aria-label="Go back"
+            className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-2xl glass-panel flex items-center justify-center text-foreground hover:primary-glow transition-all duration-300"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-6 h-6" />
           </button>
         )}
         {title && (
-          <h1 className={`text-lg font-bold ${transparent ? 'text-white' : 'text-foreground'}`}>{title}</h1>
+          <h1 className={`text-xl font-bold ${transparent ? 'text-white' : 'text-foreground'}`}>{title}</h1>
         )}
       </div>
-      <button
-        onClick={toggleTheme}
-        aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-        className={`w-11 h-11 rounded-2xl glass-panel flex items-center justify-center ${transparent ? 'text-white' : 'text-primary'} hover:primary-glow transition-all duration-300`}
-      >
-        {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-      </button>
+      <div className="flex items-center gap-2">
+        <FontSizeControls variant={transparent ? 'light' : 'default'} />
+        <button
+          onClick={toggleTheme}
+          aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+          className={`w-12 h-12 min-w-[48px] min-h-[48px] rounded-2xl glass-panel flex items-center justify-center ${transparent ? 'text-white' : 'text-primary'} hover:primary-glow transition-all duration-300`}
+        >
+          {isDark ? <Sun className="w-6 h-6" /> : <Moon className="w-6 h-6" />}
+        </button>
+      </div>
     </header>
   );
 };

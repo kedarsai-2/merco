@@ -17,7 +17,7 @@ const menuSections = [
     section: 'General',
     items: [
       { id: 'notifications', icon: Bell, label: 'Notifications', desc: 'Alerts & preferences' },
-      { id: 'settings', icon: Settings, label: 'App Settings', desc: 'Theme, language' },
+      { id: 'settings', icon: Settings, label: 'Settings', desc: 'Roles, users & permissions', path: '/settings' },
       { id: 'help', icon: HelpCircle, label: 'Help & Support', desc: 'FAQs & contact' },
     ],
   },
@@ -97,7 +97,7 @@ const ProfilePage = () => {
               {section.items.map((item, itemIndex) => {
                 const Icon = item.icon;
                 return (
-                  <button key={item.id} className={cn("w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors", itemIndex < section.items.length - 1 && "border-b border-border")}>
+                  <button key={item.id} onClick={() => (item as any).path ? navigate((item as any).path) : undefined} className={cn("w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors", itemIndex < section.items.length - 1 && "border-b border-border")}>
                     <div className="flex items-center gap-3">
                       <Icon className="w-5 h-5 text-muted-foreground" />
                       <div className="text-left">

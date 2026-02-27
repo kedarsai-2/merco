@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Eye, EyeOff, Mail, Lock, Sun, Moon } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, Mail, Lock, Sun, Moon, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MercotraceIcon } from '@/components/MercotraceLogo';
@@ -198,7 +198,15 @@ const LoginScreen = () => {
             </motion.form>
           </div>
 
-          <div className="px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-center shrink-0">
+          <div className="px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-center shrink-0 space-y-2">
+            <Button
+              onClick={() => navigate('/trader-setup')}
+              variant="outline"
+              className="w-full max-w-sm mx-auto h-12 rounded-xl text-sm font-semibold bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white backdrop-blur-sm"
+            >
+              <Building2 className="w-4 h-4 mr-2" />
+              Register as Trader
+            </Button>
             <p className="text-sm text-white/70">
               Don't have an account?{' '}
               <button onClick={() => navigate('/register')} className="text-white font-semibold underline min-h-[44px]">Sign Up</button>

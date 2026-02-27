@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ArrowLeft, Printer, Package, User, Truck, Hash, Search,
-  StickyNote, ClipboardList, ChevronDown
+  ArrowLeft, Printer, Package, User, Hash, Search
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDesktopMode } from '@/hooks/use-desktop';
@@ -61,8 +60,7 @@ const LogisticsPage = () => {
   const isDesktop = useDesktopMode();
   const [bids, setBids] = useState<BidInfo[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedBid, setSelectedBid] = useState<BidInfo | null>(null);
-  const [viewMode, setViewMode] = useState<'sticker' | 'chiti'>('sticker');
+  
 
   // REQ-LOG-004: Load bids from completed auctions
   useEffect(() => {
@@ -124,161 +122,121 @@ const LogisticsPage = () => {
     );
   }, [bids, searchQuery]);
 
-  const handlePrint = (bid: BidInfo, type: 'sticker' | 'chiti') => {
-    setSelectedBid(bid);
-    setViewMode(type);
+  const handleDirectPrint = (bid: BidInfo, type: 'sticker' | 'chiti') => {
+    toast.info(`🖨 Printing ${type === 'sticker' ? 'Sticker' : 'Chiti'}…`);
+
+    // Log the print
+    const printLog = getStore<any>('mkt_print_logs');
+    printLog.push({
+      print_log_id: crypto.randomUUID(),
+      trader_id: '',
+      reference_type: type === 'sticker' ? 'STICKER' : 'CHITI',
+      reference_id: String(bid.bidNumber),
+      print_type: type.toUpperCase(),
+      printed_at: new Date().toISOString(),
+    });
+    localStorage.setItem('mkt_print_logs', JSON.stringify(printLog));
+
+    // Generate print content in a hidden iframe
+    const printContent = type === 'sticker' ? generateStickerHTML(bid) : generateChitiHTML(bid);
+
+    const printFrame = document.createElement('iframe');
+    printFrame.style.position = 'fixed';
+    printFrame.style.top = '-10000px';
+    printFrame.style.left = '-10000px';
+    printFrame.style.width = '0';
+    printFrame.style.height = '0';
+    document.body.appendChild(printFrame);
+
+    const frameDoc = printFrame.contentDocument || printFrame.contentWindow?.document;
+    if (!frameDoc) {
+      toast.error('Printer not connected. Please check printer connection.');
+      document.body.removeChild(printFrame);
+      return;
+    }
+
+    frameDoc.open();
+    frameDoc.write(printContent);
+    frameDoc.close();
+
+    // Wait for content to render, then print
+    setTimeout(() => {
+      try {
+        printFrame.contentWindow?.print();
+        toast.success(`${type === 'sticker' ? 'Sticker' : 'Chiti'} sent to printer!`);
+      } catch {
+        toast.error('Printer not connected. Please check printer connection.');
+      }
+      // Cleanup after print dialog closes
+      setTimeout(() => {
+        document.body.removeChild(printFrame);
+      }, 1000);
+    }, 300);
   };
 
-  // ═══ STICKER / CHITI PREVIEW ═══
-  if (selectedBid) {
-    return (
-      <div className="min-h-[100dvh] bg-gradient-to-b from-background via-background to-blue-50/30 dark:to-blue-950/10 pb-28 lg:pb-6">
-        {!isDesktop ? (
-        <div className="bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-500 pt-[max(1.5rem,env(safe-area-inset-top))] pb-6 px-4 rounded-b-[2rem] relative overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2)_0%,transparent_50%)]" />
-          <div className="relative z-10">
-            <div className="flex items-center gap-3">
-              <button onClick={() => setSelectedBid(null)} aria-label="Go back" className="w-10 h-10 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
-                <ArrowLeft className="w-5 h-5 text-white" />
-              </button>
-              <div>
-                <h1 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Printer className="w-5 h-5" />
-                  {viewMode === 'sticker' ? 'Print Sticker' : 'Print Chiti'}
-                </h1>
-                <p className="text-white/70 text-xs">Bid #{selectedBid.bidNumber} Preview</p>
-              </div>
-            </div>
-          </div>
+  function generateStickerHTML(bid: BidInfo): string {
+    return `<!DOCTYPE html><html><head><style>
+      body { font-family: Arial, sans-serif; margin: 0; padding: 16px; }
+      .sticker { border: 2px dashed #333; border-radius: 12px; padding: 20px; max-width: 320px; margin: auto; }
+      .header { text-align: center; border-bottom: 1px solid #ccc; padding-bottom: 12px; margin-bottom: 12px; }
+      .header small { color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 10px; }
+      .header h2 { margin: 4px 0; font-size: 18px; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+      .box { background: #f5f5f5; border-radius: 8px; padding: 10px; text-align: center; }
+      .box small { display: block; color: #888; font-size: 9px; text-transform: uppercase; font-weight: 600; }
+      .box .big { font-size: 32px; font-weight: 900; }
+      .mark-box { background: linear-gradient(135deg,#e8f0fe,#f3e8ff); border-radius: 10px; padding: 16px; text-align: center; margin-bottom: 12px; }
+      .mark-box small { display: block; color: #888; font-size: 9px; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
+      .mark-box .mark { font-size: 48px; font-weight: 900; letter-spacing: 4px; }
+      .qty-box { background: #fff8e1; border-radius: 8px; padding: 10px; text-align: center; margin-bottom: 12px; }
+      .qty-box small { display: block; color: #888; font-size: 9px; text-transform: uppercase; font-weight: 600; }
+      .qty-box .big { font-size: 28px; font-weight: 900; }
+      .footer { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 11px; color: #666; text-align: center; }
+      @media print { body { margin: 0; } }
+    </style></head><body>
+      <div class="sticker">
+        <div class="header"><small>Navigation Sticker</small><h2>Mercotrace</h2></div>
+        <div class="grid">
+          <div class="box"><small>Seller S.No.</small><div class="big">${bid.sellerSerial}</div></div>
+          <div class="box"><small>Lot / Door No.</small><div class="big">${bid.lotNumber}</div></div>
         </div>
-        ) : (
-          <div className="px-8 py-5 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-                <Printer className="w-5 h-5 text-emerald-500" />
-                {viewMode === 'sticker' ? 'Print Sticker' : 'Print Chiti'}
-              </h2>
-              <p className="text-sm text-muted-foreground">Bid #{selectedBid.bidNumber} Preview</p>
-            </div>
-            <Button onClick={() => setSelectedBid(null)} variant="outline" className="rounded-xl">
-              ← Back to List
-            </Button>
-          </div>
-        )}
-
-        <div className="px-4 mt-6 space-y-4">
-          {/* Toggle Sticker / Chiti */}
-          <div className="flex gap-2">
-            <button onClick={() => setViewMode('sticker')}
-              className={cn("flex-1 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all",
-                viewMode === 'sticker'
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md'
-                  : 'bg-muted/40 text-muted-foreground')}>
-              <StickyNote className="w-4 h-4" /> Sticker
-            </button>
-            <button onClick={() => setViewMode('chiti')}
-              className={cn("flex-1 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all",
-                viewMode === 'chiti'
-                  ? 'bg-gradient-to-r from-blue-500 to-violet-500 text-white shadow-md'
-                  : 'bg-muted/40 text-muted-foreground')}>
-              <ClipboardList className="w-4 h-4" /> Chiti
-            </button>
-          </div>
-
-          {/* Preview Card — Sticker (REQ-LOG-003) */}
-          {viewMode === 'sticker' ? (
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-              className="bg-card border-2 border-dashed border-border rounded-2xl p-6 space-y-4 shadow-lg">
-              <div className="text-center border-b border-border/50 pb-3">
-                <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold">Navigation Sticker</p>
-                <p className="text-lg font-bold text-foreground mt-1">Mercotrace</p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-xl p-3 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase font-semibold">Seller S.No.</p>
-                  <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400">{selectedBid.sellerSerial}</p>
-                </div>
-                <div className="bg-blue-50 dark:bg-blue-950/30 rounded-xl p-3 text-center">
-                  <p className="text-[10px] text-muted-foreground uppercase font-semibold">Lot / Door No.</p>
-                  <p className="text-3xl font-black text-blue-600 dark:text-blue-400">{selectedBid.lotNumber}</p>
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-xl p-4 text-center">
-                <p className="text-[10px] text-muted-foreground uppercase font-semibold mb-1">Buyer Mark</p>
-                <p className="text-5xl font-black text-foreground tracking-wider">{selectedBid.buyerMark}</p>
-              </div>
-
-              <div className="bg-amber-50 dark:bg-amber-950/30 rounded-xl p-3 text-center">
-                <p className="text-[10px] text-muted-foreground uppercase font-semibold">Quantity</p>
-                <p className="text-3xl font-black text-amber-600 dark:text-amber-400">{selectedBid.quantity} <span className="text-sm font-semibold">bags</span></p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 text-center text-xs text-muted-foreground">
-                <div><span className="font-semibold">Seller:</span> {selectedBid.sellerName}</div>
-                <div><span className="font-semibold">Vehicle:</span> {selectedBid.vehicleNumber}</div>
-                <div><span className="font-semibold">Lot:</span> {selectedBid.lotName}</div>
-                <div><span className="font-semibold">Commodity:</span> {selectedBid.commodityName}</div>
-              </div>
-            </motion.div>
-          ) : (
-            /* Chiti — Bid info for coolie (REQ-LOG-003) */
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-              className="bg-card border-2 border-dashed border-border rounded-2xl p-6 space-y-4 shadow-lg">
-              <div className="text-center border-b border-border/50 pb-3">
-                <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold">Auction Chiti</p>
-                <p className="text-lg font-bold text-foreground mt-1">Bid #{selectedBid.bidNumber}</p>
-              </div>
-
-              <div className="space-y-3">
-                {[
-                  { label: 'Seller S.No.', value: String(selectedBid.sellerSerial), icon: Hash, color: 'text-emerald-500' },
-                  { label: 'Lot / Door No.', value: String(selectedBid.lotNumber), icon: Package, color: 'text-blue-500' },
-                  { label: 'Buyer Mark', value: selectedBid.buyerMark, icon: User, color: 'text-primary' },
-                  { label: 'Buyer Name', value: selectedBid.buyerName, icon: User, color: 'text-violet-500' },
-                  { label: 'Quantity', value: `${selectedBid.quantity} bags`, icon: Package, color: 'text-amber-500' },
-                  { label: 'Rate', value: `₹${selectedBid.rate}/bag`, icon: Hash, color: 'text-green-500' },
-                  { label: 'Seller', value: selectedBid.sellerName, icon: User, color: 'text-cyan-500' },
-                  { label: 'Vehicle', value: selectedBid.vehicleNumber, icon: Truck, color: 'text-indigo-500' },
-                  { label: 'Lot Name', value: selectedBid.lotName, icon: Package, color: 'text-rose-500' },
-                  { label: 'Commodity', value: selectedBid.commodityName, icon: Package, color: 'text-teal-500' },
-                ].map(item => (
-                  <div key={item.label} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-muted/20">
-                    <item.icon className={cn("w-4 h-4 flex-shrink-0", item.color)} />
-                    <span className="text-xs text-muted-foreground font-medium flex-shrink-0 w-24">{item.label}</span>
-                    <span className="text-sm font-bold text-foreground">{item.value}</span>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex gap-3">
-            <Button onClick={() => {
-              // Simulate print
-              const printLog = getStore<any>('mkt_print_logs');
-              printLog.push({
-                print_log_id: crypto.randomUUID(),
-                trader_id: '',
-                reference_type: viewMode === 'sticker' ? 'STICKER' : 'CHITI',
-                reference_id: String(selectedBid.bidNumber),
-                print_type: viewMode.toUpperCase(),
-                printed_at: new Date().toISOString(),
-              });
-              localStorage.setItem('mkt_print_logs', JSON.stringify(printLog));
-              toast.success(`${viewMode === 'sticker' ? 'Sticker' : 'Chiti'} sent to printer!`);
-            }}
-              className="flex-1 h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold shadow-lg text-base">
-              <Printer className="w-5 h-5 mr-2" />
-              Print {viewMode === 'sticker' ? 'Sticker' : 'Chiti'}
-            </Button>
-          </div>
+        <div class="mark-box"><small>Buyer Mark</small><div class="mark">${bid.buyerMark}</div></div>
+        <div class="qty-box"><small>Quantity</small><div class="big">${bid.quantity} bags</div></div>
+        <div class="footer">
+          <div><b>Seller:</b> ${bid.sellerName}</div>
+          <div><b>Lot:</b> ${bid.lotName}</div>
+          <div><b>Commodity:</b> ${bid.commodityName}</div>
+          <div><b>Date:</b> ${new Date().toLocaleDateString()}</div>
         </div>
-        {!isDesktop && <BottomNav />}
       </div>
-    );
+    </body></html>`;
+  }
+
+  function generateChitiHTML(bid: BidInfo): string {
+    return `<!DOCTYPE html><html><head><style>
+      body { font-family: Arial, sans-serif; margin: 0; padding: 16px; }
+      .chiti { border: 2px dashed #333; border-radius: 12px; padding: 20px; max-width: 320px; margin: auto; }
+      .header { text-align: center; border-bottom: 1px solid #ccc; padding-bottom: 12px; margin-bottom: 12px; }
+      .header small { color: #888; text-transform: uppercase; letter-spacing: 2px; font-size: 10px; }
+      .header h2 { margin: 4px 0; font-size: 16px; }
+      .row { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; background: #f9f9f9; margin-bottom: 4px; }
+      .row .label { font-size: 11px; color: #888; width: 90px; flex-shrink: 0; }
+      .row .value { font-size: 13px; font-weight: 700; }
+      @media print { body { margin: 0; } }
+    </style></head><body>
+      <div class="chiti">
+        <div class="header"><small>Auction Chiti</small><h2>Bid #${bid.bidNumber}</h2></div>
+        <div class="row"><span class="label">Seller S.No.</span><span class="value">${bid.sellerSerial}</span></div>
+        <div class="row"><span class="label">Lot / Door No.</span><span class="value">${bid.lotNumber}</span></div>
+        <div class="row"><span class="label">Buyer Mark</span><span class="value">${bid.buyerMark}</span></div>
+        <div class="row"><span class="label">Buyer Name</span><span class="value">${bid.buyerName}</span></div>
+        <div class="row"><span class="label">Quantity</span><span class="value">${bid.quantity} bags</span></div>
+        <div class="row"><span class="label">Rate</span><span class="value">₹${bid.rate}/bag</span></div>
+        <div class="row"><span class="label">Seller</span><span class="value">${bid.sellerName}</span></div>
+        <div class="row"><span class="label">Lot Name</span><span class="value">${bid.lotName}</span></div>
+        <div class="row"><span class="label">Commodity</span><span class="value">${bid.commodityName}</span></div>
+      </div>
+    </body></html>`;
   }
 
   // ═══ BID LIST SCREEN ═══
@@ -304,9 +262,9 @@ const LogisticsPage = () => {
               </button>
               <div className="flex-1">
                 <h1 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Printer className="w-5 h-5" /> Logistics & Navigation
-                </h1>
-                <p className="text-white/70 text-xs">Print stickers & chiti for completed bids</p>
+307:                   <Printer className="w-5 h-5" /> Print Hub
+308:                 </h1>
+309:                 <p className="text-white/70 text-xs">Print stickers & chiti for completed bids</p>
               </div>
             </div>
             <div className="relative">
@@ -325,7 +283,7 @@ const LogisticsPage = () => {
           <div className="flex items-center justify-between gap-4 mb-4">
             <div>
               <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-                <Printer className="w-5 h-5 text-emerald-500" /> Logistics & Navigation
+                <Printer className="w-5 h-5 text-emerald-500" /> Print Hub
               </h2>
               <p className="text-sm text-muted-foreground">{bids.length} completed bids · Print stickers & chiti</p>
             </div>
@@ -395,11 +353,11 @@ const LogisticsPage = () => {
                   </div>
                 </div>
                 <div className="flex flex-col gap-1 flex-shrink-0">
-                  <button onClick={() => handlePrint(bid, 'sticker')}
+                  <button onClick={() => handleDirectPrint(bid, 'sticker')}
                     className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[10px] font-bold shadow-sm">
                     Sticker
                   </button>
-                  <button onClick={() => handlePrint(bid, 'chiti')}
+                  <button onClick={() => handleDirectPrint(bid, 'chiti')}
                     className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-500 to-violet-500 text-white text-[10px] font-bold shadow-sm">
                     Chiti
                   </button>

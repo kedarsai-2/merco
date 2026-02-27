@@ -11,11 +11,11 @@ const MobileBackButton = ({ onClick, className }: MobileBackButtonProps) => (
     onClick={onClick}
     aria-label="Go back"
     className={cn(
-      "w-10 h-10 min-w-[44px] min-h-[44px] rounded-full bg-white/20 backdrop-blur flex items-center justify-center",
+      "w-12 h-12 min-w-[48px] min-h-[48px] rounded-full bg-white/20 backdrop-blur flex items-center justify-center",
       className
     )}
   >
-    <ArrowLeft className="w-5 h-5 text-white" />
+    <ArrowLeft className="w-6 h-6 text-white" />
   </button>
 );
 

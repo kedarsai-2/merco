@@ -65,7 +65,7 @@ const AdminLayout = () => {
         {/* Nav Items */}
         <nav className="relative z-10 flex-1 py-3 px-2 space-y-1 overflow-y-auto no-scrollbar">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path || (item.path !== '/admin' && location.pathname.startsWith(item.path));
+            const isActive = location.pathname === item.path || (item.path !== '/admin' && location.pathname.startsWith(item.path + '/')) || (item.path !== '/admin' && location.pathname === item.path);
             return (
               <button
                 key={item.path}

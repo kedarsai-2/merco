@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Gavel, Eye, EyeOff, PenLine, Plus, Trash2,
   ShoppingCart, User, Package, Truck, CircleDollarSign, Banknote, ChevronDown,
-  Search, AlertTriangle, Merge, TrendingUp, TrendingDown, Hash
+  Search, AlertTriangle, Merge, TrendingUp, TrendingDown, Hash,
+  ChevronLeft, ChevronRight, List, Filter
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDesktopMode } from '@/hooks/use-desktop';
@@ -36,14 +37,16 @@ interface LotInfo {
   seller_mark: string;
   seller_vehicle_id: string;
   vehicle_number: string;
-  was_modified: boolean; // REQ-AUC-009: * indicator
+  was_modified: boolean;
 }
+
+type LotStatus = 'available' | 'sold' | 'partial' | 'pending';
 
 type PresetType = 'PROFIT' | 'LOSS';
 
 interface SaleEntry {
   id: string;
-  bidNumber: number; // REQ: sequential bid number
+  bidNumber: number;
   buyerName: string;
   buyerMark: string;
   buyerContactId: string | null;
@@ -61,6 +64,59 @@ interface SaleEntry {
 }
 
 const presetButtons = [10, 20, 50];
+
+// ── Draft key for auto-save ──────────────────────────────
+const AUCTION_DRAFT_KEY = 'mkt_auction_draft';
+
+interface AuctionDraft {
+  selectedLotId: string | null;
+  entries: SaleEntry[];
+  rate: string;
+  qty: string;
+  extraRate: string;
+  preset: number;
+  presetType: PresetType;
+  showExtraRate: boolean;
+  entryMode: 'scribble' | 'search';
+  scribbleMark: string;
+}
+
+function saveDraft(draft: AuctionDraft) {
+  localStorage.setItem(AUCTION_DRAFT_KEY, JSON.stringify(draft));
+}
+
+function loadDraft(): AuctionDraft | null {
+  try {
+    const raw = localStorage.getItem(AUCTION_DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function clearDraft() {
+  localStorage.removeItem(AUCTION_DRAFT_KEY);
+}
+
+// ── Get lot status from auction results ──────────────────
+function getLotStatus(lotId: string, bagCount: number): LotStatus {
+  const results = getStore<any>('mkt_auction_results');
+  const result = results.find((r: any) => r.lotId === lotId);
+  if (result) {
+    const soldBags = (result.entries || []).reduce((s: number, e: any) => s + (e.quantity || 0), 0);
+    if (soldBags >= bagCount) return 'sold';
+    if (soldBags > 0) return 'partial';
+  }
+  // Check if there's an active draft for this lot
+  const draft = loadDraft();
+  if (draft?.selectedLotId === lotId && draft.entries.length > 0) return 'pending';
+  return 'available';
+}
+
+const STATUS_CONFIG: Record<LotStatus, { label: string; bg: string; text: string; dot: string }> = {
+  available: { label: 'Available', bg: 'bg-emerald-500/15', text: 'text-emerald-600 dark:text-emerald-400', dot: 'bg-emerald-500' },
+  sold: { label: 'Sold', bg: 'bg-rose-500/15', text: 'text-rose-600 dark:text-rose-400', dot: 'bg-rose-500' },
+  partial: { label: 'Partial', bg: 'bg-amber-500/15', text: 'text-amber-600 dark:text-amber-400', dot: 'bg-amber-500' },
+  pending: { label: 'Pending', bg: 'bg-blue-500/15', text: 'text-blue-600 dark:text-blue-400', dot: 'bg-blue-500' },
+};
 
 // ── Get next bid number ──────────────────────────────────
 function getNextBidNumber(): number {
@@ -91,6 +147,9 @@ const AuctionsPage = () => {
   const [selectedLot, setSelectedLot] = useState<LotInfo | null>(null);
   const [lotSearchQuery, setLotSearchQuery] = useState('');
   const [lotNavMode, setLotNavMode] = useState<'all' | 'vehicle' | 'seller' | 'lot_number'>('all');
+  const [lotNumberSearch, setLotNumberSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<LotStatus | 'all'>('all');
+  const [showLotList, setShowLotList] = useState(false);
 
   // Duplicate mark dialog
   const [duplicateMarkDialog, setDuplicateMarkDialog] = useState<{
@@ -110,6 +169,9 @@ const AuctionsPage = () => {
   const [rate, setRate] = useState('');
   const [qty, setQty] = useState('');
   const [extraRate, setExtraRate] = useState('');
+
+  // Skip initial draft restore flag
+  const draftRestored = useRef(false);
 
   // Load lots from arrivals
   useEffect(() => {
@@ -140,7 +202,66 @@ const AuctionsPage = () => {
       });
     });
     setAvailableLots(lots);
+    return lots;
   };
+
+  // ── Restore draft on mount ──────────────────────────────
+  useEffect(() => {
+    if (draftRestored.current) return;
+    draftRestored.current = true;
+    const draft = loadDraft();
+    if (!draft || !draft.selectedLotId) return;
+
+    const arrivals = getStore<any>('mkt_arrival_records');
+    const lots: LotInfo[] = [];
+    arrivals.forEach((arr: any) => {
+      const vehicleNumber = arr.vehicle?.vehicle_number || 'Unknown';
+      (arr.sellers || []).forEach((seller: any) => {
+        (seller.lots || []).forEach((lot: any) => {
+          lots.push({
+            lot_id: lot.lot_id, lot_name: lot.lot_name, bag_count: lot.quantity,
+            original_bag_count: lot.quantity, commodity_name: lot.commodity_name || '',
+            seller_name: seller.seller_name, seller_mark: seller.seller_mark || '',
+            seller_vehicle_id: seller.seller_vehicle_id, vehicle_number: vehicleNumber,
+            was_modified: false,
+          });
+        });
+      });
+    });
+
+    const lot = lots.find(l => l.lot_id === draft.selectedLotId);
+    if (lot) {
+      setSelectedLot(lot);
+      setShowLotSelector(false);
+      setEntries(draft.entries || []);
+      setRate(draft.rate || '');
+      setQty(draft.qty || '');
+      setExtraRate(draft.extraRate || '');
+      setPreset(draft.preset || 0);
+      setPresetType(draft.presetType || 'PROFIT');
+      setShowExtraRate(draft.showExtraRate || false);
+      setEntryMode(draft.entryMode || 'scribble');
+      setScribbleMark(draft.scribbleMark || '');
+      toast.info('Draft restored from previous session');
+    }
+  }, []);
+
+  // ── Auto-save draft on state change ─────────────────────
+  useEffect(() => {
+    if (!draftRestored.current) return;
+    saveDraft({
+      selectedLotId: selectedLot?.lot_id || null,
+      entries,
+      rate,
+      qty,
+      extraRate,
+      preset,
+      presetType,
+      showExtraRate,
+      entryMode,
+      scribbleMark,
+    });
+  }, [selectedLot, entries, rate, qty, extraRate, preset, presetType, showExtraRate, entryMode, scribbleMark]);
 
   // Filter lots
   const filteredLots = useMemo(() => {
@@ -155,8 +276,15 @@ const AuctionsPage = () => {
         l.commodity_name.toLowerCase().includes(q)
       );
     }
+    if (lotNumberSearch) {
+      const q = lotNumberSearch.toLowerCase();
+      result = result.filter(l => l.lot_name.toLowerCase().includes(q) || l.lot_id.toLowerCase().includes(q));
+    }
+    if (statusFilter !== 'all') {
+      result = result.filter(l => getLotStatus(l.lot_id, l.bag_count) === statusFilter);
+    }
     return result;
-  }, [availableLots, lotSearchQuery]);
+  }, [availableLots, lotSearchQuery, lotNumberSearch, statusFilter]);
 
   // Group lots by vehicle for navigation
   const lotsByVehicle = useMemo(() => {
@@ -184,6 +312,32 @@ const AuctionsPage = () => {
   const remaining = selectedLot ? selectedLot.bag_count - totalSold : 0;
   const highestBid = useMemo(() => Math.max(0, ...entries.map(e => e.rate)), [entries]);
 
+  // ── Lot navigation (prev/next) ─────────────────────────
+  const currentLotIndex = useMemo(() => {
+    if (!selectedLot) return -1;
+    return availableLots.findIndex(l => l.lot_id === selectedLot.lot_id);
+  }, [selectedLot, availableLots]);
+
+  const navigateToLot = (direction: 'prev' | 'next') => {
+    if (currentLotIndex === -1) return;
+    const newIndex = direction === 'prev' ? currentLotIndex - 1 : currentLotIndex + 1;
+    if (newIndex < 0 || newIndex >= availableLots.length) return;
+    selectLot(availableLots[newIndex]);
+  };
+
+  const canGoPrev = currentLotIndex > 0;
+  const canGoNext = currentLotIndex >= 0 && currentLotIndex < availableLots.length - 1;
+
+  // Status counts for lot selector
+  const statusCounts = useMemo(() => {
+    const counts = { available: 0, sold: 0, partial: 0, pending: 0 };
+    availableLots.forEach(l => {
+      const s = getLotStatus(l.lot_id, l.bag_count);
+      counts[s]++;
+    });
+    return counts;
+  }, [availableLots]);
+
   // REQ-AUC-003 / REQ-AUC-005: Calculate seller rate based on preset type
   const calcSellerRate = useCallback((bidRate: number, presetVal: number, type: PresetType) => {
     if (presetVal === 0) return bidRate;
@@ -197,7 +351,6 @@ const AuctionsPage = () => {
     const newTotal = currentSold + entry.quantity;
 
     if (newTotal > selectedLot.bag_count) {
-      // Show confirmation to increase lot quantity
       setQtyIncreaseDialog({
         currentTotal: currentSold,
         lotTotal: selectedLot.bag_count,
@@ -211,7 +364,6 @@ const AuctionsPage = () => {
   };
 
   const commitEntry = (entry: Omit<SaleEntry, 'id' | 'bidNumber'>) => {
-    // Check duplicate mark in this lot
     const existingWithMark = entries.find(e => e.buyerMark === entry.buyerMark && !e.isSelfSale);
     if (existingWithMark && !entry.isSelfSale) {
       setDuplicateMarkDialog({
@@ -243,17 +395,14 @@ const AuctionsPage = () => {
     setBuyerSearch('');
   };
 
-  // Handle quantity increase confirmation
   const confirmQtyIncrease = () => {
     if (!qtyIncreaseDialog || !selectedLot) return;
     const newBagCount = qtyIncreaseDialog.currentTotal + qtyIncreaseDialog.attemptedQty;
-    // Update lot in state with * marker
     setSelectedLot({
       ...selectedLot,
       bag_count: newBagCount,
       was_modified: true,
     });
-    // Also update in localStorage
     updateLotInStorage(selectedLot.lot_id, newBagCount);
     commitEntry(qtyIncreaseDialog.pendingEntry);
     setQtyIncreaseDialog(null);
@@ -268,7 +417,6 @@ const AuctionsPage = () => {
       lots[idx].was_modified = true;
       setStore('mkt_lots', lots);
     }
-    // Also update in arrival records
     const arrivals = getStore<any>('mkt_arrival_records');
     arrivals.forEach((arr: any) => {
       (arr.sellers || []).forEach((seller: any) => {
@@ -282,12 +430,10 @@ const AuctionsPage = () => {
     setStore('mkt_arrival_records', arrivals);
   };
 
-  // Handle duplicate mark dialog
   const handleDuplicateMerge = () => {
     if (!duplicateMarkDialog) return;
     const { existingEntry, rate: newRate, qty: newQty } = duplicateMarkDialog;
     if (existingEntry.rate === newRate) {
-      // Same rate → merge quantities
       setEntries(prev => prev.map(e =>
         e.id === existingEntry.id
           ? { ...e, quantity: e.quantity + newQty, amount: e.rate * (e.quantity + newQty) }
@@ -295,7 +441,6 @@ const AuctionsPage = () => {
       ));
       toast.success(`Merged ${newQty} bags into existing bid #${existingEntry.bidNumber}`);
     } else {
-      // Different rate → keep separate
       finalizeEntry({
         buyerName: duplicateMarkDialog.buyerName,
         buyerMark: duplicateMarkDialog.mark,
@@ -318,7 +463,6 @@ const AuctionsPage = () => {
   };
 
   const handleDuplicateNewMark = () => {
-    // User chose to enter a different mark — clear dialog & let them re-enter
     setDuplicateMarkDialog(null);
     toast.info('Enter a different mark for this buyer');
   };
@@ -435,9 +579,16 @@ const AuctionsPage = () => {
   const selectLot = (lot: LotInfo) => {
     setSelectedLot(lot);
     setShowLotSelector(false);
+    setShowLotList(false);
     setEntries([]);
     setRate('');
     setQty('');
+    setLotNumberSearch('');
+  };
+
+  const goBackToSelector = () => {
+    // Don't clear entries — they're auto-saved
+    setShowLotSelector(true);
   };
 
   // ═══ LOT SELECTOR SCREEN ═══
@@ -459,7 +610,7 @@ const AuctionsPage = () => {
             </div>
             <div className="relative z-10">
               <div className="flex items-center gap-3 mb-4">
-                <button onClick={() => navigate('/home')} aria-label="Go back" className="w-10 h-10 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
+                <button onClick={() => navigate('/home')} aria-label="Go back" className="w-12 h-12 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
                   <ArrowLeft className="w-5 h-5 text-white" />
                 </button>
                 <div className="flex-1">
@@ -469,13 +620,24 @@ const AuctionsPage = () => {
                   <p className="text-white/70 text-xs">Select a lot to begin auction</p>
                 </div>
               </div>
-              <div className="relative">
+              {/* General search */}
+              <div className="relative mb-3">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
                 <input
                   placeholder="Search lot, seller, vehicle…"
                   value={lotSearchQuery}
                   onChange={e => setLotSearchQuery(e.target.value)}
                   className="w-full h-10 pl-10 pr-4 rounded-xl bg-white/20 backdrop-blur text-white placeholder:text-white/50 text-sm border border-white/10 focus:outline-none focus:border-white/30"
+                />
+              </div>
+              {/* Lot Number search */}
+              <div className="relative">
+                <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
+                <input
+                  placeholder="Search by Lot Number…"
+                  value={lotNumberSearch}
+                  onChange={e => setLotNumberSearch(e.target.value)}
+                  className="w-full h-10 pl-10 pr-4 rounded-xl bg-white/15 backdrop-blur text-white placeholder:text-white/50 text-sm border border-white/10 focus:outline-none focus:border-white/30"
                 />
               </div>
             </div>
@@ -492,14 +654,25 @@ const AuctionsPage = () => {
                 </h2>
                 <p className="text-sm text-muted-foreground">{availableLots.length} lots available · Select a lot to begin auction</p>
               </div>
-              <div className="relative w-72">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
-                  placeholder="Search lot, seller, vehicle…"
-                  value={lotSearchQuery}
-                  onChange={e => setLotSearchQuery(e.target.value)}
-                  className="w-full h-10 pl-10 pr-4 rounded-xl bg-muted/50 text-foreground text-sm border border-border focus:outline-none focus:border-primary/50"
-                />
+              <div className="flex gap-3">
+                <div className="relative w-56">
+                  <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    placeholder="Lot Number…"
+                    value={lotNumberSearch}
+                    onChange={e => setLotNumberSearch(e.target.value)}
+                    className="w-full h-10 pl-10 pr-4 rounded-xl bg-muted/50 text-foreground text-sm border border-border focus:outline-none focus:border-primary/50"
+                  />
+                </div>
+                <div className="relative w-64">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    placeholder="Search lot, seller, vehicle…"
+                    value={lotSearchQuery}
+                    onChange={e => setLotSearchQuery(e.target.value)}
+                    className="w-full h-10 pl-10 pr-4 rounded-xl bg-muted/50 text-foreground text-sm border border-border focus:outline-none focus:border-primary/50"
+                  />
+                </div>
               </div>
             </div>
             <div className="grid grid-cols-4 gap-4">
@@ -523,8 +696,31 @@ const AuctionsPage = () => {
           </div>
         )}
 
+        {/* Status Filter Bar */}
+        <div className="px-4 mt-4 mb-2">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar">
+            <button onClick={() => setStatusFilter('all')}
+              className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all",
+                statusFilter === 'all'
+                  ? 'bg-foreground text-background shadow-md'
+                  : 'bg-muted/40 text-muted-foreground')}>
+              All ({availableLots.length})
+            </button>
+            {(Object.entries(STATUS_CONFIG) as [LotStatus, typeof STATUS_CONFIG['available']][]).map(([key, cfg]) => (
+              <button key={key} onClick={() => setStatusFilter(key)}
+                className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all",
+                  statusFilter === key
+                    ? `${cfg.bg} ${cfg.text} shadow-md ring-1 ring-current/20`
+                    : 'bg-muted/40 text-muted-foreground')}>
+                <span className={cn("w-2 h-2 rounded-full", cfg.dot)} />
+                {cfg.label} ({statusCounts[key]})
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Navigation Mode */}
-        <div className="px-4 mt-4 mb-3">
+        <div className="px-4 mt-2 mb-3">
           <div className="flex gap-2 overflow-x-auto no-scrollbar">
             {[
               { key: 'all', label: 'All Lots', icon: Package },
@@ -559,13 +755,12 @@ const AuctionsPage = () => {
             <div className="glass-card rounded-2xl p-8 text-center">
               <Search className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
               <p className="text-sm text-muted-foreground font-medium">No results found</p>
-              <p className="text-xs text-muted-foreground/70 mt-1">Try a different search term</p>
-              <Button onClick={() => setLotSearchQuery('')} variant="outline" className="mt-4 rounded-xl">
-                Clear Search
+              <p className="text-xs text-muted-foreground/70 mt-1">Try a different search term or filter</p>
+              <Button onClick={() => { setLotSearchQuery(''); setLotNumberSearch(''); setStatusFilter('all'); }} variant="outline" className="mt-4 rounded-xl">
+                Clear Filters
               </Button>
             </div>
           ) : lotNavMode === 'vehicle' ? (
-            // Group by vehicle
             Array.from(lotsByVehicle.entries()).map(([vehicle, lots]) => (
               <div key={vehicle} className="glass-card rounded-2xl overflow-hidden">
                 <div className="p-3 bg-gradient-to-r from-blue-50 to-violet-50 dark:from-blue-950/20 dark:to-violet-950/20 border-b border-border/30 flex items-center gap-2">
@@ -581,7 +776,6 @@ const AuctionsPage = () => {
               </div>
             ))
           ) : (
-            // Flat list (all / seller / lot_number modes)
             filteredLots.map(lot => (
               <LotRow key={lot.lot_id} lot={lot} onSelect={selectLot} />
             ))
@@ -611,8 +805,8 @@ const AuctionsPage = () => {
 
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-4">
-            <button onClick={() => { setShowLotSelector(true); setEntries([]); setSelectedLot(null); }}
-              aria-label="Go back" className="w-10 h-10 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
+            <button onClick={goBackToSelector}
+              aria-label="Go back" className="w-12 h-12 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
               <ArrowLeft className="w-5 h-5 text-white" />
             </button>
             <div className="flex-1">
@@ -620,6 +814,23 @@ const AuctionsPage = () => {
                 <Gavel className="w-5 h-5" /> Sales Pad
               </h1>
               <p className="text-white/70 text-xs">Live auction operations</p>
+            </div>
+            {/* Lot navigation & list toggle */}
+            <div className="flex items-center gap-1">
+              <button onClick={() => navigateToLot('prev')} disabled={!canGoPrev}
+                aria-label="Previous lot" className={cn("w-9 h-9 rounded-full flex items-center justify-center transition-all",
+                  canGoPrev ? 'bg-white/20 backdrop-blur' : 'bg-white/10 opacity-40')}>
+                <ChevronLeft className="w-4 h-4 text-white" />
+              </button>
+              <button onClick={() => setShowLotList(!showLotList)}
+                aria-label="Lot list" className="w-9 h-9 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
+                <List className="w-4 h-4 text-white" />
+              </button>
+              <button onClick={() => navigateToLot('next')} disabled={!canGoNext}
+                aria-label="Next lot" className={cn("w-9 h-9 rounded-full flex items-center justify-center transition-all",
+                  canGoNext ? 'bg-white/20 backdrop-blur' : 'bg-white/10 opacity-40')}>
+                <ChevronRight className="w-4 h-4 text-white" />
+              </button>
             </div>
           </div>
 
@@ -640,6 +851,13 @@ const AuctionsPage = () => {
               ))}
             </div>
           )}
+
+          {/* Lot position indicator */}
+          {selectedLot && (
+            <div className="mt-2 flex items-center justify-center gap-2">
+              <span className="text-[10px] text-white/60">Lot {currentLotIndex + 1} of {availableLots.length}</span>
+            </div>
+          )}
         </div>
       </div>
       )}
@@ -654,12 +872,27 @@ const AuctionsPage = () => {
               </h2>
               <p className="text-sm text-muted-foreground">
                 {selectedLot ? `${selectedLot.lot_name} · ${selectedLot.seller_name} · ${selectedLot.commodity_name}` : 'No lot selected'}
+                {selectedLot && <span className="ml-2 text-primary font-medium">({currentLotIndex + 1}/{availableLots.length})</span>}
               </p>
             </div>
-            <Button onClick={() => { setShowLotSelector(true); setEntries([]); setSelectedLot(null); }}
-              variant="outline" className="rounded-xl">
-              ← Change Lot
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button onClick={() => navigateToLot('prev')} disabled={!canGoPrev}
+                variant="outline" size="icon" className="rounded-xl h-10 w-10">
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <Button onClick={() => setShowLotList(!showLotList)}
+                variant={showLotList ? 'default' : 'outline'} size="icon" className="rounded-xl h-10 w-10">
+                <List className="w-4 h-4" />
+              </Button>
+              <Button onClick={() => navigateToLot('next')} disabled={!canGoNext}
+                variant="outline" size="icon" className="rounded-xl h-10 w-10">
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+              <Button onClick={goBackToSelector}
+                variant="outline" className="rounded-xl ml-2">
+                ← Change Lot
+              </Button>
+            </div>
           </div>
           {selectedLot && (
             <div className="grid grid-cols-5 gap-4">
@@ -687,6 +920,46 @@ const AuctionsPage = () => {
           )}
         </div>
       )}
+
+      {/* ═══ LOT LIST OVERLAY ═══ */}
+      <AnimatePresence>
+        {showLotList && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+            className="px-4 mb-3 overflow-hidden">
+            <div className="glass-card rounded-2xl p-3 max-h-60 overflow-y-auto">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase">Quick Lot Navigation</p>
+                <div className="relative w-40">
+                  <Hash className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+                  <input placeholder="Lot #" value={lotNumberSearch} onChange={e => setLotNumberSearch(e.target.value)}
+                    className="w-full h-7 pl-7 pr-2 rounded-lg bg-muted/50 text-foreground text-xs border border-border focus:outline-none focus:border-primary/50" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                {(lotNumberSearch
+                  ? availableLots.filter(l => l.lot_name.toLowerCase().includes(lotNumberSearch.toLowerCase()) || l.lot_id.toLowerCase().includes(lotNumberSearch.toLowerCase()))
+                  : availableLots
+                ).map(lot => {
+                  const status = getLotStatus(lot.lot_id, lot.bag_count);
+                  const cfg = STATUS_CONFIG[status];
+                  const isActive = selectedLot?.lot_id === lot.lot_id;
+                  return (
+                    <button key={lot.lot_id} onClick={() => selectLot(lot)}
+                      className={cn("w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-xs transition-all",
+                        isActive ? 'bg-primary/15 ring-1 ring-primary/30' : 'hover:bg-muted/50')}>
+                      <span className={cn("w-2 h-2 rounded-full flex-shrink-0", cfg.dot)} />
+                      <span className={cn("font-semibold truncate flex-1", isActive ? 'text-primary' : 'text-foreground')}>{lot.lot_name}</span>
+                      <span className="text-muted-foreground truncate max-w-[80px]">{lot.seller_name}</span>
+                      <span className={cn("px-1.5 py-0.5 rounded text-[9px] font-bold", cfg.bg, cfg.text)}>{cfg.label}</span>
+                      <span className="text-muted-foreground font-medium">{lot.bag_count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="px-4 mt-4 space-y-3">
         {/* REQ-AUC-003: Preset & Toggle Bar with Profit/Loss */}
@@ -742,7 +1015,6 @@ const AuctionsPage = () => {
               <span className="text-sm font-bold text-foreground">{preset}</span>
             </div>
           </div>
-          {/* REQ-AUC-005: Display logic guided by preset type */}
           {preset > 0 && highestBid > 0 && (
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[10px] text-muted-foreground mt-2">
               Buyer pays <span className="text-foreground font-semibold">₹{highestBid}</span> · Seller gets{' '}
@@ -781,21 +1053,18 @@ const AuctionsPage = () => {
           <AnimatePresence mode="wait">
             {entryMode === 'scribble' ? (
               <motion.div key="scribble" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}>
-                {/* Inline Scribble Pad */}
                 <div className={cn("grid gap-3", isDesktop ? "grid-cols-[1fr_280px]" : "grid-cols-1")}>
                   <InlineScribblePad
                     onMarkDetected={setScribbleMark}
                     canvasHeight={isDesktop ? 120 : 140}
                   />
                   <div className="space-y-2">
-                    {/* Detected mark display */}
                     {scribbleMark && (
                       <div className="flex items-center gap-2">
                         <span className="text-[9px] font-semibold text-muted-foreground uppercase">Mark:</span>
                         <span className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white text-sm font-bold shadow-sm">{scribbleMark}</span>
                       </div>
                     )}
-                    {/* Rate & Qty */}
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <label className="text-[9px] font-semibold text-muted-foreground uppercase mb-0.5 block">Rate (₹)</label>
@@ -808,7 +1077,6 @@ const AuctionsPage = () => {
                           className="h-11 rounded-xl text-center font-bold text-lg bg-muted/20 border-primary/20" />
                       </div>
                     </div>
-                    {/* Extra Rate */}
                     <AnimatePresence>
                       {showExtraRate && (
                         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
@@ -818,7 +1086,6 @@ const AuctionsPage = () => {
                         </motion.div>
                       )}
                     </AnimatePresence>
-                    {/* Add button */}
                     <div className="flex gap-2">
                       <Button onClick={handleScribbleInlineAdd}
                         disabled={!scribbleMark || !rate || !qty || parseInt(qty) <= 0 || parseInt(rate) <= 0}
@@ -835,7 +1102,6 @@ const AuctionsPage = () => {
               </motion.div>
             ) : (
               <motion.div key="search" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}>
-                {/* Buyer search mode */}
                 <div className="relative">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -879,7 +1145,6 @@ const AuctionsPage = () => {
                   </AnimatePresence>
                 </div>
 
-                {/* Rate & Qty */}
                 <div className="grid grid-cols-2 gap-2 mt-3">
                   <div>
                     <label className="text-[9px] font-semibold text-muted-foreground uppercase mb-0.5 block">Rate (₹)</label>
@@ -893,7 +1158,6 @@ const AuctionsPage = () => {
                   </div>
                 </div>
 
-                {/* Extra Rate */}
                 <AnimatePresence>
                   {showExtraRate && (
                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="mt-3">
@@ -904,7 +1168,6 @@ const AuctionsPage = () => {
                   )}
                 </AnimatePresence>
 
-                {/* Action buttons */}
                 <div className="flex gap-2 mt-3">
                   <Button onClick={handleFormSubmit}
                     disabled={!selectedBuyer || !rate || !qty || parseInt(qty) <= 0 || parseInt(rate) <= 0}
@@ -1001,7 +1264,6 @@ const AuctionsPage = () => {
                     </div>
                   </div>
 
-                  {/* Token advance input — REQ-AUC-008 */}
                   <AnimatePresence>
                     {showTokenInput === entry.id && (
                       <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
@@ -1050,7 +1312,6 @@ const AuctionsPage = () => {
                 <Button onClick={() => {
                   if (!selectedLot) return;
                   const results = getStore<any>('mkt_auction_results');
-                  // Avoid duplicates
                   if (results.some((r: any) => r.lotId === selectedLot.lot_id)) return;
                   results.push({
                     lotId: selectedLot.lot_id,
@@ -1071,6 +1332,7 @@ const AuctionsPage = () => {
                     completedAt: new Date().toISOString(),
                   });
                   setStore('mkt_auction_results', results);
+                  clearDraft();
                   toast.success('Auction saved! Navigate to Logistics or Weighing.');
                 }}
                   className="mt-2 w-full h-10 rounded-xl bg-gradient-to-r from-emerald-500 to-green-500 text-white font-bold text-sm shadow-md">
@@ -1082,7 +1344,7 @@ const AuctionsPage = () => {
         )}
       </div>
 
-      {/* Scribble Pad — REQ-AUC-006 */}
+      {/* Scribble Pad */}
       <ScribblePad open={showScribble} onClose={() => setShowScribble(false)} onConfirm={handleScribbleConfirm} />
 
       {/* ═══ DUPLICATE MARK DIALOG ═══ */}
@@ -1151,27 +1413,38 @@ const AuctionsPage = () => {
   );
 };
 
-// ── Lot Row Component ──────────────────────────────────────
-const LotRow = ({ lot, onSelect }: { lot: LotInfo; onSelect: (lot: LotInfo) => void }) => (
-  <button onClick={() => onSelect(lot)}
-    className="w-full glass-card rounded-2xl p-3 flex items-center gap-3 hover:shadow-lg transition-all text-left group">
-    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center shadow-md flex-shrink-0 relative overflow-hidden">
-      <Package className="w-4 h-4 text-white relative z-10" />
-      <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-    </div>
-    <div className="flex-1 min-w-0">
-      <p className="font-semibold text-sm text-foreground truncate">
-        {lot.lot_name}{lot.was_modified ? '*' : ''} — {lot.commodity_name}
-      </p>
-      <p className="text-xs text-muted-foreground truncate">
-        {lot.seller_name} {lot.seller_mark && `(${lot.seller_mark})`} · {lot.vehicle_number}
-      </p>
-    </div>
-    <div className="text-right flex-shrink-0">
-      <p className="text-sm font-bold text-foreground">{lot.bag_count}</p>
-      <p className="text-[10px] text-muted-foreground">bags</p>
-    </div>
-  </button>
-);
+// ── Lot Row Component with Status Badge ──────────────────
+const LotRow = ({ lot, onSelect }: { lot: LotInfo; onSelect: (lot: LotInfo) => void }) => {
+  const status = getLotStatus(lot.lot_id, lot.bag_count);
+  const cfg = STATUS_CONFIG[status];
+
+  return (
+    <button onClick={() => onSelect(lot)}
+      className="w-full glass-card rounded-2xl p-3 flex items-center gap-3 hover:shadow-lg transition-all text-left group">
+      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center shadow-md flex-shrink-0 relative overflow-hidden">
+        <Package className="w-4 h-4 text-white relative z-10" />
+        <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <p className="font-semibold text-sm text-foreground truncate">
+            {lot.lot_name}{lot.was_modified ? '*' : ''} — {lot.commodity_name}
+          </p>
+          <span className={cn("px-1.5 py-0.5 rounded-full text-[9px] font-bold flex items-center gap-1 flex-shrink-0", cfg.bg, cfg.text)}>
+            <span className={cn("w-1.5 h-1.5 rounded-full", cfg.dot)} />
+            {cfg.label}
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground truncate">
+          {lot.seller_name} {lot.seller_mark && `(${lot.seller_mark})`} · {lot.vehicle_number}
+        </p>
+      </div>
+      <div className="text-right flex-shrink-0">
+        <p className="text-sm font-bold text-foreground">{lot.bag_count}</p>
+        <p className="text-[10px] text-muted-foreground">bags</p>
+      </div>
+    </button>
+  );
+};
 
 export default AuctionsPage;

@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { FontSizeProvider } from "@/context/FontSizeContext";
 import { AuthProvider } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import RootClassManager from "@/components/RootClassManager";
@@ -17,6 +18,7 @@ import LoginScreen from "./pages/LoginScreen";
 import SplashScreen from "./pages/SplashScreen";
 import OnboardingScreen from "./pages/OnboardingScreen";
 import RegisterScreen from "./pages/RegisterScreen";
+import TraderSetupPage from "./pages/TraderSetupPage";
 import Homepage from "./pages/Homepage";
 import NotFound from "./pages/NotFound";
 import CommoditySettings from "./pages/CommoditySettings";
@@ -39,6 +41,10 @@ import StockPurchasePage from "./pages/StockPurchasePage";
 import CDNPage from "./pages/CDNPage";
 import PrintsPage from "./pages/PrintsPage";
 import ReportsPage from "./pages/ReportsPage";
+import SettingsPage from "./pages/SettingsPage";
+import RoleManagementPage from "./pages/admin/settings/RoleManagementPage";
+import UserManagementPage from "./pages/admin/settings/UserManagementPage";
+import RoleAllocationPage from "./pages/admin/settings/RoleAllocationPage";
 
 // Admin (lazy — less frequent access)
 const AdminLayout = lazy(() => import("./components/admin/AdminLayout"));
@@ -62,6 +68,7 @@ const LazyFallback = () => (
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
+      <FontSizeProvider>
       <AuthProvider>
         <TooltipProvider>
           <Toaster />
@@ -77,6 +84,7 @@ const App = () => (
                 <Route path="/onboarding" element={<OnboardingScreen />} />
                 <Route path="/login" element={<LoginScreen />} />
                 <Route path="/register" element={<RegisterScreen />} />
+                <Route path="/trader-setup" element={<TraderSetupPage />} />
 
                 {/* Trader App — wrapped in TraderLayout (sidebar on desktop) */}
                 <Route element={<ProtectedRoute><TraderLayout /></ProtectedRoute>}>
@@ -102,6 +110,10 @@ const App = () => (
                   <Route path="/prints-reports" element={<PrintsPage />} />
                   <Route path="/prints" element={<PrintsPage />} />
                   <Route path="/reports" element={<ReportsPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="/settings/roles" element={<RoleManagementPage />} />
+                  <Route path="/settings/users" element={<UserManagementPage />} />
+                  <Route path="/settings/role-allocation" element={<RoleAllocationPage />} />
                 </Route>
 
                 {/* Admin Portal */}
@@ -114,6 +126,9 @@ const App = () => (
                   <Route path="contacts" element={<AdminContactsPage />} />
                   <Route path="reports" element={<AdminReportsPage />} />
                   <Route path="settings" element={<AdminSettingsPage />} />
+                  <Route path="settings/roles" element={<RoleManagementPage />} />
+                  <Route path="settings/users" element={<UserManagementPage />} />
+                  <Route path="settings/role-allocation" element={<RoleAllocationPage />} />
                 </Route>
 
                 <Route path="*" element={<NotFound />} />
@@ -122,6 +137,7 @@ const App = () => (
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>
+      </FontSizeProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

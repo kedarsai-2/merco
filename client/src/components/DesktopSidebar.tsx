@@ -28,7 +28,7 @@ const navSections = [
       { icon: Gavel, title: 'Auctions / Sales', path: '/auctions' },
       { icon: Scale, title: 'Weighing', path: '/weighing' },
       { icon: PenLine, title: "Writer's Pad", path: '/writers-pad' },
-      { icon: Printer, title: 'Logistics', path: '/logistics' },
+      { icon: Printer, title: 'Print Hub', path: '/logistics' },
     ],
   },
   {
@@ -49,6 +49,12 @@ const navSections = [
       { icon: BarChart3, title: 'Financial Reports', path: '/financial-reports' },
       { icon: Printer, title: 'Print Templates', path: '/prints' },
       { icon: BarChart3, title: 'Reports', path: '/reports' },
+    ],
+  },
+  {
+    label: 'System',
+    items: [
+      { icon: Settings, title: 'Settings', path: '/settings' },
     ],
   },
 ];
@@ -99,7 +105,7 @@ const DesktopSidebar = () => {
             )}
             <div className="space-y-0.5">
               {section.items.map((item) => {
-                const isActive = location.pathname === item.path;
+                const isActive = location.pathname === item.path || (item.path !== '/home' && location.pathname.startsWith(item.path + '/'));
                 return (
                   <button
                     key={item.path}

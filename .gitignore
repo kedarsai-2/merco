@@ -1,6 +1,7 @@
 docs/
 .cursor
 client_bck
+client_bck20260227
 
 # Liquibase local configuration (do not commit real credentials)
 server/src/main/resources/liquibase.properties

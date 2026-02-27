@@ -1,12 +1,11 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Users, Truck, Gavel, PenLine, User } from 'lucide-react';
+import { Truck, Gavel, Receipt, Printer, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 const tabs = [
-  { icon: Home, label: 'Home', path: '/home' },
-  { icon: Users, label: 'Contacts', path: '/contacts' },
   { icon: Truck, label: 'Arrivals', path: '/arrivals' },
   { icon: Gavel, label: 'Auctions', path: '/auctions' },
-  { icon: PenLine, label: 'Scribble', path: '/scribble-pad' },
+  { icon: Receipt, label: 'Billings', path: '/billing' },
+  { icon: Printer, label: 'PrintHub', path: '/logistics' },
   { icon: User, label: 'Profile', path: '/profile' },
 ];
 

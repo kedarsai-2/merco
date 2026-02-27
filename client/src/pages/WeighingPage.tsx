@@ -12,7 +12,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import BottomNav from '@/components/BottomNav';
 import { toast } from 'sonner';
-import { commodityApi, type FullCommodityConfigDto } from '@/services/api';
 
 // ── localStorage helpers ──────────────────────────────────
 function getStore<T>(key: string): T[] {
@@ -53,14 +52,18 @@ interface WeighingSessionData {
   roundOffApplied: boolean;
 }
 
-// REQ-WGH-004: Government deduction rules (uses config from API)
-function getGovtDeduction(weight: number, fullConfigs: FullCommodityConfigDto[]): number {
-  const withGovt = fullConfigs.find((f) => f.config?.govtDeductionEnabled);
-  if (withGovt?.deductionRules) {
-    const rule = withGovt.deductionRules.find(
-      (r) => weight >= r.minWeight && weight <= r.maxWeight
-    );
-    if (rule) return rule.deductionValue;
+// REQ-WGH-004: Government deduction rules
+function getGovtDeduction(weight: number): number {
+  const configs = (() => {
+    try { return JSON.parse(localStorage.getItem('mkt_commodity_configs') || '[]'); } catch { return []; }
+  })();
+  const config = configs.find((c: any) => c.govt_deduction_enabled);
+  if (config) {
+    const rules = (() => {
+      try { return JSON.parse(localStorage.getItem('mkt_deduction_rules') || '[]'); } catch { return []; }
+    })();
+    const rule = rules.find((r: any) => weight >= r.min_weight && weight <= r.max_weight);
+    if (rule) return rule.deduction_value;
   }
   // Fallback: if 1 ≤ W ≤ 35 → deduct 1.5kg
   if (weight >= 1 && weight <= 35) return 1.5;
@@ -75,11 +78,6 @@ const WeighingPage = () => {
   const [selectedBid, setSelectedBid] = useState<BidForWeighing | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [scaleConnected, setScaleConnected] = useState(false);
-
-  const [fullConfigs, setFullConfigs] = useState<FullCommodityConfigDto[]>([]);
-  useEffect(() => {
-    commodityApi.getAllFullConfigs().then(setFullConfigs);
-  }, []);
 
   // Weighing session
   const [session, setSession] = useState<WeighingSessionData | null>(null);
@@ -198,7 +196,7 @@ const WeighingPage = () => {
     // REQ-WGH-004: Govt deductions per bag
     let deductions = 0;
     if (govtDeductionEnabled) {
-      deductions = bags.reduce((s, b) => s + getGovtDeduction(b.weight, fullConfigs), 0);
+      deductions = bags.reduce((s, b) => s + getGovtDeduction(b.weight), 0);
     }
     // REQ-WGH-003: NW = OW - D (use totalOriginal for calc even if manual)
     let netWeight = totalOriginal - deductions;
@@ -228,7 +226,7 @@ const WeighingPage = () => {
 
     let deductions = 0;
     if (govtDeductionEnabled) {
-      deductions = getGovtDeduction(avgWeight, fullConfigs) * selectedBid.quantity;
+      deductions = getGovtDeduction(avgWeight) * selectedBid.quantity;
     }
 
     let netWeight = totalEstWeight - deductions;

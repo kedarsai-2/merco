@@ -27,6 +27,10 @@ const pageTitles: Record<string, string> = {
   '/prints-reports': 'Print Templates',
   '/prints': 'Print Templates',
   '/reports': 'Analytics Reports',
+  '/settings': 'Settings',
+  '/settings/roles': 'Role Management',
+  '/settings/users': 'User Management',
+  '/settings/role-allocation': 'Role Allocation',
 };
 
 const pageGradients: Record<string, string> = {
