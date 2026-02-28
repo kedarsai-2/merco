@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { commodityApi } from '@/services/api';
-import type { Commodity, CommodityConfiguration, DynamicCharge, DeductionRule, HamaliSlab, ChargeType, AppliesTo } from '@/types/models';
+import type { FullCommodityConfigDto } from '@/services/api/commodities';
+import type { Commodity, CommodityConfiguration, ChargeType, AppliesTo } from '@/types/models';
 import { useDesktopMode } from '@/hooks/use-desktop';
 import { toast } from 'sonner';
 
@@ -29,11 +30,48 @@ interface LocalCommodityConfig {
   gstApplicable: boolean;
 }
 
-function getStore<T>(key: string): T[] {
-  try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
-}
-function setStore<T>(key: string, data: T[]) {
-  localStorage.setItem(key, JSON.stringify(data));
+/** Map API full-config to local UI shape */
+function fullConfigToLocal(commodity: Commodity, full: FullCommodityConfigDto): LocalCommodityConfig {
+  const cfg = full.config;
+  const config: CommodityConfiguration = {
+    config_id: cfg?.id != null ? String(cfg.id) : crypto.randomUUID(),
+    commodity_id: commodity.commodity_id,
+    rate_per_unit: cfg?.ratePerUnit ?? 0,
+    min_weight: cfg?.minWeight ?? 0,
+    max_weight: cfg?.maxWeight ?? 0,
+    govt_deduction_enabled: cfg?.govtDeductionEnabled ?? false,
+    roundoff_enabled: cfg?.roundoffEnabled ?? false,
+    commission_percent: cfg?.commissionPercent ?? 0,
+    user_fee_percent: cfg?.userFeePercent ?? 0,
+    hsn_code: cfg?.hsnCode ?? '',
+    created_at: new Date().toISOString(),
+  };
+  const charges = (full.dynamicCharges ?? []).map(ch => ({
+    charge_name: ch.chargeName,
+    charge_type: (ch.chargeType || 'FIXED') as ChargeType,
+    value: String(ch.valueAmount ?? 0),
+    applies_to: (ch.appliesTo || 'BUYER') as AppliesTo,
+  }));
+  const deductionRules = (full.deductionRules ?? []).map(r => ({
+    min_weight: String(r.minWeight),
+    max_weight: String(r.maxWeight),
+    deduction_value: String(r.deductionValue),
+  }));
+  const hamaliSlabs = (full.hamaliSlabs ?? []).map(s => ({
+    threshold_weight: String(s.thresholdWeight),
+    fixed_rate: String(s.fixedRate),
+    per_kg_rate: String(s.perKgRate ?? 0),
+  }));
+  return {
+    commodity,
+    config,
+    charges,
+    deductionRules,
+    hamaliSlabs,
+    hamaliEnabled: cfg?.hamaliEnabled ?? false,
+    billPrefix: cfg?.billPrefix ?? '',
+    gstApplicable: !!(cfg?.hsnCode && cfg.hsnCode.trim()),
+  };
 }
 
 const CommoditySettings = () => {
@@ -47,40 +85,14 @@ const CommoditySettings = () => {
 
   useEffect(() => {
     const load = async () => {
-      const commodities = await commodityApi.list();
-      const configs = getStore<CommodityConfiguration>('mkt_commodity_configs');
-      const charges = getStore<DynamicCharge & { applies_to?: AppliesTo; commodity_id?: string }>('mkt_dynamic_charges');
-      const deductions = getStore<DeductionRule>('mkt_deduction_rules');
-      const hamalis = getStore<HamaliSlab>('mkt_hamali_slabs');
-      const hamaliToggles = getStore<{ commodity_id: string; enabled: boolean }>('mkt_hamali_toggles');
-      const billPrefixes = getStore<{ commodity_id: string; prefix: string }>('mkt_bill_prefixes');
-
+      const [commodities, fullConfigs] = await Promise.all([
+        commodityApi.list(),
+        commodityApi.getAllFullConfigs(),
+      ]);
       const result: LocalCommodityConfig[] = commodities.map((c) => {
-        const cfg = configs.find(x => x.commodity_id === c.commodity_id) || {
-          config_id: crypto.randomUUID(), commodity_id: c.commodity_id,
-          rate_per_unit: 0, min_weight: 0, max_weight: 0,
-          govt_deduction_enabled: false, roundoff_enabled: false,
-          commission_percent: 0, user_fee_percent: 0, hsn_code: '',
-          created_at: new Date().toISOString(),
-        };
-        const cCharges = charges.filter(ch => ch.commodity_id === c.commodity_id).map(ch => ({
-          charge_name: ch.charge_name, charge_type: ch.charge_type, value: String(ch.value), applies_to: (ch as any).applies_to || 'BUYER' as AppliesTo,
-        }));
-        const cDeductions = deductions.filter(d => d.commodity_id === c.commodity_id).map(d => ({
-          min_weight: String(d.min_weight), max_weight: String(d.max_weight), deduction_value: String(d.deduction_value),
-        }));
-        const cHamalis = hamalis.filter(h => h.commodity_id === c.commodity_id).map(h => ({
-          threshold_weight: String(h.threshold_weight), fixed_rate: String(h.fixed_rate), per_kg_rate: String(h.per_kg_rate),
-        }));
-        const hamaliToggle = hamaliToggles.find(t => t.commodity_id === c.commodity_id);
-        const bp = billPrefixes.find(b => b.commodity_id === c.commodity_id);
-        return {
-          commodity: c, config: cfg, charges: cCharges,
-          deductionRules: cDeductions, hamaliSlabs: cHamalis,
-          hamaliEnabled: hamaliToggle?.enabled ?? false,
-          billPrefix: bp?.prefix ?? '',
-          gstApplicable: !!cfg.hsn_code,
-        };
+        const full = fullConfigs.find((f: FullCommodityConfigDto) => String(f.commodityId) === String(c.commodity_id));
+        if (full) return fullConfigToLocal(c, full);
+        return fullConfigToLocal(c, { commodityId: Number(c.commodity_id) || 0 });
       });
       setItems(result);
       setLoading(false);
@@ -170,23 +182,16 @@ const CommoditySettings = () => {
     const item = items[index];
     const name = item.commodity.commodity_name || 'this commodity';
     await commodityApi.remove(item.commodity.commodity_id);
-    // Also clean up localStorage entries
-    const cid = item.commodity.commodity_id;
-    setStore('mkt_commodity_configs', getStore<CommodityConfiguration>('mkt_commodity_configs').filter(c => c.commodity_id !== cid));
-    setStore('mkt_deduction_rules', getStore<DeductionRule>('mkt_deduction_rules').filter(d => d.commodity_id !== cid));
-    setStore('mkt_hamali_slabs', getStore<HamaliSlab>('mkt_hamali_slabs').filter(h => h.commodity_id !== cid));
-    setStore('mkt_hamali_toggles', getStore<any>('mkt_hamali_toggles').filter((t: any) => t.commodity_id !== cid));
-    setStore('mkt_bill_prefixes', getStore<any>('mkt_bill_prefixes').filter((b: any) => b.commodity_id !== cid));
-    setStore('mkt_dynamic_charges', getStore<any>('mkt_dynamic_charges').filter((ch: any) => ch.commodity_id !== cid));
     setItems(prev => prev.filter((_, i) => i !== index));
     if (expanded === index) setExpanded(null);
     toast.success(`"${name}" removed`);
   };
 
-  const saveSettings = (index: number) => {
+  const saveSettings = async (index: number) => {
     const item = items[index];
     const cfg = item.config;
     const commodityName = item.commodity.commodity_name || 'Commodity';
+    const cid = Number(item.commodity.commodity_id) || 0;
 
     // Validation
     if (cfg.rate_per_unit <= 0) { toast.error(`${commodityName}: Rate Per Unit must be greater than 0`); return; }
@@ -202,7 +207,6 @@ const CommoditySettings = () => {
       if (!rule.min_weight || !rule.max_weight || !rule.deduction_value) { toast.error(`${commodityName}: All deduction rule fields are required`); return; }
       if (min < 0 || max < 0 || ded < 0) { toast.error(`${commodityName}: Deduction values cannot be negative`); return; }
       if (min > max) { toast.error(`${commodityName}: Deduction min weight cannot exceed max`); return; }
-      // Validate no overlapping ranges
       for (let rj = ri + 1; rj < item.deductionRules.length; rj++) {
         const other = item.deductionRules[rj];
         const oMin = Number(other.min_weight), oMax = Number(other.max_weight);
@@ -227,60 +231,49 @@ const CommoditySettings = () => {
       if (charge.charge_type === 'PERCENT' && Number(charge.value) > 100) { toast.error(`${commodityName}: "${charge.charge_name}" percent cannot exceed 100`); return; }
     }
 
-    // Save commodity config
-    const allConfigs = getStore<CommodityConfiguration>('mkt_commodity_configs');
-    const existingIdx = allConfigs.findIndex(c => c.commodity_id === cfg.commodity_id);
-    if (existingIdx >= 0) allConfigs[existingIdx] = cfg;
-    else allConfigs.push(cfg);
-    setStore('mkt_commodity_configs', allConfigs);
+    const payload: FullCommodityConfigDto = {
+      commodityId: cid,
+      config: {
+        commodityId: cid,
+        ratePerUnit: cfg.rate_per_unit,
+        minWeight: cfg.min_weight,
+        maxWeight: cfg.max_weight,
+        govtDeductionEnabled: cfg.govt_deduction_enabled,
+        roundoffEnabled: cfg.roundoff_enabled,
+        commissionPercent: cfg.commission_percent,
+        userFeePercent: cfg.user_fee_percent,
+        hsnCode: cfg.hsn_code?.trim() || undefined,
+        billPrefix: item.billPrefix?.trim() || undefined,
+        hamaliEnabled: item.hamaliEnabled,
+      },
+      deductionRules: item.deductionRules.map(r => ({
+        commodityId: cid,
+        minWeight: Number(r.min_weight),
+        maxWeight: Number(r.max_weight),
+        deductionValue: Number(r.deduction_value),
+      })),
+      hamaliSlabs: item.hamaliSlabs.map(s => ({
+        commodityId: cid,
+        thresholdWeight: Number(s.threshold_weight),
+        fixedRate: Number(s.fixed_rate),
+        perKgRate: Number(s.per_kg_rate) || 0,
+      })),
+      dynamicCharges: item.charges.map(ch => ({
+        commodityId: cid,
+        chargeName: ch.charge_name,
+        chargeType: ch.charge_type,
+        valueAmount: Number(ch.value),
+        appliesTo: ch.applies_to,
+      })),
+    };
 
-    // Save deduction rules
-    const allDeductions = getStore<DeductionRule>('mkt_deduction_rules').filter(d => d.commodity_id !== item.commodity.commodity_id);
-    item.deductionRules.forEach(rule => {
-      allDeductions.push({
-        deduction_rule_id: crypto.randomUUID(), commodity_id: item.commodity.commodity_id,
-        min_weight: Number(rule.min_weight), max_weight: Number(rule.max_weight),
-        deduction_value: Number(rule.deduction_value), created_at: new Date().toISOString(),
-      });
-    });
-    setStore('mkt_deduction_rules', allDeductions);
-
-    // Save hamali slabs
-    const allHamalis = getStore<HamaliSlab>('mkt_hamali_slabs').filter(h => h.commodity_id !== item.commodity.commodity_id);
-    if (item.hamaliEnabled) {
-      item.hamaliSlabs.forEach(slab => {
-        allHamalis.push({
-          slab_id: crypto.randomUUID(), commodity_id: item.commodity.commodity_id,
-          threshold_weight: Number(slab.threshold_weight), fixed_rate: Number(slab.fixed_rate),
-          per_kg_rate: Number(slab.per_kg_rate || 0), created_at: new Date().toISOString(),
-        });
-      });
+    try {
+      await commodityApi.saveFullConfig(item.commodity.commodity_id, payload);
+      toast.success(`✅ ${commodityName} settings saved successfully!`);
+    } catch (err) {
+      console.error('Save commodity config:', err);
+      toast.error('Failed to save settings');
     }
-    setStore('mkt_hamali_slabs', allHamalis);
-
-    // Save hamali toggle
-    const allToggles = getStore<{ commodity_id: string; enabled: boolean }>('mkt_hamali_toggles').filter(t => t.commodity_id !== item.commodity.commodity_id);
-    allToggles.push({ commodity_id: item.commodity.commodity_id, enabled: item.hamaliEnabled });
-    setStore('mkt_hamali_toggles', allToggles);
-
-    // Save bill prefix
-    const allPrefixes = getStore<{ commodity_id: string; prefix: string }>('mkt_bill_prefixes').filter(b => b.commodity_id !== item.commodity.commodity_id);
-    if (item.billPrefix) allPrefixes.push({ commodity_id: item.commodity.commodity_id, prefix: item.billPrefix });
-    setStore('mkt_bill_prefixes', allPrefixes);
-
-    // Save dynamic charges
-    const allCharges = getStore<any>('mkt_dynamic_charges').filter((ch: any) => ch.commodity_id !== item.commodity.commodity_id);
-    item.charges.forEach(charge => {
-      allCharges.push({
-        charge_id: crypto.randomUUID(), trader_id: item.commodity.trader_id,
-        commodity_id: item.commodity.commodity_id, charge_name: charge.charge_name,
-        charge_type: charge.charge_type, value: Number(charge.value),
-        applies_to: charge.applies_to, created_at: new Date().toISOString(),
-      });
-    });
-    setStore('mkt_dynamic_charges', allCharges);
-
-    toast.success(`✅ ${commodityName} settings saved successfully!`);
   };
 
   if (loading) {

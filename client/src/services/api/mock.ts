@@ -1,5 +1,4 @@
 // Thin re-export layer so that production API files do not contain mock logic.
-// Actual mock implementations live under `client/src/services/mocks`.
+// Vehicle CRUD is stubbed in api/vehicles.ts (use arrivals API). RBAC mock below.
 
-export { vehicleMockApi as vehicleApi } from '../mocks/vehicles';
 export { rbacMockApi as rbacApi } from '../mocks/rbac';

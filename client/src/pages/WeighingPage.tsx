@@ -13,13 +13,26 @@ import { Button } from '@/components/ui/button';
 import BottomNav from '@/components/BottomNav';
 import { toast } from 'sonner';
 import { useAuctionResults } from '@/hooks/useAuctionResults';
+import { commodityApi } from '@/services/api';
+import type { FullCommodityConfigDto } from '@/services/api/commodities';
 
-// ── localStorage helpers ──────────────────────────────────
+// ── localStorage helpers (weighing sessions: mock until backend — see NOT_IMPLEMENTED.md) ──────────────────────────────────
 function getStore<T>(key: string): T[] {
   try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
 }
 function setStore<T>(key: string, data: T[]) {
   localStorage.setItem(key, JSON.stringify(data));
+}
+
+/** REQ-WGH-004: Government deduction from API full-config */
+function getGovtDeductionFromConfigs(weight: number, fullConfigs: FullCommodityConfigDto[]): number {
+  const withGovt = fullConfigs.find(f => f.config?.govtDeductionEnabled);
+  if (withGovt && (withGovt.deductionRules?.length ?? 0) > 0) {
+    const rule = withGovt.deductionRules!.find(r => weight >= r.minWeight && weight <= r.maxWeight);
+    if (rule) return rule.deductionValue;
+  }
+  if (weight >= 1 && weight <= 35) return 1.5;
+  return 0;
 }
 
 // ── Types ─────────────────────────────────────────────────
@@ -53,24 +66,6 @@ interface WeighingSessionData {
   roundOffApplied: boolean;
 }
 
-// REQ-WGH-004: Government deduction rules
-function getGovtDeduction(weight: number): number {
-  const configs = (() => {
-    try { return JSON.parse(localStorage.getItem('mkt_commodity_configs') || '[]'); } catch { return []; }
-  })();
-  const config = configs.find((c: any) => c.govt_deduction_enabled);
-  if (config) {
-    const rules = (() => {
-      try { return JSON.parse(localStorage.getItem('mkt_deduction_rules') || '[]'); } catch { return []; }
-    })();
-    const rule = rules.find((r: any) => weight >= r.min_weight && weight <= r.max_weight);
-    if (rule) return rule.deduction_value;
-  }
-  // Fallback: if 1 ≤ W ≤ 35 → deduct 1.5kg
-  if (weight >= 1 && weight <= 35) return 1.5;
-  return 0;
-}
-
 const WeighingPage = () => {
   const navigate = useNavigate();
   const isDesktop = useDesktopMode();
@@ -100,8 +95,13 @@ const WeighingPage = () => {
   }, [govtDeductionEnabled]);
 
   const { auctionResults: auctionData } = useAuctionResults();
+  const [fullConfigs, setFullConfigs] = useState<FullCommodityConfigDto[]>([]);
 
-  // Load bids from auction results
+  useEffect(() => {
+    commodityApi.getAllFullConfigs().then(setFullConfigs);
+  }, []);
+
+  // Load bids from auction results (arrivals: mock until backend — see NOT_IMPLEMENTED.md)
   useEffect(() => {
     const arrivals = getStore<any>('mkt_arrival_records');
     const allBids: BidForWeighing[] = [];
@@ -198,7 +198,7 @@ const WeighingPage = () => {
     // REQ-WGH-004: Govt deductions per bag
     let deductions = 0;
     if (govtDeductionEnabled) {
-      deductions = bags.reduce((s, b) => s + getGovtDeduction(b.weight), 0);
+      deductions = bags.reduce((s, b) => s + getGovtDeductionFromConfigs(b.weight, fullConfigs), 0);
     }
     // REQ-WGH-003: NW = OW - D (use totalOriginal for calc even if manual)
     let netWeight = totalOriginal - deductions;
@@ -228,7 +228,7 @@ const WeighingPage = () => {
 
     let deductions = 0;
     if (govtDeductionEnabled) {
-      deductions = getGovtDeduction(avgWeight) * selectedBid.quantity;
+      deductions = getGovtDeductionFromConfigs(avgWeight, fullConfigs) * selectedBid.quantity;
     }
 
     let netWeight = totalEstWeight - deductions;

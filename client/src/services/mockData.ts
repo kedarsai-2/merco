@@ -83,6 +83,7 @@ const SEED_USER = {
 };
 
 // ── Seed Arrival + Auction Data for end-to-end testing ────
+// Demo/localStorage only. Production and API-backed flows use GET/POST /api/arrivals.
 
 const SEED_ARRIVAL_RECORDS = () => {
   const sellerId1 = crypto.randomUUID();
@@ -160,15 +161,9 @@ const SEED_ARRIVAL_RECORDS = () => {
 
 export function initializeMockData() {
   if (!localStorage.getItem('mkt_initialized')) {
+    // Categories: temporary mock until backend /api/business-categories (see NOT_IMPLEMENTED.md)
     localStorage.setItem('mkt_categories', JSON.stringify(SEED_CATEGORIES));
-    localStorage.setItem('mkt_commodities', JSON.stringify(SEED_COMMODITIES));
-    localStorage.setItem('mkt_commodity_configs', JSON.stringify(SEED_COMMODITY_CONFIGS));
-    localStorage.setItem('mkt_contacts', JSON.stringify(SEED_CONTACTS));
-    localStorage.setItem('mkt_vehicles', JSON.stringify([]));
-    localStorage.setItem('mkt_lots', JSON.stringify([]));
-    // mkt_auctions: not used; auction data is API-only. Not seeding to avoid leftover keys.
-    localStorage.setItem('mkt_vouchers', JSON.stringify([]));
-    localStorage.setItem('mkt_ledger', JSON.stringify([]));
+    // Contacts, commodities, arrivals: backend exists — do not seed
     localStorage.setItem('mkt_users', JSON.stringify([SEED_USER]));
     localStorage.setItem('mkt_traders', JSON.stringify([SEED_TRADER]));
     localStorage.setItem('mkt_initialized', 'true');
@@ -177,14 +172,5 @@ export function initializeMockData() {
     localStorage.setItem('mkt_users', JSON.stringify([SEED_USER]));
     localStorage.setItem('mkt_traders', JSON.stringify([SEED_TRADER]));
   }
-
-  // Seed arrival/auction data if not already present
-  if (!localStorage.getItem('mkt_seed_v2')) {
-    const seed = SEED_ARRIVAL_RECORDS();
-    localStorage.setItem('mkt_arrival_records', JSON.stringify(seed.arrivals));
-    // Auction results are API-only. Do not seed mkt_auction_results so new users never fall back to stale local data.
-    localStorage.setItem('mkt_weighing_sessions', JSON.stringify(seed.weighingSessions));
-    localStorage.setItem('mkt_vouchers', JSON.stringify(seed.vouchers));
-    localStorage.setItem('mkt_seed_v2', 'true');
-  }
+  // Arrival/weighing/vouchers: no backend for detail records — do not seed (see NOT_IMPLEMENTED.md)
 }

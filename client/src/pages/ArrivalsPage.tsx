@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { vehicleApi, contactApi } from '@/services/api';
+import { contactApi, arrivalsApi, commodityApi } from '@/services/api';
+import type { ArrivalSummary, ArrivalCreatePayload } from '@/services/api/arrivals';
 import type { Vehicle, Contact, FreightMethod } from '@/types/models';
 import { toast } from 'sonner';
 import { useDesktopMode } from '@/hooks/use-desktop';
@@ -27,14 +28,6 @@ import { useDesktopMode } from '@/hooks/use-desktop';
  *   3.3.5 Rental & Advance Logic
  *   3.3.6 Validation & Constraints
  */
-
-// ── Helper: localStorage persistence ──────────────────────
-function getStore<T>(key: string): T[] {
-  try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
-}
-function setStore<T>(key: string, data: T[]) {
-  localStorage.setItem(key, JSON.stringify(data));
-}
 
 // ── Types for local arrival data ──────────────────────────
 interface LotEntry {
@@ -73,14 +66,6 @@ interface ArrivalRecord {
   gatepass_number: string;
 }
 
-// Get commodity configs for outlier validation (REQ-ARR-013)
-function getCommodityConfigs() {
-  try { return JSON.parse(localStorage.getItem('mkt_commodity_configs') || '[]'); } catch { return []; }
-}
-function getCommodities() {
-  try { return JSON.parse(localStorage.getItem('mkt_commodities') || '[]'); } catch { return []; }
-}
-
 const FREIGHT_METHODS: { value: FreightMethod; label: string }[] = [
   { value: 'BY_WEIGHT', label: 'By Weight' },
   { value: 'BY_COUNT', label: 'By Count' },
@@ -98,9 +83,11 @@ const NARRATION_PRESETS = [
 const ArrivalsPage = () => {
   const navigate = useNavigate();
   const isDesktop = useDesktopMode();
-  const [arrivals, setArrivals] = useState<ArrivalRecord[]>([]);
+  const [apiArrivals, setApiArrivals] = useState<ArrivalSummary[]>([]);
+  const [apiArrivalsLoading, setApiArrivalsLoading] = useState(true);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [commodities, setCommodities] = useState<any[]>([]);
+  const [commodityConfigs, setCommodityConfigs] = useState<any[]>([]);
   const [expandedArrival, setExpandedArrival] = useState<number | null>(null);
   const [desktopTab, setDesktopTab] = useState<'summary' | 'new-arrival'>('summary');
 
@@ -163,11 +150,25 @@ const ArrivalsPage = () => {
     return ew > 0 && lw > 0 && ew > lw;
   }, [loadedWeight, emptyWeight]);
 
+  const loadArrivalsFromApi = async () => {
+    setApiArrivalsLoading(true);
+    try {
+      const list = await arrivalsApi.list(0, 100);
+      setApiArrivals(list);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load arrivals';
+      toast.error(message);
+      setApiArrivals([]);
+    } finally {
+      setApiArrivalsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const storedArrivals = getStore<ArrivalRecord>('mkt_arrival_records');
-    setArrivals(storedArrivals);
+    loadArrivalsFromApi();
     contactApi.list().then(setContacts);
-    setCommodities(getCommodities());
+    commodityApi.list().then(setCommodities);
+    commodityApi.getAllFullConfigs().then(setCommodityConfigs);
   }, []);
 
   // REQ-ARR-001: Tonnage Calculation
@@ -265,20 +266,16 @@ const ArrivalsPage = () => {
     }));
   };
 
-  // REQ-ARR-013: Outlier validation
+  // REQ-ARR-013: Outlier validation (uses commodity config from API)
   const validateWeightOutliers = (): string[] => {
     const warnings: string[] = [];
-    const configs = getCommodityConfigs();
     sellers.forEach(seller => {
       seller.lots.forEach(lot => {
-        const cfg = configs.find((c: any) => {
-          const comm = commodities.find((cm: any) => cm.commodity_name === lot.commodity_name);
-          return comm && c.commodity_id === comm.commodity_id;
-        });
-        if (cfg && cfg.min_weight > 0 && cfg.max_weight > 0) {
-          // Approximate per-lot weight by dividing total by lot count
-          // In a real system this would use actual per-lot weight
-          if (lot.quantity < cfg.min_weight / 50 || lot.quantity > cfg.max_weight / 10) {
+        const comm = commodities.find((cm: any) => cm.commodity_name === lot.commodity_name);
+        const fullCfg = comm ? commodityConfigs.find((c: any) => String(c.commodityId) === String(comm.commodity_id)) : null;
+        const cfg = fullCfg?.config;
+        if (cfg && cfg.minWeight > 0 && cfg.maxWeight > 0) {
+          if (lot.quantity < cfg.minWeight / 50 || lot.quantity > cfg.maxWeight / 10) {
             warnings.push(`⚠️ ${lot.lot_name || 'Unnamed lot'} (${lot.commodity_name}): Quantity ${lot.quantity} bags may be outside normal range`);
           }
         }
@@ -321,138 +318,46 @@ const ArrivalsPage = () => {
     }
 
     try {
-      // Create vehicle
-      const vehicle = await vehicleApi.create({
-        vehicle_number: vehicleNumber.trim().toUpperCase() || 'SINGLE-SELLER',
-        trader_id: '',
-        arrival_datetime: new Date().toISOString(),
-      });
-
-      const record: ArrivalRecord = {
-        vehicle,
+      const toNumericContactId = (id: string): string => {
+        const n = Number(id);
+        if (Number.isNaN(n)) throw new Error('Use a contact from the Contacts list (numeric ID).');
+        return String(n);
+      };
+      const payload: ArrivalCreatePayload = {
+        vehicle_number: isMultiSeller ? vehicleNumber.trim().toUpperCase() || undefined : undefined,
+        is_multi_seller: isMultiSeller,
         loaded_weight: parseFloat(loadedWeight) || 0,
         empty_weight: parseFloat(emptyWeight) || 0,
         deducted_weight: parseFloat(deductedWeight) || 0,
-        net_weight: netWeight,
-        final_billable_weight: finalBillableWeight,
         freight_method: freightMethod,
         freight_rate: parseFloat(freightRate) || 0,
-        freight_total: freightTotal,
         no_rental: noRental,
         advance_paid: parseFloat(advancePaid) || 0,
-        broker_name: brokerName,
-        sellers,
-        is_multi_seller: isMultiSeller,
-        godown,
-        gatepass_number: gatepassNumber,
+        broker_name: brokerName || undefined,
+        narration: narration || undefined,
+        sellers: sellers.map(s => ({
+          contact_id: toNumericContactId(s.contact_id),
+          seller_name: s.seller_name,
+          seller_phone: s.seller_phone,
+          seller_mark: s.seller_mark || undefined,
+          lots: s.lots.map(l => ({
+            lot_name: l.lot_name,
+            quantity: l.quantity,
+            commodity_name: l.commodity_name,
+            broker_tag: l.broker_tag || undefined,
+          })),
+        })),
       };
-
-      // REQ-ARR-006: Create inventory (lots in localStorage)
-      const existingLots = getStore<any>('mkt_lots');
-      const dailySerial = getStore<any>('mkt_daily_serials');
-      let sellerSerial = dailySerial.length > 0 ? dailySerial[dailySerial.length - 1].seller_serial || 0 : 0;
-
-      sellers.forEach(seller => {
-        sellerSerial++;
-        seller.lots.forEach(lot => {
-          existingLots.push({
-            lot_id: lot.lot_id,
-            seller_vehicle_id: seller.seller_vehicle_id,
-            commodity_id: commodities.find((c: any) => c.commodity_name === lot.commodity_name)?.commodity_id || '',
-            lot_name: lot.lot_name,
-            bag_count: lot.quantity,
-            seller_serial_no: sellerSerial,
-            created_at: new Date().toISOString(),
-            commodity_name: lot.commodity_name,
-            seller_name: seller.seller_name,
-          });
-        });
-      });
-      setStore('mkt_lots', existingLots);
-
-      // REQ-ARR-008: Freight Voucher
-      if (freightTotal > 0 && !noRental) {
-        const vouchers = getStore<any>('mkt_vouchers');
-        vouchers.push({
-          voucher_id: crypto.randomUUID(),
-          trader_id: '',
-          reference_type: 'FREIGHT',
-          reference_id: vehicle.vehicle_id,
-          amount: freightTotal,
-          status: 'OPEN',
-          narration: narration || 'Freight for vehicle arrival',
-          created_at: new Date().toISOString(),
-        });
-        setStore('mkt_vouchers', vouchers);
-      }
-
-      // REQ-ARR-011: Advance Recording
-      if ((parseFloat(advancePaid) || 0) > 0) {
-        const vouchers = getStore<any>('mkt_vouchers');
-        vouchers.push({
-          voucher_id: crypto.randomUUID(),
-          trader_id: '',
-          reference_type: 'ADVANCE',
-          reference_id: vehicle.vehicle_id,
-          amount: parseFloat(advancePaid) || 0,
-          status: 'OPEN',
-          narration: 'Advance paid to driver',
-          created_at: new Date().toISOString(),
-        });
-        setStore('mkt_vouchers', vouchers);
-      }
-
-      // REQ-ARR-009: Coolie Voucher
-      const coolieConfig = (() => {
-        try { return JSON.parse(localStorage.getItem('mkt_tenant_config') || '{}'); } catch { return {}; }
-      })();
-      if (coolieConfig.coolie_charges_enabled && (coolieConfig.coolie_rate || 0) > 0) {
-        const coolieAmount = (coolieConfig.coolie_rate || 0) * sellers.reduce((s, sel) => s + sel.lots.reduce((ls, l) => ls + l.quantity, 0), 0);
-        const vouchers = getStore<any>('mkt_vouchers');
-        vouchers.push({
-          voucher_id: crypto.randomUUID(),
-          trader_id: '',
-          reference_type: 'COOLIE',
-          reference_id: vehicle.vehicle_id,
-          amount: coolieAmount,
-          status: 'OPEN',
-          narration: 'Coolie charges for unloading',
-          created_at: new Date().toISOString(),
-        });
-        setStore('mkt_vouchers', vouchers);
-      }
-
-      // REQ-ARR-002: Freight Distribution
-      if (freightMethod === 'DIVIDE_BY_WEIGHT' && sellers.length > 1) {
-        const totalLotQty = sellers.reduce((s, sel) => s + sel.lots.reduce((ls, l) => ls + l.quantity, 0), 0);
-        const freightDist = getStore<any>('mkt_freight_distribution');
-        sellers.forEach(seller => {
-          seller.lots.forEach(lot => {
-            freightDist.push({
-              freight_distribution_id: crypto.randomUUID(),
-              freight_id: vehicle.vehicle_id,
-              lot_id: lot.lot_id,
-              allocated_amount: totalLotQty > 0 ? (lot.quantity / totalLotQty) * freightTotal : 0,
-            });
-          });
-        });
-        setStore('mkt_freight_distribution', freightDist);
-      }
-
-      // Save arrival record
-      const allArrivals = getStore<ArrivalRecord>('mkt_arrival_records');
-      allArrivals.push(record);
-      setStore('mkt_arrival_records', allArrivals);
-      setArrivals(allArrivals);
-
-      // Reset form
+      const created = await arrivalsApi.create(payload);
+      await loadArrivalsFromApi();
       resetForm();
       setShowAdd(false);
       setDesktopTab('summary');
-      toast.success(`✅ Vehicle ${vehicle.vehicle_number} registered with ${sellers.length} seller(s) and ${sellers.reduce((s, sel) => s + sel.lots.length, 0)} lot(s)`);
+      toast.success(`✅ Vehicle ${created.vehicleNumber} registered with ${created.sellerCount} seller(s) and ${created.lotCount} lot(s)`);
     } catch (err) {
       console.error('Submit arrival error:', err);
-      toast.error('Failed to submit arrival. Please try again.');
+      const message = err instanceof Error ? err.message : 'Failed to submit arrival. Please try again.';
+      toast.error(message);
     }
   };
 
@@ -499,7 +404,7 @@ const ArrivalsPage = () => {
                 </button>
                 <div>
                   <h1 className="text-xl font-bold text-white">Arrivals</h1>
-                  <p className="text-white/70 text-xs">{arrivals.reduce((s, a) => s + a.sellers.reduce((ls, sel) => ls + sel.lots.length, 0), 0)} lots · Inward Logistics</p>
+                  <p className="text-white/70 text-xs">{apiArrivalsLoading ? '…' : apiArrivals.reduce((s, a) => s + a.lotCount, 0)} lots · Inward Logistics</p>
                 </div>
               </div>
               <button onClick={() => { resetForm(); setShowAdd(true); }} className="w-10 h-10 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
@@ -527,7 +432,7 @@ const ArrivalsPage = () => {
               <div className="flex items-center gap-2">
                 <Truck className="w-4 h-4" />
                 Summary
-                <span className="ml-1 px-2 py-0.5 rounded-full bg-muted text-[10px] font-bold">{arrivals.length}</span>
+                <span className="ml-1 px-2 py-0.5 rounded-full bg-muted text-[10px] font-bold">{apiArrivalsLoading ? '…' : apiArrivals.length}</span>
               </div>
               {desktopTab === 'summary' && (
                 <motion.div layoutId="desktop-tab-indicator" className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 to-violet-500 rounded-full" />
@@ -556,7 +461,11 @@ const ArrivalsPage = () => {
           <AnimatePresence mode="wait">
             {desktopTab === 'summary' && (
               <motion.div key="summary" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
-                {arrivals.length === 0 ? (
+                {apiArrivalsLoading ? (
+                  <div className="glass-card p-12 rounded-2xl text-center">
+                    <p className="text-muted-foreground">Loading arrivals…</p>
+                  </div>
+                ) : apiArrivals.length === 0 ? (
                   <div className="glass-card p-12 rounded-2xl text-center">
                     <div className="relative mb-4 mx-auto w-16 h-16">
                       <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-xl" />
@@ -575,40 +484,28 @@ const ArrivalsPage = () => {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-border/40 bg-muted/30">
-                          <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase">Lot ID</th>
-                          <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase">Source</th>
-                          <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase">Sellers</th>
-                          <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase">Commodity</th>
-                          <th className="text-right px-4 py-3 font-semibold text-muted-foreground text-xs uppercase">Bags</th>
+                          <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase">Vehicle</th>
+                          <th className="text-right px-4 py-3 font-semibold text-muted-foreground text-xs uppercase">Sellers</th>
+                          <th className="text-right px-4 py-3 font-semibold text-muted-foreground text-xs uppercase">Lots</th>
                           <th className="text-right px-4 py-3 font-semibold text-muted-foreground text-xs uppercase">Net Wt</th>
+                          <th className="text-right px-4 py-3 font-semibold text-muted-foreground text-xs uppercase">Freight</th>
                           <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase">Date</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {arrivals.flatMap((arr, ai) =>
-                          arr.sellers.flatMap((seller) =>
-                            seller.lots.map((lot, li) => {
-                              const lotIndex = `${ai}-${seller.seller_vehicle_id}-${li}`;
-                              const firstCommodity = lot.commodity_name || '—';
-                              const source = seller.seller_name ? `${seller.seller_name}${seller.seller_mark ? ` (${seller.seller_mark})` : ''}` : 'Unknown';
-                              return (
-                                <motion.tr key={lotIndex} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: li * 0.03 }}
-                                  className="border-b border-border/20 hover:bg-muted/20 transition-colors cursor-pointer"
-                                  onClick={() => setExpandedArrival(expandedArrival === ai ? null : ai)}>
-                                  <td className="px-4 py-3 font-semibold text-foreground">
-                                    <span className="px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-xs font-bold">{lot.lot_name || `LOT-${li + 1}`}</span>
-                                  </td>
-                                  <td className="px-4 py-3 text-muted-foreground text-sm">{source}</td>
-                                  <td className="px-4 py-3 text-muted-foreground text-sm">{arr.sellers.length}</td>
-                                  <td className="px-4 py-3 text-muted-foreground text-sm">{firstCommodity}</td>
-                                  <td className="px-4 py-3 text-right font-medium text-foreground">{lot.quantity} bags</td>
-                                  <td className="px-4 py-3 text-right font-medium text-foreground">{arr.net_weight}kg</td>
-                                  <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(arr.vehicle.arrival_datetime).toLocaleDateString()}</td>
-                                </motion.tr>
-                              );
-                            })
-                          )
-                        )}
+                        {apiArrivals.map((a, i) => (
+                          <motion.tr key={a.vehicleId + '-' + i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
+                            className="border-b border-border/20 hover:bg-muted/20 transition-colors">
+                            <td className="px-4 py-3 font-semibold text-foreground">
+                              <span className="px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-xs font-bold">{a.vehicleNumber}</span>
+                            </td>
+                            <td className="px-4 py-3 text-right text-muted-foreground">{a.sellerCount}</td>
+                            <td className="px-4 py-3 text-right font-medium text-foreground">{a.lotCount}</td>
+                            <td className="px-4 py-3 text-right text-muted-foreground">{a.netWeight}kg</td>
+                            <td className="px-4 py-3 text-right text-muted-foreground">{a.freightTotal > 0 ? `₹${a.freightTotal.toLocaleString()}` : '—'}</td>
+                            <td className="px-4 py-3 text-muted-foreground text-xs">{new Date(a.arrivalDatetime).toLocaleDateString()}</td>
+                          </motion.tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>
@@ -923,7 +820,11 @@ const ArrivalsPage = () => {
       {!isDesktop && (
         <>
           <div className="px-4 space-y-2.5">
-            {arrivals.length === 0 ? (
+            {apiArrivalsLoading ? (
+              <div className="glass-card p-8 rounded-2xl text-center">
+                <p className="text-muted-foreground">Loading arrivals…</p>
+              </div>
+            ) : apiArrivals.length === 0 ? (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card p-8 rounded-2xl text-center">
                 <div className="relative mb-4 mx-auto w-16 h-16">
                   <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-xl" />
@@ -938,78 +839,32 @@ const ArrivalsPage = () => {
                 </Button>
               </motion.div>
             ) : (
-              arrivals.flatMap((arr, ai) =>
-                arr.sellers.flatMap((seller) =>
-                  seller.lots.map((lot, li) => {
-                    const lotKey = `${ai}-${seller.seller_vehicle_id}-${li}`;
-                    const expandKey = `${ai}-${li}`;
-                    const isExpanded = expandedArrival !== null && `${expandedArrival}` === expandKey;
-                    const source = seller.seller_name ? `${seller.seller_name}${seller.seller_mark ? ` (${seller.seller_mark})` : ''}` : 'Unknown';
-                    return (
-                <motion.div key={lotKey} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: li * 0.04 }}>
-                  <div className="glass-card rounded-2xl overflow-hidden">
-                    <button onClick={() => setExpandedArrival(isExpanded ? null : (expandKey as any))}
-                      className="w-full p-3.5 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center shadow-md">
-                          <Package className="w-4 h-4 text-white" />
-                        </div>
-                        <div className="text-left">
-                          <p className="font-semibold text-sm text-foreground">
-                            <span className="px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-xs font-bold mr-1.5">{lot.lot_name || `LOT-${li + 1}`}</span>
-                            {lot.commodity_name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            📍 {source} · {lot.quantity} bags
-                          </p>
-                        </div>
+              apiArrivals.map((a, i) => (
+                <motion.div key={a.vehicleId + '-' + i} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}>
+                  <div className="glass-card rounded-2xl overflow-hidden p-3.5">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center shadow-md">
+                        <Truck className="w-4 h-4 text-white" />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">{new Date(arr.vehicle.arrival_datetime).toLocaleDateString()}</span>
-                        {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm text-foreground">
+                          <span className="px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-xs font-bold mr-1.5">{a.vehicleNumber}</span>
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {a.sellerCount} seller(s) · {a.lotCount} lot(s) · {a.netWeight}kg
+                        </p>
                       </div>
-                    </button>
-                    <AnimatePresence>
-                      {isExpanded && (
-                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                          className="overflow-hidden border-t border-border/30">
-                          <div className="p-4 space-y-3 text-sm">
-                            <div className="grid grid-cols-2 gap-2">
-                              <div className="rounded-lg bg-blue-50 dark:bg-blue-950/20 p-2 text-center">
-                                <p className="text-[10px] text-muted-foreground">Net Weight</p>
-                                <p className="font-bold text-foreground">{arr.net_weight}kg</p>
-                              </div>
-                              <div className="rounded-lg bg-violet-50 dark:bg-violet-950/20 p-2 text-center">
-                                <p className="text-[10px] text-muted-foreground">Billable</p>
-                                <p className="font-bold text-foreground">{arr.final_billable_weight}kg</p>
-                              </div>
-                            </div>
-                            {arr.freight_total > 0 && (
-                              <div className="rounded-lg bg-amber-50 dark:bg-amber-950/20 p-2 flex justify-between">
-                                <span className="text-muted-foreground text-xs">Freight ({FREIGHT_METHODS.find(m => m.value === arr.freight_method)?.label})</span>
-                                <span className="font-bold text-foreground">₹{arr.freight_total.toLocaleString()}</span>
-                              </div>
-                            )}
-                            <div className="rounded-lg border border-border/30 p-2">
-                              <p className="font-semibold text-foreground text-xs mb-1">Seller: {seller.seller_name} {seller.seller_mark && `(${seller.seller_mark})`}</p>
-                              <div className="flex justify-between text-xs text-muted-foreground pl-3">
-                                <span>{lot.lot_name} — {lot.commodity_name}</span>
-                                <span>{lot.quantity} bags</span>
-                              </div>
-                              {arr.vehicle.vehicle_number && arr.vehicle.vehicle_number !== 'SINGLE-SELLER' && (
-                                <p className="text-[10px] text-muted-foreground mt-1 pl-3">🚚 Vehicle: {arr.vehicle.vehicle_number}</p>
-                              )}
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                      <span className="text-xs text-muted-foreground flex-shrink-0">{new Date(a.arrivalDatetime).toLocaleDateString()}</span>
+                    </div>
+                    {a.freightTotal > 0 && (
+                      <div className="mt-2 rounded-lg bg-amber-50 dark:bg-amber-950/20 p-2 flex justify-between text-xs">
+                        <span className="text-muted-foreground">Freight</span>
+                        <span className="font-bold text-foreground">₹{a.freightTotal.toLocaleString()}</span>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
-                    );
-                  })
-                )
-              )
+              ))
             )}
           </div>
 

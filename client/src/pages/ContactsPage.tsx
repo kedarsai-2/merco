@@ -11,20 +11,9 @@ import { contactApi } from '@/services/api';
 import type { Contact } from '@/types/models';
 import { toast } from 'sonner';
 
-function createLedgerForContact(contact: Contact) {
-  const ledgers = JSON.parse(localStorage.getItem('mkt_ledgers') || '[]');
-  const exists = ledgers.find((l: any) => l.contact_id === contact.contact_id);
-  if (!exists) {
-    ledgers.push({
-      ledger_id: crypto.randomUUID(),
-      trader_id: contact.trader_id || '',
-      contact_id: contact.contact_id,
-      ledger_name: `${contact.name} — Ledger`,
-      account_type: 'ASSET',
-      created_at: new Date().toISOString(),
-    });
-    localStorage.setItem('mkt_ledgers', JSON.stringify(ledgers));
-  }
+/** Ledger backend not implemented; no-op. See NOT_IMPLEMENTED.md. */
+function createLedgerForContact(_contact: Contact) {
+  // No backend for ledgers — do not create/write.
 }
 
 type ModalMode = 'add' | 'view' | 'edit' | null;
@@ -104,7 +93,7 @@ const ContactsPage = () => {
       createLedgerForContact(created);
       setContacts(prev => [...prev, created]);
       closeModal();
-      toast.success(`✅ ${created.name} registered with ledger created`);
+      toast.success(`✅ ${created.name} registered`);
     } catch (err) {
       console.error('Add contact error:', err);
       toast.error('Failed to register contact');
@@ -129,18 +118,10 @@ const ContactsPage = () => {
     }
   };
 
-  const handleDelete = (contactId: string) => {
+  const handleDelete = async (contactId: string) => {
+    const contact = contacts.find(c => c.contact_id === contactId);
     try {
-      const contact = contacts.find(c => c.contact_id === contactId);
-      // Remove from localStorage
-      const list = JSON.parse(localStorage.getItem('mkt_contacts') || '[]');
-      const remaining = list.filter((c: any) => c.contact_id !== contactId);
-      localStorage.setItem('mkt_contacts', JSON.stringify(remaining));
-      // Also remove ledger
-      const ledgers = JSON.parse(localStorage.getItem('mkt_ledgers') || '[]');
-      const remainingLedgers = ledgers.filter((l: any) => l.contact_id !== contactId);
-      localStorage.setItem('mkt_ledgers', JSON.stringify(remainingLedgers));
-      // Update state
+      await contactApi.remove(contactId);
       setContacts(prev => prev.filter(c => c.contact_id !== contactId));
       setDeleteConfirm(null);
       toast.success(`🗑️ ${contact?.name || 'Contact'} deleted`);
@@ -357,8 +338,8 @@ const ContactsPage = () => {
                 <Trash2 className="w-7 h-7 text-red-500" />
               </div>
               <h3 className="text-lg font-bold text-center text-foreground mb-1">Delete Contact?</h3>
-              <p className="text-sm text-center text-muted-foreground mb-5">
-                This will permanently remove <strong>{contacts.find(c => c.contact_id === deleteConfirm)?.name}</strong> and their ledger data.
+                <p className="text-sm text-center text-muted-foreground mb-5">
+                This will permanently remove <strong>{contacts.find(c => c.contact_id === deleteConfirm)?.name}</strong>.
               </p>
               <div className="flex gap-3">
                 <Button variant="outline" onClick={() => setDeleteConfirm(null)} className="flex-1 h-12 rounded-xl">Cancel</Button>
@@ -507,7 +488,7 @@ const ContactsPage = () => {
                   {modalMode === 'add' && (
                     <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-800/30 px-3 py-2 flex items-start gap-2">
                       <BookOpen className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
-                      <p className="text-xs text-emerald-700 dark:text-emerald-400">A financial ledger will be <strong>automatically created</strong> for this contact upon registration.</p>
+                      <p className="text-xs text-emerald-700 dark:text-emerald-400">Contact is stored on the server. Ledger feature is not yet implemented.</p>
                     </div>
                   )}
 

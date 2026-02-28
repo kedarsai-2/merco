@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260228140000-1" author="mercotrace">
+        <comment>Seed Auctions module authorities so RBAC can be assigned to users (e.g. superadmin).</comment>
+        <insert tableName="jhi_authority">
+            <column name="name" value="ROLE_AUCTIONS_VIEW"/>
+        </insert>
+        <insert tableName="jhi_authority">
+            <column name="name" value="ROLE_AUCTIONS_CREATE"/>
+        </insert>
+        <insert tableName="jhi_authority">
+            <column name="name" value="ROLE_AUCTIONS_EDIT"/>
+        </insert>
+        <insert tableName="jhi_authority">
+            <column name="name" value="ROLE_AUCTIONS_DELETE"/>
+        </insert>
+        <insert tableName="jhi_authority">
+            <column name="name" value="ROLE_AUCTIONS_APPROVE"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

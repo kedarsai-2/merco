@@ -15,8 +15,10 @@ import BottomNav from '@/components/BottomNav';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { useAuctionResults } from '@/hooks/useAuctionResults';
+import { commodityApi } from '@/services/api';
+import type { FullCommodityConfigDto } from '@/services/api/commodities';
 
-// ── localStorage helpers ──────────────────────────────────
+// ── localStorage helpers (Billing backend not implemented: bills, vouchers, arrival detail) ──────────────────────────────────
 function getStore<T>(key: string): T[] {
   try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
 }
@@ -116,23 +118,28 @@ const BillingPage = () => {
   // Search mode for bill search
   const [billSearchMode, setBillSearchMode] = useState<'buyer' | 'bill'>('buyer');
   const [savedBills, setSavedBills] = useState<BillData[]>([]);
+  const [commodities, setCommodities] = useState<any[]>([]);
+  const [fullConfigs, setFullConfigs] = useState<FullCommodityConfigDto[]>([]);
 
   const { auctionResults: auctionData } = useAuctionResults();
 
-  // Load buyer data from completed auctions
+  useEffect(() => {
+    commodityApi.list().then(setCommodities);
+    commodityApi.getAllFullConfigs().then(setFullConfigs);
+  }, []);
+
+  // Load buyer data from completed auctions (arrivals/weighing: mock until backend — see NOT_IMPLEMENTED.md)
   useEffect(() => {
     const arrivals = getStore<any>('mkt_arrival_records');
     const weighingSessions = getStore<any>('mkt_weighing_sessions');
-    const configs = getStore<any>('mkt_commodity_configs');
-    
-    // REQ-BIL-001: Aggregate all purchases by one buyer across vehicles/sellers
+
     const buyerMap = new Map<string, BuyerPurchase>();
-    
+
     auctionData.forEach((auction: any) => {
       let sellerName = auction.sellerName || 'Unknown';
       let lotName = auction.lotName || '';
       let commodityName = auction.commodityName || '';
-      
+
       arrivals.forEach((arr: any) => {
         (arr.sellers || []).forEach((seller: any) => {
           (seller.lots || []).forEach((lot: any) => {
@@ -144,10 +151,10 @@ const BillingPage = () => {
           });
         });
       });
-      
+
       (auction.entries || []).forEach((entry: any) => {
         if (entry.isSelfSale) return;
-        
+
         const key = entry.buyerMark || entry.buyerName;
         if (!buyerMap.has(key)) {
           buyerMap.set(key, {
@@ -157,10 +164,10 @@ const BillingPage = () => {
             entries: [],
           });
         }
-        
+
         const ws = weighingSessions.find((s: any) => s.bid_number === entry.bidNumber);
         const weight = ws ? ws.net_weight : entry.quantity * 50;
-        
+
         buyerMap.get(key)!.entries.push({
           bidNumber: entry.bidNumber,
           lotId: auction.lotId,
@@ -175,32 +182,28 @@ const BillingPage = () => {
         });
       });
     });
-    
+
     setBuyers(Array.from(buyerMap.values()));
     setSavedBills(getStore<any>('mkt_bills'));
   }, [auctionData]);
 
-  // Generate Bill
+  // Generate Bill (commodity config from API)
   const generateBill = useCallback((buyer: BuyerPurchase) => {
     setSelectedBuyer(buyer);
-    const configs = getStore<any>('mkt_commodity_configs');
-    const commodities = getStore<any>('mkt_commodities');
-    
-    // REQ-BIL-004: Group by commodity (separate calc tables per commodity)
     const commodityMap = new Map<string, CommodityGroup>();
-    
+
     buyer.entries.forEach(entry => {
       const commName = entry.commodityName || 'Unknown';
       if (!commodityMap.has(commName)) {
-        // Find config for this commodity
         const commodity = commodities.find((c: any) => c.commodity_name === commName);
-        const config = commodity ? configs.find((c: any) => c.commodity_id === commodity.commodity_id) : null;
-        
+        const fullCfg = commodity ? fullConfigs.find((f: FullCommodityConfigDto) => String(f.commodityId) === String(commodity.commodity_id)) : null;
+        const config = fullCfg?.config;
+
         commodityMap.set(commName, {
           commodityName: commName,
-          hsnCode: config?.hsn_code || '',
-          commissionPercent: config?.commission_percent || 0,
-          userFeePercent: config?.user_fee_percent || 0,
+          hsnCode: config?.hsnCode || '',
+          commissionPercent: config?.commissionPercent || 0,
+          userFeePercent: config?.userFeePercent || 0,
           items: [],
           subtotal: 0,
           commissionAmount: 0,
@@ -208,7 +211,7 @@ const BillingPage = () => {
           totalCharges: 0,
         });
       }
-      
+
       const group = commodityMap.get(commName)!;
       
       // REQ-BIL-002: NR = B + P + BRK + Other Charges
@@ -266,7 +269,7 @@ const BillingPage = () => {
       versions: [],
     });
     setEditLocked(false);
-  }, []);
+  }, [commodities, fullConfigs]);
 
   // Recalculate grand total
   const recalcGrandTotal = useCallback((b: BillData): BillData => {

@@ -43,6 +43,7 @@ public class ArrivalService {
     private final DailySerialRepository dailySerialRepository;
     private final CommodityRepository commodityRepository;
     private final ContactRepository contactRepository;
+    private final TraderContextService traderContextService;
 
     public ArrivalService(
         VehicleRepository vehicleRepository,
@@ -54,7 +55,8 @@ public class ArrivalService {
         VoucherRepository voucherRepository,
         DailySerialRepository dailySerialRepository,
         CommodityRepository commodityRepository,
-        ContactRepository contactRepository
+        ContactRepository contactRepository,
+        TraderContextService traderContextService
     ) {
         this.vehicleRepository = vehicleRepository;
         this.vehicleWeightRepository = vehicleWeightRepository;
@@ -66,6 +68,7 @@ public class ArrivalService {
         this.dailySerialRepository = dailySerialRepository;
         this.commodityRepository = commodityRepository;
         this.contactRepository = contactRepository;
+        this.traderContextService = traderContextService;
     }
 
     /**
@@ -251,8 +254,7 @@ public class ArrivalService {
     }
 
     private Long resolveTraderId() {
-        // TODO: Integrate with authenticated trader context; for module 1 we assume trader 1.
-        return 1L;
+        return traderContextService.getCurrentTraderId();
     }
 
     private DailySerial getOrCreateDailySerial(Long traderId, LocalDate date) {

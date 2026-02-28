@@ -36,15 +36,27 @@ public class Module1AdminBootstrap {
         this.passwordEncoder = passwordEncoder;
     }
 
+    /** Authority names for Auctions module (RBAC); superadmin gets all of these. */
+    private static final String[] AUCTION_AUTHORITIES = {
+        AuthoritiesConstants.AUCTIONS_VIEW,
+        AuthoritiesConstants.AUCTIONS_CREATE,
+        AuthoritiesConstants.AUCTIONS_EDIT,
+        AuthoritiesConstants.AUCTIONS_DELETE,
+        AuthoritiesConstants.AUCTIONS_APPROVE,
+    };
+
     @PostConstruct
     public void ensureSuperAdmin() {
         String email = "superadmin@mercotrace.com";
         String login = email; // login == email for module 1
 
         userRepository
-            .findOneByEmailIgnoreCase(email)
+            .findOneWithAuthoritiesByEmailIgnoreCase(email)
             .ifPresentOrElse(
-                existing -> LOG.info("Module1 super admin already present: {}", existing.getLogin()),
+                existing -> {
+                    LOG.info("Module1 super admin already present: {}", existing.getLogin());
+                    grantAuctionAuthoritiesIfMissing(existing);
+                },
                 () -> {
                     LOG.info("Creating Module1 super admin user {}", email);
                     User user = new User();
@@ -63,12 +75,30 @@ public class Module1AdminBootstrap {
                     Set<Authority> authorities = new HashSet<>();
                     authorityRepository.findById(AuthoritiesConstants.ADMIN).ifPresent(authorities::add);
                     authorityRepository.findById(AuthoritiesConstants.USER).ifPresent(authorities::add);
+                    for (String role : AUCTION_AUTHORITIES) {
+                        authorityRepository.findById(role).ifPresent(authorities::add);
+                    }
                     user.setAuthorities(authorities);
 
                     userRepository.save(user);
                     LOG.info("Module1 super admin created with email {}", email);
                 }
             );
+    }
+
+    /** Ensures existing superadmin has all Auctions module authorities (fixes 403 after adding RBAC). */
+    private void grantAuctionAuthoritiesIfMissing(User user) {
+        Set<Authority> authorities = user.getAuthorities();
+        boolean modified = false;
+        for (String role : AUCTION_AUTHORITIES) {
+            if (authorityRepository.findById(role).filter(a -> authorities.add(a)).isPresent()) {
+                modified = true;
+            }
+        }
+        if (modified) {
+            userRepository.save(user);
+            LOG.info("Module1 super admin granted Auctions authorities");
+        }
     }
 }
 

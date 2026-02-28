@@ -48,6 +48,7 @@ public class AuctionService {
     private final VehicleRepository vehicleRepository;
     private final ContactRepository contactRepository;
     private final CommodityRepository commodityRepository;
+    private final TraderContextService traderContextService;
 
     public AuctionService(
         AuctionRepository auctionRepository,
@@ -57,7 +58,8 @@ public class AuctionService {
         SellerInVehicleRepository sellerInVehicleRepository,
         VehicleRepository vehicleRepository,
         ContactRepository contactRepository,
-        CommodityRepository commodityRepository
+        CommodityRepository commodityRepository,
+        TraderContextService traderContextService
     ) {
         this.auctionRepository = auctionRepository;
         this.auctionEntryRepository = auctionEntryRepository;
@@ -67,16 +69,19 @@ public class AuctionService {
         this.vehicleRepository = vehicleRepository;
         this.contactRepository = contactRepository;
         this.commodityRepository = commodityRepository;
+        this.traderContextService = traderContextService;
     }
 
     /**
      * List lots with auction-derived status and optional search, for Sales Pad lot selector.
+     * Scoped to the current trader: lots whose seller_vehicle links to a vehicle with that trader_id.
      */
     @Transactional(readOnly = true)
     public Page<LotSummaryDTO> listLotsWithStatus(Pageable pageable, String statusFilter, String q) {
+        Long traderId = resolveTraderId();
         Page<Lot> lotPage = (q != null && !q.isBlank())
-            ? lotRepository.findAllByLotNameContainingIgnoreCase(q.trim(), pageable)
-            : lotRepository.findAll(pageable);
+            ? lotRepository.findAllByTraderIdAndLotNameContainingIgnoreCase(traderId, q.trim(), pageable)
+            : lotRepository.findAllByTraderId(traderId, pageable);
         List<Lot> lots = lotPage.getContent();
         if (lots.isEmpty()) {
             return Page.empty(pageable);
@@ -488,6 +493,10 @@ public class AuctionService {
 
         dto.setEntries(resultEntries);
         return dto;
+    }
+
+    private Long resolveTraderId() {
+        return traderContextService.getCurrentTraderId();
     }
 
     private BigDecimal calcSellerRate(BigDecimal bidRate, BigDecimal preset, AuctionPresetType type) {
