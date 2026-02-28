@@ -38,6 +38,10 @@ public class ContactDTO implements Serializable {
 
     private BigDecimal currentBalance;
 
+    /** Contact type: SELLER (vendor), BUYER, BROKER. Returned in API as "type". */
+    @Size(max = 20)
+    private String type;
+
     public Long getId() {
         return id;
     }
@@ -110,6 +114,14 @@ public class ContactDTO implements Serializable {
         this.currentBalance = currentBalance;
     }
 
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -143,6 +155,7 @@ public class ContactDTO implements Serializable {
             ", createdAt='" + getCreatedAt() + "'" +
             ", openingBalance=" + getOpeningBalance() +
             ", currentBalance=" + getCurrentBalance() +
+            ", type='" + getType() + "'" +
             "}";
     }
 }

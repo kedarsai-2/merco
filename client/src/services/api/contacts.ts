@@ -44,6 +44,7 @@ function mapContactToCreatePayload(data: Partial<Contact>): Record<string, unkno
     mark: data.mark?.trim() ?? '',
     address: data.address?.trim() ?? '',
     traderId: data.trader_id && data.trader_id.length > 0 ? data.trader_id : undefined,
+    type: data.type ?? undefined,
   };
 }
 
@@ -54,6 +55,7 @@ function mapContactToUpdatePayload(id: string, data: Partial<Contact>): Record<s
     phone: data.phone?.trim() ?? '',
     mark: data.mark?.trim() ?? '',
     address: data.address?.trim() ?? '',
+    type: data.type ?? undefined,
   };
 }
 

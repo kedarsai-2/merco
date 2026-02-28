@@ -4,6 +4,8 @@ import { authApi } from '@/services/api';
 import { initializeMockData } from '@/services/mockData';
 
 interface AuthContextType extends AuthState {
+  /** True once initial auth check (getProfile) has completed. Used by ProtectedRoute to avoid redirecting before bootstrap. */
+  hasBootstrapped: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (data: any) => Promise<void>;
   logout: () => void;
@@ -16,6 +18,7 @@ const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   user: null,
   trader: null,
+  hasBootstrapped: false,
   login: async () => {},
   register: async () => {},
   logout: () => {},
@@ -44,7 +47,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let cancelled = false;
     const bootstrap = async () => {
       try {
-        const profile = await authApi.getProfile();
+        let profile = await authApi.getProfile();
+        // Retry once on 401 to avoid redirecting when session cookie is valid but first request was transient (e.g. race)
+        if (!cancelled && !profile) {
+          await new Promise((r) => setTimeout(r, 400));
+          if (!cancelled) profile = await authApi.getProfile();
+        }
         if (!cancelled && profile) {
           setState({
             isAuthenticated: true,
@@ -120,7 +128,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const clearError = useCallback(() => setError(null), []);
 
   return (
-    <AuthContext.Provider value={{ ...state, login, register, logout, isLoading, error, clearError }}>
+    <AuthContext.Provider value={{ ...state, hasBootstrapped, login, register, logout, isLoading, error, clearError }}>
       {children}
     </AuthContext.Provider>
   );

@@ -18,5 +18,7 @@ public interface ContactRepository extends JpaRepository<Contact, Long>, JpaSpec
     List<Contact> findAllByTraderId(Long traderId);
 
     List<Contact> findAllByTraderIdAndMarkContainingIgnoreCase(Long traderId, String mark);
+
+    List<Contact> findAllByTraderIdAndNameContainingIgnoreCase(Long traderId, String name);
 }
 

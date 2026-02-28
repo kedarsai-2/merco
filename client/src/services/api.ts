@@ -12,6 +12,7 @@ export { auctionApi, fetchAllAuctionResults } from './api/auction';
 export { weighingApi } from './api/weighing';
 export { printLogApi } from './api/printLog';
 export { selfSaleApi } from './api/selfSale';
+export { stockPurchaseApi } from './api/stockPurchase';
 export type {
   LotSummaryDTO,
   AuctionSessionDTO,
@@ -27,3 +28,4 @@ export type {
 export type { WeighingSessionDTO, WeighingSessionCreateRequest } from './api/weighing';
 export type { PrintLogDTO, PrintLogCreateRequest } from './api/printLog';
 export type { OpenLotDTO, ClosureDTO, CreateClosureRequest } from './api/selfSale';
+export type { StockPurchaseDTO, StockPurchasePage, CreateStockPurchaseRequest } from './api/stockPurchase';

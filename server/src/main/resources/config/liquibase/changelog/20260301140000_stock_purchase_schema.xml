@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+        Stock Purchase module schema (Part 11.2–11.4).
+        Aligned with database/merkotrace_database_schema.sql and client StockPurchasePage.tsx.
+        Audit: created_at, created_by, updated_at, updated_by on all tables.
+    -->
+
+    <changeSet id="20260301140000-1" author="mercotrace">
+        <createTable tableName="stock_purchases">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="trader_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="vendor_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="purchase_date" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_amount" type="numeric(15,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_charges" type="numeric(15,2)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="voucher_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+            <column name="created_at" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="varchar(100)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="updated_at" type="${datetimeType}">
+                <constraints nullable="true"/>
+            </column>
+            <column name="updated_by" type="varchar(100)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="is_deleted" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="stock_purchases" baseColumnNames="trader_id"
+                                 referencedTableName="trader" referencedColumnNames="id"
+                                 constraintName="fk_sp_trader"/>
+        <addForeignKeyConstraint baseTableName="stock_purchases" baseColumnNames="vendor_id"
+                                 referencedTableName="contact" referencedColumnNames="id"
+                                 constraintName="fk_sp_vendor"/>
+        <addForeignKeyConstraint baseTableName="stock_purchases" baseColumnNames="voucher_id"
+                                 referencedTableName="voucher" referencedColumnNames="id"
+                                 constraintName="fk_sp_voucher"/>
+
+        <createIndex tableName="stock_purchases" indexName="idx_sp_trader_id">
+            <column name="trader_id"/>
+        </createIndex>
+        <createIndex tableName="stock_purchases" indexName="idx_sp_vendor_id">
+            <column name="vendor_id"/>
+        </createIndex>
+        <createIndex tableName="stock_purchases" indexName="idx_sp_purchase_date">
+            <column name="purchase_date"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260301140000-2" author="mercotrace">
+        <createTable tableName="stock_purchase_items">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="purchase_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="commodity_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="lot_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+            <column name="commodity_name" type="varchar(150)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="quantity" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="rate" type="numeric(15,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="amount" type="numeric(15,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="allocated_charges" type="numeric(15,2)" defaultValueNumeric="0">
+                <constraints nullable="true"/>
+            </column>
+            <column name="effective_base_rate" type="numeric(15,2)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="created_at" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="varchar(100)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="updated_at" type="${datetimeType}">
+                <constraints nullable="true"/>
+            </column>
+            <column name="updated_by" type="varchar(100)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="is_deleted" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="stock_purchase_items" baseColumnNames="purchase_id"
+                                 referencedTableName="stock_purchases" referencedColumnNames="id"
+                                 constraintName="fk_spi_purchase" onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="stock_purchase_items" baseColumnNames="commodity_id"
+                                 referencedTableName="commodity" referencedColumnNames="id"
+                                 constraintName="fk_spi_commodity"/>
+        <addForeignKeyConstraint baseTableName="stock_purchase_items" baseColumnNames="lot_id"
+                                 referencedTableName="lot" referencedColumnNames="id"
+                                 constraintName="fk_spi_lot"/>
+
+        <createIndex tableName="stock_purchase_items" indexName="idx_spi_purchase_id">
+            <column name="purchase_id"/>
+        </createIndex>
+        <createIndex tableName="stock_purchase_items" indexName="idx_spi_commodity_id">
+            <column name="commodity_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260301140000-3" author="mercotrace">
+        <createTable tableName="stock_purchase_charges">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="purchase_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="charge_name" type="varchar(150)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="charge_amount" type="numeric(15,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="varchar(100)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="updated_at" type="${datetimeType}">
+                <constraints nullable="true"/>
+            </column>
+            <column name="updated_by" type="varchar(100)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="is_deleted" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="stock_purchase_charges" baseColumnNames="purchase_id"
+                                 referencedTableName="stock_purchases" referencedColumnNames="id"
+                                 constraintName="fk_spc_purchase" onDelete="CASCADE"/>
+
+        <createIndex tableName="stock_purchase_charges" indexName="idx_spc_purchase_id">
+            <column name="purchase_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

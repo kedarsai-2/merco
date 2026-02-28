@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Add contact_type so vendors (SELLER) can be distinguished. Values: SELLER, BUYER, BROKER -->
+    <changeSet id="20260301150000-1" author="mercotrace">
+        <addColumn tableName="contact">
+            <column name="contact_type" type="varchar(20)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <!-- Seed one SELLER contact so Stock Purchase vendor search shows at least one vendor after clean setup -->
+    <changeSet id="20260301150000-2" author="mercotrace" context="dev">
+        <insert tableName="contact">
+            <column name="id" valueNumeric="1501"/>
+            <column name="trader_id" valueNumeric="17881"/>
+            <column name="name" value="Seed Vendor (SELLER)"/>
+            <column name="phone" value="9855553210"/>
+            <column name="mark" value="VENDOR1"/>
+            <column name="address" value="Vendor address"/>
+            <column name="created_at" valueDate="2026-03-01T12:00:00"/>
+            <column name="opening_balance" valueNumeric="0"/>
+            <column name="current_balance" valueNumeric="0"/>
+            <column name="contact_type" value="SELLER"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

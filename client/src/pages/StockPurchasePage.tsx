@@ -10,16 +10,10 @@ import { Button } from '@/components/ui/button';
 import BottomNav from '@/components/BottomNav';
 import { useDesktopMode } from '@/hooks/use-desktop';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { contactApi } from '@/services/api';
+import { contactApi, stockPurchaseApi } from '@/services/api';
 import type { Contact } from '@/types/models';
+import type { StockPurchaseDTO } from '@/services/api';
 import { toast } from 'sonner';
-
-function getStore<T>(key: string): T[] {
-  try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
-}
-function setStore<T>(key: string, data: T[]) {
-  localStorage.setItem(key, JSON.stringify(data));
-}
 
 interface PurchaseLineItem {
   id: string;
@@ -35,37 +29,60 @@ interface PurchaseCharge {
   amount: number;
 }
 
-interface StockPurchaseRecord {
-  id: string;
-  vendor_name: string;
-  vendor_id: string | null;
-  items: PurchaseLineItem[];
-  charges: PurchaseCharge[];
-  subtotal: number;
-  total_charges: number;
-  grand_total: number;
-  lot_numbers: string[];
-  created_at: string;
-}
-
 const StockPurchasePage = () => {
   const navigate = useNavigate();
   const isDesktop = useDesktopMode();
   const [vendors, setVendors] = useState<Contact[]>([]);
-  const [records, setRecords] = useState<StockPurchaseRecord[]>([]);
+  const [records, setRecords] = useState<StockPurchaseDTO[]>([]);
+  const [totalElements, setTotalElements] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState('');
+  const [vendorsLoading, setVendorsLoading] = useState(false);
 
   // Form state
   const [selectedVendor, setSelectedVendor] = useState<Contact | null>(null);
   const [vendorSearch, setVendorSearch] = useState('');
   const [items, setItems] = useState<PurchaseLineItem[]>([{ id: crypto.randomUUID(), commodity: '', quantity: 0, rate: 0, amount: 0 }]);
   const [charges, setCharges] = useState<PurchaseCharge[]>([]);
+  const [saving, setSaving] = useState(false);
+
+  const pageSize = 10;
+
+  const loadPurchases = (page: number = 0) => {
+    setLoading(true);
+    setError(null);
+    stockPurchaseApi
+      .getPage({ page, size: pageSize, vendorSearch: search.trim() || undefined })
+      .then((p) => {
+        setRecords(p.content);
+        setTotalElements(p.totalElements);
+        setTotalPages(p.totalPages);
+        setCurrentPage(p.number);
+      })
+      .catch((e) => {
+        setError(e instanceof Error ? e.message : 'Failed to load purchases');
+        setRecords([]);
+      })
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
-    contactApi.list().then(c => setVendors(c.filter(v => v.type === 'SELLER')));
-    setRecords(getStore<StockPurchaseRecord>('mkt_stock_purchases'));
-  }, []);
+    if (!showForm) return;
+    setVendorsLoading(true);
+    contactApi
+      .list()
+      .then(c => setVendors(c.filter(v => v.type === 'SELLER')))
+      .catch(() => setVendors([]))
+      .finally(() => setVendorsLoading(false));
+  }, [showForm]);
+
+  useEffect(() => {
+    loadPurchases(0);
+  }, [search]);
 
   const filteredVendors = useMemo(() => {
     if (!vendorSearch) return vendors;
@@ -76,7 +93,7 @@ const StockPurchasePage = () => {
   const subtotal = useMemo(() => items.reduce((s, i) => s + i.amount, 0), [items]);
   const totalCharges = useMemo(() => charges.reduce((s, c) => s + c.amount, 0), [charges]);
   const grandTotal = subtotal + totalCharges;
-  const totalSpent = useMemo(() => records.reduce((s, r) => s + r.grand_total, 0), [records]);
+  const pageTotalSpent = useMemo(() => records.reduce((s, r) => s + (r.grandTotal ?? 0), 0), [records]);
 
   const updateItem = (id: string, field: string, value: any) => {
     setItems(prev => prev.map(i => {
@@ -97,33 +114,29 @@ const StockPurchasePage = () => {
       toast.error('Select vendor and add at least one item');
       return;
     }
-
+    const vendorId = Number(selectedVendor.contact_id);
+    if (!Number.isFinite(vendorId)) {
+      toast.error('Invalid vendor');
+      return;
+    }
     const validItems = items.filter(i => i.amount > 0);
-    const lotNumbers = validItems.map((item, idx) => {
-      const allocated = subtotal > 0 ? (item.amount / subtotal) * totalCharges : 0;
-      const effectiveRate = item.quantity > 0 ? (item.amount + allocated) / item.quantity : 0;
-      return `SP-${Date.now()}-${idx + 1} {₹${effectiveRate.toFixed(0)}}`;
-    });
-
-    const record: StockPurchaseRecord = {
-      id: crypto.randomUUID(),
-      vendor_name: selectedVendor.name,
-      vendor_id: selectedVendor.contact_id,
-      items: validItems,
-      charges,
-      subtotal,
-      total_charges: totalCharges,
-      grand_total: grandTotal,
-      lot_numbers: lotNumbers,
-      created_at: new Date().toISOString(),
-    };
-
-    const updated = [...records, record];
-    setStore('mkt_stock_purchases', updated);
-    setRecords(updated);
-    setShowForm(false);
-    resetForm();
-    toast.success('Stock purchase recorded & inventory updated');
+    setSaving(true);
+    stockPurchaseApi
+      .create({
+        vendorId,
+        items: validItems.map((i) => ({ commodity: i.commodity, quantity: i.quantity, rate: i.rate, amount: i.amount })),
+        charges: charges.map((c) => ({ name: c.name, amount: c.amount })),
+      })
+      .then(() => {
+        setShowForm(false);
+        resetForm();
+        loadPurchases(0);
+        toast.success('Stock purchase recorded & inventory updated');
+      })
+      .catch((e) => {
+        toast.error(e instanceof Error ? e.message : 'Failed to save purchase');
+      })
+      .finally(() => setSaving(false));
   };
 
   const resetForm = () => {
@@ -133,11 +146,7 @@ const StockPurchasePage = () => {
     setCharges([]);
   };
 
-  const filteredRecords = useMemo(() => {
-    if (!search) return records;
-    const q = search.toLowerCase();
-    return records.filter(r => r.vendor_name.toLowerCase().includes(q));
-  }, [records, search]);
+  const displayRecords = records;
 
   return (
     <div className="min-h-[100dvh] bg-background pb-28 lg:pb-6">
@@ -167,11 +176,11 @@ const StockPurchasePage = () => {
             <div className="grid grid-cols-2 gap-2">
               <div className="bg-white/20 backdrop-blur-md rounded-xl px-3 py-2">
                 <p className="text-white/70 text-[10px] font-semibold uppercase tracking-wider">Purchases</p>
-                <p className="text-white text-lg font-bold">{records.length}</p>
+                <p className="text-white text-lg font-bold">{loading ? '…' : totalElements}</p>
               </div>
               <div className="bg-white/20 backdrop-blur-md rounded-xl px-3 py-2">
-                <p className="text-white/70 text-[10px] font-semibold uppercase tracking-wider">Total Spent</p>
-                <p className="text-white text-lg font-bold">₹{totalSpent.toLocaleString()}</p>
+                <p className="text-white/70 text-[10px] font-semibold uppercase tracking-wider">Page Total</p>
+                <p className="text-white text-lg font-bold">₹{(loading ? 0 : pageTotalSpent).toLocaleString()}</p>
               </div>
             </div>
           </div>
@@ -187,11 +196,11 @@ const StockPurchasePage = () => {
           <div className="flex items-center gap-3">
             <div className="glass-card rounded-xl px-4 py-2 flex items-center gap-2">
               <Package className="w-4 h-4 text-teal-500" />
-              <span className="text-sm font-semibold">{records.length} purchases</span>
+              <span className="text-sm font-semibold">{loading ? '…' : totalElements} purchases</span>
             </div>
             <div className="glass-card rounded-xl px-4 py-2 flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-emerald-500" />
-              <span className="text-sm font-semibold">₹{totalSpent.toLocaleString()}</span>
+              <span className="text-sm font-semibold">₹{(loading ? 0 : pageTotalSpent).toLocaleString()} (page)</span>
             </div>
           </div>
           <Button onClick={() => setShowForm(true)} className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-bold h-11">
@@ -206,7 +215,16 @@ const StockPurchasePage = () => {
           <h2 className="text-sm font-bold text-foreground uppercase tracking-wide">Purchase History</h2>
         </div>
 
-        {filteredRecords.length === 0 ? (
+        {error ? (
+          <div className="glass-card rounded-2xl p-6 text-center">
+            <p className="text-sm font-semibold text-destructive mb-1">Error loading purchases</p>
+            <p className="text-xs text-muted-foreground">{error}</p>
+          </div>
+        ) : loading ? (
+          <div className="glass-card rounded-2xl p-10 text-center">
+            <p className="text-sm text-muted-foreground">Loading purchases…</p>
+          </div>
+        ) : displayRecords.length === 0 ? (
           <div className="glass-card rounded-2xl p-10 text-center">
             <div className="w-16 h-16 rounded-2xl bg-teal-100 dark:bg-teal-900/20 mx-auto mb-4 flex items-center justify-center">
               <Box className="w-8 h-8 text-teal-500" />
@@ -229,23 +247,30 @@ const StockPurchasePage = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredRecords.map(r => (
+                {displayRecords.map(r => (
                   <tr key={r.id} className="border-b border-border/30 last:border-0 hover:bg-teal-50/30 dark:hover:bg-teal-900/5 transition-colors">
-                    <td className="p-3 text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</td>
-                    <td className="p-3 font-semibold">{r.vendor_name}</td>
-                    <td className="p-3 text-right">{r.items.length}</td>
-                    <td className="p-3 text-right">₹{r.subtotal.toLocaleString()}</td>
-                    <td className="p-3 text-right text-amber-600 dark:text-amber-400">₹{r.total_charges.toLocaleString()}</td>
-                    <td className="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400">₹{r.grand_total.toLocaleString()}</td>
-                    <td className="p-3 text-xs text-muted-foreground max-w-[200px] truncate">{r.lot_numbers.join(', ')}</td>
+                    <td className="p-3 text-muted-foreground">{r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—'}</td>
+                    <td className="p-3 font-semibold">{r.vendorName}</td>
+                    <td className="p-3 text-right">{r.items?.length ?? 0}</td>
+                    <td className="p-3 text-right">₹{(r.subtotal ?? 0).toLocaleString()}</td>
+                    <td className="p-3 text-right text-amber-600 dark:text-amber-400">₹{(r.totalCharges ?? 0).toLocaleString()}</td>
+                    <td className="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400">₹{(r.grandTotal ?? 0).toLocaleString()}</td>
+                    <td className="p-3 text-xs text-muted-foreground max-w-[200px] truncate">{(r.lotNumbers ?? []).join(', ') || '—'}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            {totalPages > 1 && (
+              <div className="flex justify-center gap-2 py-3 border-t border-border/30">
+                <Button variant="outline" size="sm" disabled={currentPage <= 0} onClick={() => loadPurchases(currentPage - 1)}>Previous</Button>
+                <span className="text-xs self-center px-2">Page {currentPage + 1} of {totalPages}</span>
+                <Button variant="outline" size="sm" disabled={currentPage >= totalPages - 1} onClick={() => loadPurchases(currentPage + 1)}>Next</Button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
-            {filteredRecords.map(r => (
+            {displayRecords.map(r => (
               <motion.div key={r.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
                 className="glass-card rounded-xl p-4 border-l-4 border-l-teal-400">
                 <div className="flex items-center justify-between">
@@ -254,19 +279,26 @@ const StockPurchasePage = () => {
                       <User className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                      <p className="font-bold text-sm">{r.vendor_name}</p>
-                      <p className="text-[11px] text-muted-foreground">{r.items.length} items · {new Date(r.created_at).toLocaleDateString()}</p>
+                      <p className="font-bold text-sm">{r.vendorName}</p>
+                      <p className="text-[11px] text-muted-foreground">{(r.items?.length ?? 0)} items · {r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—'}</p>
                     </div>
                   </div>
-                  <span className="font-black text-emerald-600 dark:text-emerald-400">₹{r.grand_total.toLocaleString()}</span>
+                  <span className="font-black text-emerald-600 dark:text-emerald-400">₹{(r.grandTotal ?? 0).toLocaleString()}</span>
                 </div>
                 <div className="mt-2.5 flex flex-wrap gap-1">
-                  {r.lot_numbers.map((ln, i) => (
+                  {(r.lotNumbers ?? []).map((ln, i) => (
                     <span key={i} className="px-2 py-0.5 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 text-[10px] font-bold">{ln}</span>
                   ))}
                 </div>
               </motion.div>
             ))}
+            {totalPages > 1 && (
+              <div className="flex justify-center gap-2 pt-2">
+                <Button variant="outline" size="sm" disabled={currentPage <= 0} onClick={() => loadPurchases(currentPage - 1)}>Previous</Button>
+                <span className="text-xs self-center">Page {currentPage + 1} of {totalPages}</span>
+                <Button variant="outline" size="sm" disabled={currentPage >= totalPages - 1} onClick={() => loadPurchases(currentPage + 1)}>Next</Button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -301,8 +333,11 @@ const StockPurchasePage = () => {
                 </div>
               ) : (
                 <div>
-                  <Input placeholder="Search vendor by name or phone…" value={vendorSearch} onChange={e => setVendorSearch(e.target.value)} className="h-11" />
-                  {vendorSearch && (
+                  <Input placeholder="Search vendor by name or phone…" value={vendorSearch} onChange={e => setVendorSearch(e.target.value)} className="h-11" disabled={vendorsLoading} />
+                  {vendorsLoading && (
+                    <p className="mt-1.5 text-xs text-muted-foreground">Loading vendors…</p>
+                  )}
+                  {!vendorsLoading && vendorSearch && (
                     <div className="mt-1 max-h-32 overflow-y-auto border border-border rounded-xl bg-background">
                       {filteredVendors.map(v => (
                         <button key={v.contact_id} onClick={() => { setSelectedVendor(v); setVendorSearch(''); }}
@@ -379,9 +414,9 @@ const StockPurchasePage = () => {
           </div>
 
           <div className="flex gap-2 pt-2">
-            <Button variant="outline" onClick={() => setShowForm(false)} className="flex-1 h-11">Cancel</Button>
-            <Button onClick={handleSave} className="flex-1 h-11 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-bold shadow-lg">
-              <Save className="w-4 h-4 mr-1.5" /> Save Purchase
+            <Button variant="outline" onClick={() => setShowForm(false)} className="flex-1 h-11" disabled={saving}>Cancel</Button>
+            <Button onClick={handleSave} className="flex-1 h-11 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-bold shadow-lg" disabled={saving}>
+              <Save className="w-4 h-4 mr-1.5" /> {saving ? 'Saving…' : 'Save Purchase'}
             </Button>
           </div>
         </DialogContent>

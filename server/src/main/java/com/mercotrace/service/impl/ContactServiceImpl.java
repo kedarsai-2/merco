@@ -12,6 +12,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,18 +25,29 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class ContactServiceImpl implements ContactService {
 
+    /** Cache for vendor list by trader (Stock Purchase and other modules). Evicted on contact save/update/delete. */
+    public static final String STOCK_PURCHASE_VENDORS_BY_TRADER_CACHE = "stockPurchaseVendorsByTrader";
+
     private static final Logger LOG = LoggerFactory.getLogger(ContactServiceImpl.class);
 
     private final ContactRepository contactRepository;
 
     private final ContactMapper contactMapper;
 
-    public ContactServiceImpl(ContactRepository contactRepository, ContactMapper contactMapper) {
+    private final CacheManager cacheManager;
+
+    public ContactServiceImpl(
+        ContactRepository contactRepository,
+        ContactMapper contactMapper,
+        CacheManager cacheManager
+    ) {
         this.contactRepository = contactRepository;
         this.contactMapper = contactMapper;
+        this.cacheManager = cacheManager;
     }
 
     @Override
+    @CacheEvict(cacheNames = STOCK_PURCHASE_VENDORS_BY_TRADER_CACHE, key = "#contactDTO.traderId")
     public ContactDTO save(ContactDTO contactDTO) {
         LOG.debug("Request to save Contact : {}", contactDTO);
 
@@ -54,6 +68,7 @@ public class ContactServiceImpl implements ContactService {
     }
 
     @Override
+    @CacheEvict(cacheNames = STOCK_PURCHASE_VENDORS_BY_TRADER_CACHE, key = "#contactDTO.traderId")
     public ContactDTO update(ContactDTO contactDTO) {
         LOG.debug("Request to update Contact : {}", contactDTO);
         if (contactDTO.getOpeningBalance() == null) {
@@ -79,7 +94,15 @@ public class ContactServiceImpl implements ContactService {
                 return existingContact;
             })
             .map(contactRepository::save)
-            .map(contactMapper::toDto);
+            .map(
+                saved -> {
+                    Long traderId = saved.getTraderId();
+                    if (traderId != null && cacheManager.getCache(STOCK_PURCHASE_VENDORS_BY_TRADER_CACHE) != null) {
+                        cacheManager.getCache(STOCK_PURCHASE_VENDORS_BY_TRADER_CACHE).evict(traderId);
+                    }
+                    return contactMapper.toDto(saved);
+                }
+            );
     }
 
     @Override
@@ -92,11 +115,22 @@ public class ContactServiceImpl implements ContactService {
     @Override
     public void delete(Long id) {
         LOG.debug("Request to delete Contact : {}", id);
+        contactRepository
+            .findById(id)
+            .ifPresent(
+                c -> {
+                    Long traderId = c.getTraderId();
+                    if (traderId != null && cacheManager.getCache(STOCK_PURCHASE_VENDORS_BY_TRADER_CACHE) != null) {
+                        cacheManager.getCache(STOCK_PURCHASE_VENDORS_BY_TRADER_CACHE).evict(traderId);
+                    }
+                }
+            );
         contactRepository.deleteById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = STOCK_PURCHASE_VENDORS_BY_TRADER_CACHE, key = "#traderId", unless = "#result == null")
     public List<ContactDTO> findAllByTrader(Long traderId) {
         LOG.debug("Request to get all Contacts for trader : {}", traderId);
         return contactRepository
@@ -110,19 +144,19 @@ public class ContactServiceImpl implements ContactService {
     @Transactional(readOnly = true)
     public List<ContactDTO> searchByMark(Long traderId, String markFragment) {
         LOG.debug("Request to search Contacts by fragment. traderId={}, fragment={}", traderId, markFragment);
+        List<ContactDTO> all = findAllByTrader(traderId);
         if (markFragment == null || markFragment.isBlank()) {
-            return findAllByTrader(traderId);
+            return all;
         }
         final String lower = markFragment.toLowerCase();
-        return contactRepository
-            .findAllByTraderId(traderId)
+        return all
             .stream()
-            .filter(c ->
-                (c.getName() != null && c.getName().toLowerCase().contains(lower)) ||
-                (c.getPhone() != null && c.getPhone().contains(markFragment)) ||
-                (c.getMark() != null && c.getMark().toLowerCase().contains(lower))
+            .filter(
+                dto ->
+                    (dto.getName() != null && dto.getName().toLowerCase().contains(lower)) ||
+                    (dto.getPhone() != null && dto.getPhone().contains(markFragment)) ||
+                    (dto.getMark() != null && dto.getMark().toLowerCase().contains(lower))
             )
-            .map(contactMapper::toDto)
             .collect(Collectors.toList());
     }
 }

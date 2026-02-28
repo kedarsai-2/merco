@@ -14,7 +14,7 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
  */
 @Entity
 @Table(name = "contact")
-@Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
+@Cache(usage = CacheConcurrencyStrategy.NONE) /* L2 cache disabled to avoid "Index 8 out of bounds" when cache had entities serialized before contact_type was added */
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class Contact implements Serializable {
 
@@ -56,6 +56,11 @@ public class Contact implements Serializable {
     @NotNull
     @Column(name = "current_balance", precision = 19, scale = 2, nullable = false)
     private BigDecimal currentBalance;
+
+    /** Contact type: SELLER (vendor), BUYER, BROKER. Used so client can filter vendors. */
+    @Size(max = 20)
+    @Column(name = "contact_type", length = 20)
+    private String type;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
@@ -156,6 +161,19 @@ public class Contact implements Serializable {
         this.currentBalance = currentBalance;
     }
 
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public Contact type(String type) {
+        this.setType(type);
+        return this;
+    }
+
     // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here
 
     @Override
@@ -186,6 +204,7 @@ public class Contact implements Serializable {
             ", createdAt='" + getCreatedAt() + "'" +
             ", openingBalance=" + getOpeningBalance() +
             ", currentBalance=" + getCurrentBalance() +
+            ", type='" + getType() + "'" +
             "}";
     }
 }

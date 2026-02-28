@@ -9,6 +9,7 @@ export { rbacApi } from './mock';
 export { auctionApi, fetchAllAuctionResults } from './auction';
 export { weighingApi } from './weighing';
 export { printLogApi } from './printLog';
+export { stockPurchaseApi } from './stockPurchase';
 export type {
   LotSummaryDTO,
   AuctionSessionDTO,
@@ -23,4 +24,5 @@ export type {
 } from './auction';
 export type { WeighingSessionDTO, WeighingSessionCreateRequest } from './weighing';
 export type { PrintLogDTO, PrintLogCreateRequest } from './printLog';
+export type { StockPurchaseDTO, StockPurchasePage, CreateStockPurchaseRequest } from './stockPurchase';
 

@@ -118,6 +118,11 @@ public class CacheConfiguration {
             createCache(cm, com.mercotrace.domain.PrintLog.class.getName(), jcacheConfiguration);
             // Self-Sale module
             createCache(cm, com.mercotrace.domain.SelfSaleClosure.class.getName(), jcacheConfiguration);
+            createCache(cm, com.mercotrace.domain.StockPurchase.class.getName(), jcacheConfiguration);
+            createCache(cm, com.mercotrace.domain.StockPurchaseItem.class.getName(), jcacheConfiguration);
+            createCache(cm, com.mercotrace.domain.StockPurchaseCharge.class.getName(), jcacheConfiguration);
+            // Stock Purchase: vendor list by trader (read-heavy; evicted on contact save/update/delete)
+            createCache(cm, com.mercotrace.service.impl.ContactServiceImpl.STOCK_PURCHASE_VENDORS_BY_TRADER_CACHE, jcacheConfiguration);
             // jhipster-needle-redis-add-entry
         };
     }
