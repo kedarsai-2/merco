@@ -14,13 +14,7 @@ import BottomNav from '@/components/BottomNav';
 import { toast } from 'sonner';
 import { useAuctionResults } from '@/hooks/useAuctionResults';
 
-// ── localStorage helpers ──────────────────────────────────
-function getStore<T>(key: string): T[] {
-  try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
-}
-function setStore<T>(key: string, data: T[]) {
-  localStorage.setItem(key, JSON.stringify(data));
-}
+// Optional UI pref only (last cleanup date). Weight log is in-memory; no mkt_* for business data.
 
 // ── Types ─────────────────────────────────────────────────
 interface ScaleDevice {
@@ -196,11 +190,6 @@ const WritersPadPage = () => {
 
     // Req 9: Lock until load removed
     setWeightLocked(true);
-
-    // Persist
-    const sessions = getStore<any>('mkt_writer_weights');
-    sessions.push(logEntry);
-    setStore('mkt_writer_weights', sessions);
 
     toast.success(`${currentWeight}kg (→${cw}kg) → #${card.bidNumber} (${card.buyerMark})`);
   };

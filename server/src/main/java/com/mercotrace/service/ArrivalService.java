@@ -8,6 +8,9 @@ import com.mercotrace.service.dto.ArrivalDTOs.ArrivalRequestDTO;
 import com.mercotrace.service.dto.ArrivalDTOs.ArrivalSellerDTO;
 import com.mercotrace.service.dto.ArrivalDTOs.ArrivalLotDTO;
 import com.mercotrace.service.dto.ArrivalDTOs.ArrivalSummaryDTO;
+import com.mercotrace.service.dto.ArrivalDTOs.ArrivalDetailDTO;
+import com.mercotrace.service.dto.ArrivalDTOs.ArrivalSellerDetailDTO;
+import com.mercotrace.service.dto.ArrivalDTOs.ArrivalLotDetailDTO;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -223,6 +226,58 @@ public class ArrivalService {
             dto.setFreightTotal(freightTotal);
             dto.setFreightMethod(method);
             dto.setArrivalDatetime(v.getArrivalDatetime());
+            return dto;
+        }).toList();
+
+        return new PageImpl<>(content, pageable, vehiclePage.getTotalElements());
+    }
+
+    /**
+     * List arrivals with nested sellers and lots (id, lotName, sellerName) for UIs that need lot-level lookup (e.g. WeighingPage).
+     */
+    @Transactional(readOnly = true)
+    public Page<ArrivalDetailDTO> listArrivalsDetail(Pageable pageable) {
+        Long traderId = resolveTraderId();
+
+        Page<Vehicle> vehiclePage = vehicleRepository.findAllByTraderIdOrderByArrivalDatetimeDesc(traderId, pageable);
+        List<Vehicle> vehicles = vehiclePage.getContent();
+
+        if (vehicles.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        List<Long> vehicleIds = vehicles.stream().map(Vehicle::getId).toList();
+        List<SellerInVehicle> sellers = sellerInVehicleRepository.findAllByVehicleIdIn(vehicleIds);
+        List<Long> sellerVehicleIds = sellers.stream().map(SellerInVehicle::getId).toList();
+        List<Lot> lots = sellerVehicleIds.isEmpty() ? List.of() : lotRepository.findAllBySellerVehicleIdIn(sellerVehicleIds);
+        List<Long> contactIds = sellers.stream().map(SellerInVehicle::getContactId).distinct().toList();
+        List<Contact> contacts = contactIds.isEmpty() ? List.of() : contactRepository.findAllById(contactIds);
+
+        java.util.Map<Long, String> contactNameById = contacts.stream()
+            .collect(Collectors.toMap(Contact::getId, c -> c.getName() != null ? c.getName() : ""));
+
+        List<ArrivalDetailDTO> content = vehicles.stream().map(v -> {
+            ArrivalDetailDTO dto = new ArrivalDetailDTO();
+            dto.setVehicleId(v.getId());
+            dto.setVehicleNumber(v.getVehicleNumber());
+            dto.setArrivalDatetime(v.getArrivalDatetime());
+
+            List<SellerInVehicle> vehicleSellers = sellers.stream().filter(sv -> sv.getVehicleId().equals(v.getId())).toList();
+            List<ArrivalSellerDetailDTO> sellerDetailList = new ArrayList<>();
+            for (SellerInVehicle siv : vehicleSellers) {
+                ArrivalSellerDetailDTO sellerDetail = new ArrivalSellerDetailDTO();
+                sellerDetail.setSellerName(contactNameById.getOrDefault(siv.getContactId(), ""));
+                List<Lot> sellerLots = lots.stream().filter(l -> l.getSellerVehicleId().equals(siv.getId())).toList();
+                List<ArrivalLotDetailDTO> lotDetails = sellerLots.stream().map(lot -> {
+                    ArrivalLotDetailDTO ld = new ArrivalLotDetailDTO();
+                    ld.setId(lot.getId());
+                    ld.setLotName(lot.getLotName());
+                    return ld;
+                }).toList();
+                sellerDetail.setLots(lotDetails);
+                sellerDetailList.add(sellerDetail);
+            }
+            dto.setSellers(sellerDetailList);
             return dto;
         }).toList();
 

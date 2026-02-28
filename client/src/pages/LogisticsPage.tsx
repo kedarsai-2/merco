@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import BottomNav from '@/components/BottomNav';
 import { toast } from 'sonner';
 import { useAuctionResults } from '@/hooks/useAuctionResults';
+import { printLogApi } from '@/services/api';
 
 // ── localStorage helpers ──────────────────────────────────
 function getStore<T>(key: string): T[] {
@@ -124,20 +125,20 @@ const LogisticsPage = () => {
     );
   }, [bids, searchQuery]);
 
-  const handleDirectPrint = (bid: BidInfo, type: 'sticker' | 'chiti') => {
+  const handleDirectPrint = async (bid: BidInfo, type: 'sticker' | 'chiti') => {
     toast.info(`🖨 Printing ${type === 'sticker' ? 'Sticker' : 'Chiti'}…`);
 
-    // Log the print
-    const printLog = getStore<any>('mkt_print_logs');
-    printLog.push({
-      print_log_id: crypto.randomUUID(),
-      trader_id: '',
-      reference_type: type === 'sticker' ? 'STICKER' : 'CHITI',
-      reference_id: String(bid.bidNumber),
-      print_type: type.toUpperCase(),
-      printed_at: new Date().toISOString(),
-    });
-    localStorage.setItem('mkt_print_logs', JSON.stringify(printLog));
+    const printedAt = new Date().toISOString();
+    try {
+      await printLogApi.create({
+        reference_type: type === 'sticker' ? 'STICKER' : 'CHITI',
+        reference_id: String(bid.bidNumber),
+        print_type: type.toUpperCase(),
+        printed_at: printedAt,
+      });
+    } catch {
+      // backend optional
+    }
 
     // Generate print content in a hidden iframe
     const printContent = type === 'sticker' ? generateStickerHTML(bid) : generateChitiHTML(bid);

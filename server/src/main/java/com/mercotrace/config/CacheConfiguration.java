@@ -19,6 +19,8 @@ import org.springframework.boot.info.GitProperties;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.interceptor.KeyGenerator;
 import org.springframework.context.annotation.*;
+import com.mercotrace.service.TraderContextService;
+import com.mercotrace.service.dto.WeighingSessionCreateRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import tech.jhipster.config.JHipsterProperties;
@@ -30,6 +32,9 @@ public class CacheConfiguration {
 
     private GitProperties gitProperties;
     private BuildProperties buildProperties;
+
+    @Autowired(required = false)
+    private TraderContextService traderContextService;
 
     @Bean
     public javax.cache.configuration.Configuration<Object, Object> jcacheConfiguration(JHipsterProperties jHipsterProperties) {
@@ -107,6 +112,8 @@ public class CacheConfiguration {
             // Auction module (Sales Pad)
             createCache(cm, com.mercotrace.domain.Auction.class.getName(), jcacheConfiguration);
             createCache(cm, com.mercotrace.domain.AuctionEntry.class.getName(), jcacheConfiguration);
+            // Weighing: by-bid lookup (TTL from Redis config)
+            createCache(cm, "weighingSessionByBid", jcacheConfiguration);
             // jhipster-needle-redis-add-entry
         };
     }
@@ -137,5 +144,26 @@ public class CacheConfiguration {
     @Bean
     public KeyGenerator keyGenerator() {
         return new PrefixedKeyGenerator(this.gitProperties, this.buildProperties);
+    }
+
+    /**
+     * Key generator for weighingSessionByBid cache: key = "traderId::bidNumber".
+     * Used by getByBidNumber (param: Integer) and by cache eviction on create (param: WeighingSessionCreateRequest).
+     */
+    @Bean(name = "weighingByBidKeyGenerator")
+    public KeyGenerator weighingByBidKeyGenerator() {
+        return (target, method, params) -> {
+            if (traderContextService == null) return "default::" + (params.length > 0 ? params[0] : "");
+            Long traderId = traderContextService.getCurrentTraderId();
+            Integer bidNumber = null;
+            if (params.length > 0) {
+                if (params[0] instanceof Integer) {
+                    bidNumber = (Integer) params[0];
+                } else if (params[0] instanceof WeighingSessionCreateRequest) {
+                    bidNumber = ((WeighingSessionCreateRequest) params[0]).getBidNumber();
+                }
+            }
+            return (bidNumber != null) ? (traderId + "::" + bidNumber) : (traderId + "::");
+        };
     }
 }

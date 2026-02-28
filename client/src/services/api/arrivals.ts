@@ -46,6 +46,26 @@ export interface ArrivalSummary {
   arrivalDatetime: string;
 }
 
+/** Lot in arrival detail (id for lot lookup, e.g. WeighingPage bid enrichment). */
+export interface ArrivalLotDetail {
+  id: number;
+  lotName: string;
+}
+
+/** Seller in arrival detail. */
+export interface ArrivalSellerDetail {
+  sellerName: string;
+  lots: ArrivalLotDetail[];
+}
+
+/** Arrival with nested sellers/lots; mirrors backend ArrivalDetailDTO. */
+export interface ArrivalDetail {
+  vehicleId: number;
+  vehicleNumber: string;
+  arrivalDatetime: string;
+  sellers: ArrivalSellerDetail[];
+}
+
 async function handleArrivalResponse<T>(res: Response, defaultMessage: string): Promise<T> {
   if (res.ok) {
     return res.json() as Promise<T>;
@@ -81,6 +101,20 @@ export const arrivalsApi = {
 
     const res = await apiFetch(`/arrivals?${searchParams.toString()}`, { method: 'GET' });
     const data = await handleArrivalResponse<ArrivalSummary[]>(res, 'Failed to load arrivals');
+    return data;
+  },
+
+  /**
+   * List arrivals with nested sellers and lots (id, lotName, sellerName) for lot-level lookup (e.g. WeighingPage).
+   * Paginated; use multiple pages if you need all arrivals.
+   */
+  async listDetail(page = 0, size = 100): Promise<ArrivalDetail[]> {
+    const searchParams = new URLSearchParams();
+    searchParams.set('page', String(page));
+    searchParams.set('size', String(size));
+
+    const res = await apiFetch(`/arrivals/detail?${searchParams.toString()}`, { method: 'GET' });
+    const data = await handleArrivalResponse<ArrivalDetail[]>(res, 'Failed to load arrival details');
     return data;
   },
 

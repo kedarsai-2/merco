@@ -332,5 +332,98 @@ public final class ArrivalDTOs {
             this.arrivalDatetime = arrivalDatetime;
         }
     }
+
+    /**
+     * Lot summary for arrival detail (e.g. WeighingPage bid enrichment).
+     */
+    public static class ArrivalLotDetailDTO implements Serializable {
+
+        private Long id;
+        private String lotName;
+
+        public Long getId() {
+            return id;
+        }
+
+        public void setId(Long id) {
+            this.id = id;
+        }
+
+        public String getLotName() {
+            return lotName;
+        }
+
+        public void setLotName(String lotName) {
+            this.lotName = lotName;
+        }
+    }
+
+    /**
+     * Seller summary for arrival detail (seller name + lots with id for lot lookup).
+     */
+    public static class ArrivalSellerDetailDTO implements Serializable {
+
+        private String sellerName;
+        private List<ArrivalLotDetailDTO> lots;
+
+        public String getSellerName() {
+            return sellerName;
+        }
+
+        public void setSellerName(String sellerName) {
+            this.sellerName = sellerName;
+        }
+
+        public List<ArrivalLotDetailDTO> getLots() {
+            return lots;
+        }
+
+        public void setLots(List<ArrivalLotDetailDTO> lots) {
+            this.lots = lots;
+        }
+    }
+
+    /**
+     * Arrival with nested sellers and lots for pages that need lotId → lotName/sellerName (e.g. WeighingPage).
+     */
+    public static class ArrivalDetailDTO implements Serializable {
+
+        private Long vehicleId;
+        private String vehicleNumber;
+        private Instant arrivalDatetime;
+        private List<ArrivalSellerDetailDTO> sellers;
+
+        public Long getVehicleId() {
+            return vehicleId;
+        }
+
+        public void setVehicleId(Long vehicleId) {
+            this.vehicleId = vehicleId;
+        }
+
+        public String getVehicleNumber() {
+            return vehicleNumber;
+        }
+
+        public void setVehicleNumber(String vehicleNumber) {
+            this.vehicleNumber = vehicleNumber;
+        }
+
+        public Instant getArrivalDatetime() {
+            return arrivalDatetime;
+        }
+
+        public void setArrivalDatetime(Instant arrivalDatetime) {
+            this.arrivalDatetime = arrivalDatetime;
+        }
+
+        public List<ArrivalSellerDetailDTO> getSellers() {
+            return sellers;
+        }
+
+        public void setSellers(List<ArrivalSellerDetailDTO> sellers) {
+            this.sellers = sellers;
+        }
+    }
 }
 

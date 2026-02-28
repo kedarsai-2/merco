@@ -13,16 +13,9 @@ import { Button } from '@/components/ui/button';
 import BottomNav from '@/components/BottomNav';
 import { toast } from 'sonner';
 import { useAuctionResults } from '@/hooks/useAuctionResults';
-import { commodityApi } from '@/services/api';
+import { commodityApi, weighingApi, printLogApi, arrivalsApi } from '@/services/api';
 import type { FullCommodityConfigDto } from '@/services/api/commodities';
-
-// ── localStorage helpers (weighing sessions: mock until backend — see NOT_IMPLEMENTED.md) ──────────────────────────────────
-function getStore<T>(key: string): T[] {
-  try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
-}
-function setStore<T>(key: string, data: T[]) {
-  localStorage.setItem(key, JSON.stringify(data));
-}
+import type { ArrivalDetail } from '@/services/api/arrivals';
 
 /** REQ-WGH-004: Government deduction from API full-config */
 function getGovtDeductionFromConfigs(weight: number, fullConfigs: FullCommodityConfigDto[]): number {
@@ -96,26 +89,39 @@ const WeighingPage = () => {
 
   const { auctionResults: auctionData } = useAuctionResults();
   const [fullConfigs, setFullConfigs] = useState<FullCommodityConfigDto[]>([]);
+  const [weighingSessionsList, setWeighingSessionsList] = useState<any[]>([]);
+  const [arrivalDetails, setArrivalDetails] = useState<ArrivalDetail[]>([]);
 
   useEffect(() => {
     commodityApi.getAllFullConfigs().then(setFullConfigs);
   }, []);
 
-  // Load bids from auction results (arrivals: mock until backend — see NOT_IMPLEMENTED.md)
   useEffect(() => {
-    const arrivals = getStore<any>('mkt_arrival_records');
+    weighingApi.list({ page: 0, size: 2000 }).then(setWeighingSessionsList).catch(() => setWeighingSessionsList([]));
+  }, []);
+
+  // Arrivals from API (no localStorage). Load detail list for bid enrichment (lotId → lotName, sellerName).
+  useEffect(() => {
+    arrivalsApi
+      .listDetail(0, 500)
+      .then(setArrivalDetails)
+      .catch(() => setArrivalDetails([]));
+  }, []);
+
+  // Load bids from auction results; enrich seller/lot names from arrival details (API).
+  useEffect(() => {
     const allBids: BidForWeighing[] = [];
 
     auctionData.forEach((auction: any) => {
       (auction.entries || []).forEach((entry: any) => {
         let sellerName = auction.sellerName || 'Unknown';
         let lotName = auction.lotName || '';
-        arrivals.forEach((arr: any) => {
-          (arr.sellers || []).forEach((seller: any) => {
-            (seller.lots || []).forEach((lot: any) => {
-              if (String(lot.lot_id) === String(auction.lotId)) {
-                sellerName = seller.seller_name;
-                lotName = lot.lot_name || lotName;
+        arrivalDetails.forEach((arr: ArrivalDetail) => {
+          (arr.sellers || []).forEach((seller) => {
+            (seller.lots || []).forEach((lot) => {
+              if (String(lot.id) === String(auction.lotId)) {
+                sellerName = seller.sellerName;
+                lotName = lot.lotName || lotName;
               }
             });
           });
@@ -141,7 +147,7 @@ const WeighingPage = () => {
       const found = allBids.find(b => b.bidNumber === bidNum);
       if (found) startSession(found);
     }
-  }, [auctionData, searchParams]);
+  }, [auctionData, arrivalDetails, searchParams]);
 
   const filteredBids = useMemo(() => {
     if (!searchQuery) return bids;
@@ -246,45 +252,53 @@ const WeighingPage = () => {
     );
   };
 
-  // Complete session and save
-  const completeSession = () => {
-    if (!session) return;
+  // Complete session and save (backend + localStorage for BillingPage compatibility)
+  const completeSession = async () => {
+    if (!session || !selectedBid) return;
 
-    // Save weighing session
-    const sessions = getStore<any>('mkt_weighing_sessions');
-    sessions.push({
+    const payload = {
       session_id: session.sessionId,
-      lot_id: selectedBid?.lotId,
+      lot_id: Number(selectedBid.lotId) || 0,
       bid_number: session.bidNumber,
-      buyer_mark: selectedBid?.buyerMark,
-      buyer_name: selectedBid?.buyerName,
-      seller_name: selectedBid?.sellerName,
-      lot_name: selectedBid?.lotName,
-      total_bags: selectedBid?.quantity,
+      buyer_mark: selectedBid.buyerMark,
+      buyer_name: selectedBid.buyerName,
+      seller_name: selectedBid.sellerName,
+      lot_name: selectedBid.lotName,
+      total_bags: selectedBid.quantity,
       original_weight: session.originalWeight,
       net_weight: session.netWeight,
       manual_entry: session.manualEntry,
-      bag_weights: session.bagWeights,
+      bag_weights: session.bagWeights.map(b => ({ bagNumber: b.bagNumber, weight: b.weight, timestamp: b.timestamp })),
       deductions: session.deductions,
       govt_deduction_applied: session.govtDeductionApplied,
       round_off_applied: session.roundOffApplied,
-      created_at: new Date().toISOString(),
-    });
-    setStore('mkt_weighing_sessions', sessions);
+    };
 
-    // Weight audit (REQ-WGH-001: dual records)
-    const audits = getStore<any>('mkt_weight_audits');
-    audits.push({
-      weight_audit_id: crypto.randomUUID(),
-      session_id: session.sessionId,
-      original_weight: session.originalWeight,
-      net_weight: session.netWeight,
-      manual_flag: session.manualEntry,
-      audited_at: new Date().toISOString(),
-    });
-    setStore('mkt_weight_audits', audits);
+    try {
+      await weighingApi.create(payload);
+      setWeighingSessionsList(prev => [...prev, {
+        session_id: session.sessionId,
+        lot_id: selectedBid.lotId,
+        bid_number: session.bidNumber,
+        buyer_mark: selectedBid.buyerMark,
+        buyer_name: selectedBid.buyerName,
+        seller_name: selectedBid.sellerName,
+        lot_name: selectedBid.lotName,
+        total_bags: selectedBid.quantity,
+        original_weight: session.originalWeight,
+        net_weight: session.netWeight,
+        manual_entry: session.manualEntry,
+        bag_weights: session.bagWeights,
+        deductions: session.deductions,
+        govt_deduction_applied: session.govtDeductionApplied,
+        round_off_applied: session.roundOffApplied,
+        created_at: new Date().toISOString(),
+      }]);
+    } catch {
+      toast.error('Failed to save weighing session');
+      return;
+    }
 
-    // Show post-weighing slip (REQ-WGH-008)
     setCompletedSession({ ...session });
     setShowSlip(true);
 
@@ -388,16 +402,18 @@ const WeighingPage = () => {
           </div>
 
           <div className="flex gap-3 mt-4">
-            <Button onClick={() => {
-              const printLog = getStore<any>('mkt_print_logs');
-              printLog.push({
-                print_log_id: crypto.randomUUID(),
-                reference_type: 'WEIGHING_SLIP',
-                reference_id: completedSession.sessionId,
-                print_type: 'WEIGHING_SLIP',
-                printed_at: new Date().toISOString(),
-              });
-              setStore('mkt_print_logs', printLog);
+            <Button onClick={async () => {
+              const printedAt = new Date().toISOString();
+              try {
+                await printLogApi.create({
+                  reference_type: 'WEIGHING_SLIP',
+                  reference_id: completedSession.sessionId,
+                  print_type: 'WEIGHING_SLIP',
+                  printed_at: printedAt,
+                });
+              } catch {
+                // backend optional
+              }
               toast.success('Weighing slip sent to printer!');
             }}
               className="flex-1 h-12 rounded-xl bg-gradient-to-r from-slate-600 to-slate-800 text-white font-bold shadow-lg">
@@ -731,13 +747,13 @@ const WeighingPage = () => {
             <div className="glass-card rounded-2xl p-4 border-l-4 border-l-emerald-500">
               <p className="text-[10px] text-muted-foreground uppercase font-semibold">Weighed</p>
               <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                {bids.filter(b => getStore<any>('mkt_weighing_sessions').some((s: any) => s.bid_number === b.bidNumber)).length}
+                {bids.filter(b => weighingSessionsList.some((s: any) => s.bid_number === b.bidNumber)).length}
               </p>
             </div>
             <div className="glass-card rounded-2xl p-4 border-l-4 border-l-blue-500">
               <p className="text-[10px] text-muted-foreground uppercase font-semibold">Pending</p>
               <p className="text-2xl font-black text-blue-600 dark:text-blue-400">
-                {bids.filter(b => !getStore<any>('mkt_weighing_sessions').some((s: any) => s.bid_number === b.bidNumber)).length}
+                {bids.filter(b => !weighingSessionsList.some((s: any) => s.bid_number === b.bidNumber)).length}
               </p>
             </div>
             <div className="glass-card rounded-2xl p-4 border-l-4 border-l-violet-500">
@@ -771,7 +787,7 @@ const WeighingPage = () => {
           </div>
         ) : (
           filteredBids.map((bid, i) => {
-            const existingSession = getStore<any>('mkt_weighing_sessions')
+            const existingSession = weighingSessionsList
               .find((s: any) => s.bid_number === bid.bidNumber);
             return (
               <motion.div key={`${bid.bidNumber}-${i}`}

@@ -15,7 +15,7 @@ import BottomNav from '@/components/BottomNav';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { useAuctionResults } from '@/hooks/useAuctionResults';
-import { commodityApi } from '@/services/api';
+import { commodityApi, printLogApi, weighingApi } from '@/services/api';
 import type { FullCommodityConfigDto } from '@/services/api/commodities';
 
 // ── localStorage helpers (Billing backend not implemented: bills, vouchers, arrival detail) ──────────────────────────────────
@@ -120,6 +120,7 @@ const BillingPage = () => {
   const [savedBills, setSavedBills] = useState<BillData[]>([]);
   const [commodities, setCommodities] = useState<any[]>([]);
   const [fullConfigs, setFullConfigs] = useState<FullCommodityConfigDto[]>([]);
+  const [weighingSessions, setWeighingSessions] = useState<any[]>([]);
 
   const { auctionResults: auctionData } = useAuctionResults();
 
@@ -128,10 +129,13 @@ const BillingPage = () => {
     commodityApi.getAllFullConfigs().then(setFullConfigs);
   }, []);
 
-  // Load buyer data from completed auctions (arrivals/weighing: mock until backend — see NOT_IMPLEMENTED.md)
+  useEffect(() => {
+    weighingApi.list({ page: 0, size: 2000 }).then(setWeighingSessions).catch(() => setWeighingSessions([]));
+  }, []);
+
+  // Load buyer data from completed auctions (arrivals from store until arrivals API is primary; weighing from API)
   useEffect(() => {
     const arrivals = getStore<any>('mkt_arrival_records');
-    const weighingSessions = getStore<any>('mkt_weighing_sessions');
 
     const buyerMap = new Map<string, BuyerPurchase>();
 
@@ -185,7 +189,7 @@ const BillingPage = () => {
 
     setBuyers(Array.from(buyerMap.values()));
     setSavedBills(getStore<any>('mkt_bills'));
-  }, [auctionData]);
+  }, [auctionData, weighingSessions]);
 
   // Generate Bill (commodity config from API)
   const generateBill = useCallback((buyer: BuyerPurchase) => {
@@ -519,16 +523,18 @@ const BillingPage = () => {
           </div>
 
           <div className="flex gap-3 mt-4">
-            <Button onClick={() => {
-              const printLog = getStore<any>('mkt_print_logs');
-              printLog.push({
-                print_log_id: crypto.randomUUID(),
-                reference_type: 'SALES_BILL',
-                reference_id: bill.billId,
-                print_type: 'SALES_BILL',
-                printed_at: new Date().toISOString(),
-              });
-              setStore('mkt_print_logs', printLog);
+            <Button onClick={async () => {
+              const printedAt = new Date().toISOString();
+              try {
+                await printLogApi.create({
+                  reference_type: 'SALES_BILL',
+                  reference_id: bill.billId,
+                  print_type: 'SALES_BILL',
+                  printed_at: printedAt,
+                });
+              } catch {
+                // backend optional
+              }
               toast.success('Sales Bill sent to printer!');
             }}
               className="flex-1 h-12 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-500 text-white font-bold shadow-lg">

@@ -3,6 +3,7 @@ package com.mercotrace.web.rest;
 import com.mercotrace.service.ArrivalService;
 import com.mercotrace.service.dto.ArrivalDTOs.ArrivalRequestDTO;
 import com.mercotrace.service.dto.ArrivalDTOs.ArrivalSummaryDTO;
+import com.mercotrace.service.dto.ArrivalDTOs.ArrivalDetailDTO;
 import com.mercotrace.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
 import java.net.URI;
@@ -68,6 +69,19 @@ public class ArrivalResource {
     ) {
         LOG.debug("REST request to get Arrivals page: {}", pageable);
         Page<ArrivalSummaryDTO> page = arrivalService.listArrivals(pageable);
+        HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
+        return ResponseEntity.ok().headers(headers).body(page.getContent());
+    }
+
+    /**
+     * {@code GET  /arrivals/detail} : get paginated arrivals with nested sellers and lots (id, lotName, sellerName) for lot-level lookup (e.g. WeighingPage).
+     */
+    @GetMapping("/detail")
+    public ResponseEntity<List<ArrivalDetailDTO>> getArrivalsDetail(
+        @org.springdoc.core.annotations.ParameterObject Pageable pageable
+    ) {
+        LOG.debug("REST request to get Arrivals detail page: {}", pageable);
+        var page = arrivalService.listArrivalsDetail(pageable);
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
         return ResponseEntity.ok().headers(headers).body(page.getContent());
     }

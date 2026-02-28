@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import BottomNav from '@/components/BottomNav';
 import { toast } from 'sonner';
 import { useAuctionResults } from '@/hooks/useAuctionResults';
+import { printLogApi, weighingApi } from '@/services/api';
 
 // ── localStorage helpers ──────────────────────────────────
 function getStore<T>(key: string): T[] {
@@ -103,11 +104,15 @@ const SettlementPage = () => {
   const [manualVoucherAmount, setManualVoucherAmount] = useState('');
 
   const { auctionResults: auctionData } = useAuctionResults();
+  const [weighingSessions, setWeighingSessions] = useState<any[]>([]);
 
-  // Load seller data from completed auctions
+  useEffect(() => {
+    weighingApi.list({ page: 0, size: 2000 }).then(setWeighingSessions).catch(() => setWeighingSessions([]));
+  }, []);
+
+  // Load seller data from completed auctions (weighing from API)
   useEffect(() => {
     const arrivals = getStore<any>('mkt_arrival_records');
-    const weighingSessions = getStore<any>('mkt_weighing_sessions');
     
     const sellerMap = new Map<string, SellerSettlement>();
     
@@ -170,7 +175,7 @@ const SettlementPage = () => {
     });
     
     setSellers(Array.from(sellerMap.values()));
-  }, [auctionData]);
+  }, [auctionData, weighingSessions]);
 
   // Generate Patti when seller is selected
   const generatePatti = useCallback((seller: SellerSettlement) => {
@@ -448,16 +453,18 @@ const SettlementPage = () => {
           </div>
 
           <div className="flex gap-3 mt-4">
-            <Button onClick={() => {
-              const printLog = getStore<any>('mkt_print_logs');
-              printLog.push({
-                print_log_id: crypto.randomUUID(),
-                reference_type: 'SALES_PATTI',
-                reference_id: pattiData.pattiId,
-                print_type: 'SALES_PATTI',
-                printed_at: new Date().toISOString(),
-              });
-              setStore('mkt_print_logs', printLog);
+            <Button onClick={async () => {
+              const printedAt = new Date().toISOString();
+              try {
+                await printLogApi.create({
+                  reference_type: 'SALES_PATTI',
+                  reference_id: pattiData.pattiId,
+                  print_type: 'SALES_PATTI',
+                  printed_at: printedAt,
+                });
+              } catch {
+                // backend optional
+              }
               toast.success('Sales Patti sent to printer!');
             }}
               className="flex-1 h-12 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 text-white font-bold shadow-lg">

@@ -1,0 +1,24 @@
+package com.mercotrace.repository;
+
+import com.mercotrace.domain.WeighingSession;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+/**
+ * Spring Data JPA repository for the {@link WeighingSession} entity.
+ */
+@Repository
+public interface WeighingSessionRepository extends JpaRepository<WeighingSession, Long> {
+
+    Optional<WeighingSession> findOneBySessionId(String sessionId);
+
+    Page<WeighingSession> findAllByTraderIdOrderByCreatedDateDesc(Long traderId, Pageable pageable);
+
+    List<WeighingSession> findAllByBidNumber(Integer bidNumber);
+
+    boolean existsByBidNumber(Integer bidNumber);
+}
