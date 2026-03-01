@@ -13,6 +13,14 @@ export { weighingApi } from './api/weighing';
 export { printLogApi } from './api/printLog';
 export { selfSaleApi } from './api/selfSale';
 export { stockPurchaseApi } from './api/stockPurchase';
+export { cdnApi } from './api/cdn';
+export type {
+  CDNResponseDTO,
+  CDNLineItemDTO,
+  CDNCreateRequest,
+  ReceiveByPINRequest,
+  CDNListResult,
+} from './api/cdn';
 export type {
   LotSummaryDTO,
   AuctionSessionDTO,

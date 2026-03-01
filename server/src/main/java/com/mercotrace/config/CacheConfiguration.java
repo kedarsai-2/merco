@@ -21,6 +21,7 @@ import org.springframework.cache.interceptor.KeyGenerator;
 import org.springframework.context.annotation.*;
 import com.mercotrace.service.TraderContextService;
 import com.mercotrace.service.dto.WeighingSessionCreateRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import tech.jhipster.config.JHipsterProperties;
@@ -123,6 +124,11 @@ public class CacheConfiguration {
             createCache(cm, com.mercotrace.domain.StockPurchaseCharge.class.getName(), jcacheConfiguration);
             // Stock Purchase: vendor list by trader (read-heavy; evicted on contact save/update/delete)
             createCache(cm, com.mercotrace.service.impl.ContactServiceImpl.STOCK_PURCHASE_VENDORS_BY_TRADER_CACHE, jcacheConfiguration);
+            // CDN module: entity L2 + paginated list by trader (evicted on create/receive)
+            createCache(cm, com.mercotrace.domain.Cdn.class.getName(), jcacheConfiguration);
+            createCache(cm, com.mercotrace.domain.CdnItem.class.getName(), jcacheConfiguration);
+            createCache(cm, com.mercotrace.domain.CdnTransfer.class.getName(), jcacheConfiguration);
+            createCache(cm, "cdnListByTrader", jcacheConfiguration);
             // jhipster-needle-redis-add-entry
         };
     }
@@ -173,6 +179,30 @@ public class CacheConfiguration {
                 }
             }
             return (bidNumber != null) ? (traderId + "::" + bidNumber) : (traderId + "::");
+        };
+    }
+
+    /**
+     * Key generator for cdnListByTrader cache: key = "traderId::page::size::sort::search".
+     * Eviction uses allEntries = true on create/receive.
+     */
+    @Bean(name = "cdnListByTraderKeyGenerator")
+    public KeyGenerator cdnListByTraderKeyGenerator() {
+        return (target, method, params) -> {
+            if (traderContextService == null) return "default::0::10::::";
+            Long traderId = traderContextService.getCurrentTraderId();
+            int page = 0, size = 10;
+            String sort = "";
+            String search = "";
+            if (params != null && params.length >= 1 && params[0] instanceof Pageable p) {
+                page = p.getPageNumber();
+                size = p.getPageSize();
+                sort = p.getSort().isSorted() ? p.getSort().toString() : "";
+            }
+            if (params != null && params.length >= 2 && params[1] != null) {
+                search = params[1].toString().trim();
+            }
+            return traderId + "::" + page + "::" + size + "::" + sort + "::" + search;
         };
     }
 }

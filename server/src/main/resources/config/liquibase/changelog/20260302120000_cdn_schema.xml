@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+        CDN (Consignment Dispatch Note) module – Part 12 of reference schema.
+        Enums: cdn_status_enum, cdn_source_enum. Tables: cdn, cdn_items, cdn_transfers.
+        Frontend: CDNPage.tsx. MANUAL source maps to DIRECT.
+    -->
+
+    <changeSet id="20260302120000-1" author="mercotrace">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM pg_type WHERE typname = 'cdn_status_enum'</sqlCheck>
+        </preConditions>
+        <sql dbms="postgresql">
+            CREATE TYPE cdn_status_enum AS ENUM ('DRAFT','DISPATCHED','RECEIVED','TRANSFERRED');
+        </sql>
+    </changeSet>
+
+    <changeSet id="20260302120000-2" author="mercotrace">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">SELECT COUNT(*) FROM pg_type WHERE typname = 'cdn_source_enum'</sqlCheck>
+        </preConditions>
+        <sql dbms="postgresql">
+            CREATE TYPE cdn_source_enum AS ENUM ('SALES_PAD','SELF_SALE','STOCK_PURCHASE','DIRECT');
+        </sql>
+    </changeSet>
+
+    <changeSet id="20260302120000-3" author="mercotrace">
+        <createTable tableName="cdn">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="trader_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cdn_number" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cdn_date" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="dispatching_party_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+            <column name="dispatching_party_name" type="varchar(150)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="receiving_party_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+            <column name="receiving_party_name" type="varchar(150)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="source" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="source_reference_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+            <column name="transporter_name" type="varchar(150)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="driver_name" type="varchar(150)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="driver_phone" type="varchar(20)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="vehicle_number" type="varchar(50)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="freight_formula" type="varchar(200)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="freight_amount" type="numeric(15,2)" defaultValueNumeric="0">
+                <constraints nullable="true"/>
+            </column>
+            <column name="advance_paid" type="numeric(15,2)" defaultValueNumeric="0">
+                <constraints nullable="true"/>
+            </column>
+            <column name="remarks" type="text">
+                <constraints nullable="true"/>
+            </column>
+            <column name="status" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="varchar(100)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="updated_at" type="${datetimeType}">
+                <constraints nullable="true"/>
+            </column>
+            <column name="updated_by" type="varchar(100)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="is_deleted" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="cdn" baseColumnNames="trader_id"
+                                 referencedTableName="trader" referencedColumnNames="id"
+                                 constraintName="fk_cdn_trader"/>
+        <addForeignKeyConstraint baseTableName="cdn" baseColumnNames="dispatching_party_id"
+                                 referencedTableName="contact" referencedColumnNames="id"
+                                 constraintName="fk_cdn_dispatcher"/>
+        <addForeignKeyConstraint baseTableName="cdn" baseColumnNames="receiving_party_id"
+                                 referencedTableName="contact" referencedColumnNames="id"
+                                 constraintName="fk_cdn_receiver"/>
+
+        <createIndex tableName="cdn" indexName="idx_cdn_trader_id">
+            <column name="trader_id"/>
+        </createIndex>
+        <createIndex tableName="cdn" indexName="idx_cdn_status">
+            <column name="status"/>
+        </createIndex>
+        <addUniqueConstraint tableName="cdn" columnNames="trader_id, cdn_number" constraintName="uk_cdn_number"/>
+    </changeSet>
+
+    <changeSet id="20260302120000-4" author="mercotrace">
+        <createTable tableName="cdn_items">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="cdn_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="lot_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+            <column name="commodity_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+            <column name="lot_name" type="varchar(50)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="quantity" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="variant" type="varchar(100)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="created_at" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="varchar(100)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="is_deleted" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="cdn_items" baseColumnNames="cdn_id"
+                                 referencedTableName="cdn" referencedColumnNames="id"
+                                 constraintName="fk_cdni_cdn"/>
+        <addForeignKeyConstraint baseTableName="cdn_items" baseColumnNames="lot_id"
+                                 referencedTableName="lot" referencedColumnNames="id"
+                                 constraintName="fk_cdni_lot"/>
+        <addForeignKeyConstraint baseTableName="cdn_items" baseColumnNames="commodity_id"
+                                 referencedTableName="commodity" referencedColumnNames="id"
+                                 constraintName="fk_cdni_commodity"/>
+
+        <createIndex tableName="cdn_items" indexName="idx_cdni_cdn_id">
+            <column name="cdn_id"/>
+        </createIndex>
+        <createIndex tableName="cdn_items" indexName="idx_cdni_lot_id">
+            <column name="lot_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260302120000-5" author="mercotrace">
+        <createTable tableName="cdn_transfers">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="cdn_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sender_trader_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="receiver_trader_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+            <column name="pin_hash" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="pin_expiry" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_used" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="used_at" type="${datetimeType}">
+                <constraints nullable="true"/>
+            </column>
+            <column name="created_arrival_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+            <column name="created_at" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="varchar(100)">
+                <constraints nullable="true"/>
+            </column>
+            <column name="is_deleted" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="cdn_transfers" baseColumnNames="cdn_id"
+                                 referencedTableName="cdn" referencedColumnNames="id"
+                                 constraintName="fk_cdnt_cdn"/>
+        <addForeignKeyConstraint baseTableName="cdn_transfers" baseColumnNames="sender_trader_id"
+                                 referencedTableName="trader" referencedColumnNames="id"
+                                 constraintName="fk_cdnt_sender"/>
+        <addForeignKeyConstraint baseTableName="cdn_transfers" baseColumnNames="receiver_trader_id"
+                                 referencedTableName="trader" referencedColumnNames="id"
+                                 constraintName="fk_cdnt_receiver"/>
+
+        <createIndex tableName="cdn_transfers" indexName="idx_cdnt_cdn_id">
+            <column name="cdn_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

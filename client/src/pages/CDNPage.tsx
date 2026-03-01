@@ -12,15 +12,31 @@ import { Textarea } from '@/components/ui/textarea';
 import BottomNav from '@/components/BottomNav';
 import { useDesktopMode } from '@/hooks/use-desktop';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { contactApi } from '@/services/api';
+import { cdnApi, contactApi } from '@/services/api';
+import type { CDNResponseDTO } from '@/services/api';
 import type { Contact } from '@/types/models';
 import { toast } from 'sonner';
 
-function getStore<T>(key: string): T[] {
-  try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
-}
-function setStore<T>(key: string, data: T[]) {
-  localStorage.setItem(key, JSON.stringify(data));
+function apiToRecord(dto: CDNResponseDTO): CDNRecord {
+  return {
+    id: String(dto.id),
+    cdn_number: dto.cdnNumber,
+    date: typeof dto.date === 'string' ? dto.date : (dto.date as unknown as { toString: () => string })?.toString?.() ?? new Date().toISOString(),
+    dispatching_party: dto.dispatchingParty ?? '',
+    receiving_party: dto.receivingParty ?? '',
+    items: (dto.items ?? []).map((i, idx) => ({ id: i.id ?? String(idx), lot_name: i.lotName ?? '', quantity: i.quantity ?? 0, variant: i.variant ?? '' })),
+    freight_formula: dto.freightFormula ?? '',
+    transporter: dto.transporter ?? '',
+    driver: dto.driver ?? '',
+    advance_paid: Number(dto.advancePaid ?? 0),
+    remarks: dto.remarks ?? '',
+    pin: dto.pin ?? '',
+    pin_used: dto.pinUsed ?? false,
+    pin_expires_at: dto.pinExpiresAt ? (typeof dto.pinExpiresAt === 'string' ? dto.pinExpiresAt : String(dto.pinExpiresAt)) : '',
+    source: (dto.source === 'DIRECT' ? 'MANUAL' : dto.source) as CDNRecord['source'],
+    status: (dto.status === 'EXPIRED' ? 'EXPIRED' : dto.status) as CDNRecord['status'],
+    created_at: (dto.createdAt ?? dto.date) ? (typeof (dto.createdAt ?? dto.date) === 'string' ? (dto.createdAt ?? dto.date) as string : String(dto.createdAt ?? dto.date)) : new Date().toISOString(),
+  };
 }
 
 interface CDNLineItem {
@@ -50,12 +66,6 @@ interface CDNRecord {
   created_at: string;
 }
 
-const generatePIN = () => Math.random().toString(36).substring(2, 8).toUpperCase();
-const generateCDNNumber = () => {
-  const count = getStore<CDNRecord>('mkt_cdns').length;
-  return `CDN-${String(count + 1).padStart(4, '0')}`;
-};
-
 const CDNPage = () => {
   const navigate = useNavigate();
   const isDesktop = useDesktopMode();
@@ -79,9 +89,18 @@ const CDNPage = () => {
   // Receive form
   const [receivePin, setReceivePin] = useState('');
 
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    setRecords(getStore<CDNRecord>('mkt_cdns'));
     contactApi.list().then(setContacts);
+    cdnApi
+      .list({ page: 0, size: 500 })
+      .then((result) => setRecords(result.content.map(apiToRecord)))
+      .catch(() => {
+        setRecords([]);
+        toast.error('Failed to load CDNs');
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const filtered = useMemo(() => {
@@ -106,82 +125,42 @@ const CDNPage = () => {
       return;
     }
 
-    const pin = generatePIN();
-    const cdn: CDNRecord = {
-      id: crypto.randomUUID(),
-      cdn_number: generateCDNNumber(),
-      date: new Date().toISOString(),
-      dispatching_party: 'Krishna Trading Co.',
-      receiving_party: receivingParty,
-      items: items.filter(i => i.lot_name),
-      freight_formula: freight,
-      transporter,
-      driver,
-      advance_paid: parseFloat(advance) || 0,
-      remarks,
-      pin,
-      pin_used: false,
-      pin_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      source,
-      status: 'ACTIVE',
-      created_at: new Date().toISOString(),
-    };
-
-    const updated = [...records, cdn];
-    setStore('mkt_cdns', updated);
-    setRecords(updated);
-    setShowCreate(false);
-    resetForm();
-    toast.success(`CDN ${cdn.cdn_number} created. PIN: ${pin}`, { duration: 8000 });
+    cdnApi
+      .create({
+        receivingParty,
+        items: items.filter(i => i.lot_name).map(i => ({ lotName: i.lot_name, quantity: i.quantity || 0, variant: i.variant })),
+        freightFormula: freight || undefined,
+        transporter: transporter || undefined,
+        driver: driver || undefined,
+        advancePaid: parseFloat(advance) || 0,
+        remarks: remarks || undefined,
+        source,
+      })
+      .then((result) => {
+        const cdn = apiToRecord(result);
+        setRecords((prev) => [...prev, cdn]);
+        setShowCreate(false);
+        resetForm();
+        toast.success(`CDN ${cdn.cdn_number} created. PIN: ${result.pin ?? cdn.pin}`, { duration: 8000 });
+      })
+      .catch((err: Error) => {
+        toast.error(err.message || 'Failed to create CDN');
+      });
   };
 
   const handleReceive = () => {
-    const allCdns = getStore<CDNRecord>('mkt_cdns');
-    const found = allCdns.find(c => c.pin === receivePin.toUpperCase() && !c.pin_used && c.status === 'ACTIVE');
-
-    if (!found) {
-      toast.error('Invalid or expired PIN');
-      return;
-    }
-
-    if (new Date(found.pin_expires_at) < new Date()) {
-      toast.error('PIN has expired');
-      return;
-    }
-
-    found.pin_used = true;
-    found.status = 'TRANSFERRED';
-    setStore('mkt_cdns', allCdns);
-    setRecords([...allCdns]);
-
-    const arrivalRecord = {
-      id: crypto.randomUUID(),
-      vehicle: { vehicle_id: crypto.randomUUID(), vehicle_number: `CDN-${found.cdn_number}`, loaded_weight: 0, empty_weight: 0, deducted_weight: 0, net_weight: 0 },
-      sellers: [{
-        seller_vehicle_id: crypto.randomUUID(),
-        contact_id: '',
-        seller_name: found.dispatching_party,
-        seller_mark: found.dispatching_party.charAt(0),
-        lots: found.items.map(item => ({
-          lot_id: crypto.randomUUID(),
-          lot_name: item.lot_name,
-          quantity: item.quantity,
-          commodity_name: item.variant || 'General',
-          broker_tag: '',
-        })),
-      }],
-      freight: { method: 'LUMPSUM', rate: 0, total: 0, advance: found.advance_paid },
-      created_at: new Date().toISOString(),
-      source_cdn: found.cdn_number,
-    };
-
-    const arrivals = getStore<any>('mkt_arrival_records');
-    arrivals.push(arrivalRecord);
-    setStore('mkt_arrival_records', arrivals);
-
-    setShowReceive(false);
-    setReceivePin('');
-    toast.success(`CDN ${found.cdn_number} received & converted to arrival`);
+    cdnApi
+      .receiveByPin({ pin: receivePin })
+      .then((result) => {
+        const received = apiToRecord(result);
+        setRecords((prev) => prev.map((r) => (r.id === received.id ? received : r)));
+        setShowReceive(false);
+        setReceivePin('');
+        toast.success(`CDN ${received.cdn_number} received`);
+      })
+      .catch((err: Error) => {
+        toast.error(err.message || 'Invalid or expired PIN');
+      });
   };
 
   const resetForm = () => {
