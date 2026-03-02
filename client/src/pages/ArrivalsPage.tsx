@@ -91,57 +91,29 @@ const ArrivalsPage = () => {
   const [expandedArrival, setExpandedArrival] = useState<number | null>(null);
   const [desktopTab, setDesktopTab] = useState<'summary' | 'new-arrival'>('summary');
 
-  // ── Draft auto-save key ──────────────────────────────────
-  const DRAFT_KEY = 'mercotrace_arrival_draft';
-
-  function loadDraft() {
-    try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}'); } catch { return {}; }
-  }
-
-  function saveDraft(patch: Record<string, any>) {
-    const current = loadDraft();
-    localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...current, ...patch }));
-  }
-
-  function clearDraft() {
-    localStorage.removeItem(DRAFT_KEY);
-  }
-
-  // Form state for new arrival (restore from draft)
-  const draft = loadDraft();
+  // Form state for new arrival — in-memory only (no localStorage). Drafts are session-only; backend draft API not implemented.
   const [showAdd, setShowAdd] = useState(false);
-  const [step, setStep] = useState<number>(1); // kept for draft compat
-  const [isMultiSeller, setIsMultiSeller] = useState<boolean>(draft.isMultiSeller ?? true);
+  const [step, setStep] = useState<number>(1);
+  const [isMultiSeller, setIsMultiSeller] = useState<boolean>(true);
 
   // Step 1: Vehicle & Tonnage
-  const [vehicleNumber, setVehicleNumber] = useState(draft.vehicleNumber || '');
-  const [loadedWeight, setLoadedWeight] = useState(draft.loadedWeight || '');
-  const [emptyWeight, setEmptyWeight] = useState(draft.emptyWeight || '');
-  const [deductedWeight, setDeductedWeight] = useState(draft.deductedWeight || '');
-  const [freightMethod, setFreightMethod] = useState<FreightMethod>(draft.freightMethod || 'BY_WEIGHT');
-  const [freightRate, setFreightRate] = useState(draft.freightRate || '');
-  const [noRental, setNoRental] = useState(draft.noRental || false);
-  const [advancePaid, setAdvancePaid] = useState(draft.advancePaid || '');
-  const [brokerName, setBrokerName] = useState(draft.brokerName || '');
-  const [narration, setNarration] = useState(draft.narration || '');
-  const [godown, setGodown] = useState(draft.godown || '');
-  const [gatepassNumber, setGatepassNumber] = useState(draft.gatepassNumber || '');
+  const [vehicleNumber, setVehicleNumber] = useState('');
+  const [loadedWeight, setLoadedWeight] = useState('');
+  const [emptyWeight, setEmptyWeight] = useState('');
+  const [deductedWeight, setDeductedWeight] = useState('');
+  const [freightMethod, setFreightMethod] = useState<FreightMethod>('BY_WEIGHT');
+  const [freightRate, setFreightRate] = useState('');
+  const [noRental, setNoRental] = useState(false);
+  const [advancePaid, setAdvancePaid] = useState('');
+  const [brokerName, setBrokerName] = useState('');
+  const [narration, setNarration] = useState('');
+  const [godown, setGodown] = useState('');
+  const [gatepassNumber, setGatepassNumber] = useState('');
 
   // Step 2: Sellers & Lots
-  const [sellers, setSellers] = useState<SellerEntry[]>(draft.sellers || []);
+  const [sellers, setSellers] = useState<SellerEntry[]>([]);
   const [sellerSearch, setSellerSearch] = useState('');
   const [sellerDropdown, setSellerDropdown] = useState(false);
-
-  // ── Auto-save form data on change ──────────────────────
-  useEffect(() => {
-    saveDraft({
-      step, isMultiSeller, vehicleNumber, loadedWeight, emptyWeight, deductedWeight,
-      freightMethod, freightRate, noRental, advancePaid, brokerName, narration,
-      godown, gatepassNumber, sellers,
-    });
-  }, [step, isMultiSeller, vehicleNumber, loadedWeight, emptyWeight, deductedWeight,
-      freightMethod, freightRate, noRental, advancePaid, brokerName, narration,
-      godown, gatepassNumber, sellers]);
 
   // ── Weight validation: empty > loaded ──────────────────
   const isEmptyWeightInvalid = useMemo(() => {
@@ -378,7 +350,6 @@ const ArrivalsPage = () => {
     setSellers([]);
     setSellerSearch('');
     setIsMultiSeller(true);
-    clearDraft();
   };
 
   return (

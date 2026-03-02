@@ -76,11 +76,11 @@ class VoucherHeaderServiceImplTest {
         header.setTotalCredit(BigDecimal.valueOf(100));
         header.setIsMigrated(false);
         when(voucherHeaderRepository.findAllByTraderIdAndFilters(
-            eq(TRADER_ID), eq((VoucherType) null), eq((VoucherLifecycleStatus) null), eq((String) null), any()))
+            eq(TRADER_ID), eq((VoucherType) null), eq((VoucherLifecycleStatus) null), eq((LocalDate) null), eq((LocalDate) null), eq((String) null), any()))
             .thenReturn(new PageImpl<>(List.of(header)));
 
         Page<VoucherHeaderDTO> page = service.getPage(
-            PageRequest.of(0, 20), null, null, null);
+            PageRequest.of(0, 20), null, null, null, null, null);
 
         assertThat(page.getContent()).hasSize(1);
         assertThat(page.getContent().get(0).getVoucherNumber()).isEqualTo("KT/JV/001");

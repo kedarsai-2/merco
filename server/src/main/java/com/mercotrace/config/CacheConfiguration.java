@@ -146,6 +146,8 @@ public class CacheConfiguration {
             // Vouchers & Payments (accounting voucher header + lines)
             createCache(cm, com.mercotrace.domain.VoucherHeader.class.getName(), jcacheConfiguration);
             createCache(cm, com.mercotrace.domain.VoucherLine.class.getName(), jcacheConfiguration);
+            // Financial Reports / AR-AP aging
+            createCache(cm, com.mercotrace.domain.ArApDocument.class.getName(), jcacheConfiguration);
             // jhipster-needle-redis-add-entry
         };
     }

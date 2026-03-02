@@ -66,10 +66,11 @@ public class VoucherHeaderServiceImpl implements VoucherHeaderService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<VoucherHeaderDTO> getPage(Pageable pageable, VoucherType voucherType, VoucherLifecycleStatus status, String search) {
+    public Page<VoucherHeaderDTO> getPage(Pageable pageable, VoucherType voucherType, VoucherLifecycleStatus status,
+            LocalDate dateFrom, LocalDate dateTo, String search) {
         Long traderId = traderContextService.getCurrentTraderId();
         String s = (search != null && !search.isBlank()) ? search.trim() : null;
-        return voucherHeaderRepository.findAllByTraderIdAndFilters(traderId, voucherType, status, s, pageable)
+        return voucherHeaderRepository.findAllByTraderIdAndFilters(traderId, voucherType, status, dateFrom, dateTo, s, pageable)
             .map(this::toHeaderDto);
     }
 
@@ -236,6 +237,11 @@ public class VoucherHeaderServiceImpl implements VoucherHeaderService {
         d.setLedgerName(line.getLedgerName());
         d.setDebit(line.getDebit());
         d.setCredit(line.getCredit());
+        if (line.getCommodityId() != null) d.setCommodityId(line.getCommodityId().toString());
+        d.setCommodityName(line.getCommodityName());
+        d.setQuantity(line.getQuantity());
+        d.setRate(line.getRate());
+        if (line.getLotId() != null) d.setLotId(line.getLotId().toString());
         return d;
     }
 }

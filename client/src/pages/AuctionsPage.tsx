@@ -64,9 +64,7 @@ interface SaleEntry {
 
 const presetButtons = [10, 20, 50];
 
-// ── Draft key for auto-save (only auction localStorage key; all other auction data is from API) ──
-const AUCTION_DRAFT_KEY = 'mercotrace_auction_draft';
-
+// ── In-memory draft only (no localStorage). Session-only; backend draft API not implemented. ──
 interface AuctionDraft {
   selectedLotId: string | null;
   entries: SaleEntry[];
@@ -80,19 +78,18 @@ interface AuctionDraft {
   scribbleMark: string;
 }
 
+let inMemoryAuctionDraft: AuctionDraft | null = null;
+
 function saveDraft(draft: AuctionDraft) {
-  localStorage.setItem(AUCTION_DRAFT_KEY, JSON.stringify(draft));
+  inMemoryAuctionDraft = draft;
 }
 
 function loadDraft(): AuctionDraft | null {
-  try {
-    const raw = localStorage.getItem(AUCTION_DRAFT_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
+  return inMemoryAuctionDraft;
 }
 
 function clearDraft() {
-  localStorage.removeItem(AUCTION_DRAFT_KEY);
+  inMemoryAuctionDraft = null;
 }
 
 // ── Get lot status (uses API status when available, else draft for pending) ──────────────────

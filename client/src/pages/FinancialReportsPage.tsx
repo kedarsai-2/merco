@@ -1,3 +1,8 @@
+/**
+ * Financial Reports — backend APIs only.
+ * Data: chartOfAccountsApi, voucherHeadersApi, voucherLinesApi, arapDocumentsApi.
+ * No localStorage, no Mkt keys, no mock data.
+ */
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, BarChart3, TrendingUp, TrendingDown, FileSpreadsheet, Receipt, Clock, Sparkles, PieChart, Scale, Landmark, HandCoins, ChevronRight, ChevronLeft, Download } from 'lucide-react';
@@ -6,11 +11,12 @@ import { cn } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart as RPieChart, Pie, Legend } from 'recharts';
 import type { COALedger, VoucherHeader, VoucherLine, ARAPDocument, TrialBalanceRow, PLRow, BalanceSheetRow, AgingBucket, CommodityProfitRow } from '@/types/accounting';
 import { chartOfAccountsApi, dtoToCOALedger } from '@/services/api/chartOfAccounts';
+import { voucherHeadersApi } from '@/services/api/voucherHeaders';
+import { voucherLinesApi } from '@/services/api/voucherLines';
+import { arapDocumentsApi } from '@/services/api/arapDocuments';
 import BottomNav from '@/components/BottomNav';
 import { useDesktopMode } from '@/hooks/use-desktop';
 import { toast } from 'sonner';
-
-// TODO: Vouchers, voucher lines, and ARAP docs require backend APIs. Until then, trial balance uses ledger balances only; AR/AP aging and commodity P&L show empty.
 
 type ReportTab = 'TRIAL_BALANCE' | 'PL' | 'BALANCE_SHEET' | 'AR_AGING' | 'AP_AGING' | 'COMMODITY' | 'GST' | 'MARKET_FEE' | 'BROKER';
 
@@ -37,9 +43,9 @@ const FinancialReportsPage = () => {
   const tabScrollRef = useRef<HTMLDivElement>(null);
 
   const [ledgers, setLedgers] = useState<COALedger[]>([]);
-  const [vouchers] = useState<VoucherHeader[]>([]);
-  const [voucherLines] = useState<VoucherLine[]>([]);
-  const [arapDocs] = useState<ARAPDocument[]>([]);
+  const [vouchers, setVouchers] = useState<VoucherHeader[]>([]);
+  const [voucherLines, setVoucherLines] = useState<VoucherLine[]>([]);
+  const [arapDocs, setArapDocs] = useState<ARAPDocument[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -62,6 +68,67 @@ const FinancialReportsPage = () => {
     load();
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const all: ARAPDocument[] = [];
+        let page = 0;
+        let hasMore = true;
+        while (hasMore && !cancelled) {
+          const res = await arapDocumentsApi.getPage({ page, size: 100 });
+          res.content.forEach(d => all.push(d));
+          hasMore = page + 1 < res.totalPages;
+          page += 1;
+        }
+        if (!cancelled) setArapDocs(all);
+      } catch {
+        if (!cancelled) setArapDocs([]);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!dateFrom || !dateTo) {
+      setVouchers([]);
+      setVoucherLines([]);
+      return;
+    }
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const allVouchers: VoucherHeader[] = [];
+        let page = 0;
+        let hasMore = true;
+        while (hasMore && !cancelled) {
+          const res = await voucherHeadersApi.getPage({
+            page,
+            size: 100,
+            sort: 'voucherDate,asc',
+            dateFrom,
+            dateTo,
+          });
+          res.content.forEach(v => allVouchers.push(v));
+          hasMore = page + 1 < res.totalPages;
+          page += 1;
+        }
+        if (cancelled) return;
+        setVouchers(allVouchers);
+        const lines = await voucherLinesApi.getByDateRange(dateFrom, dateTo);
+        if (!cancelled) setVoucherLines(lines);
+      } catch {
+        if (!cancelled) {
+          setVouchers([]);
+          setVoucherLines([]);
+        }
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [dateFrom, dateTo]);
 
   const filteredVoucherLines = useMemo(() => {
     if (!dateFrom && !dateTo) return voucherLines;

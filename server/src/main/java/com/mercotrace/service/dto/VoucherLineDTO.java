@@ -17,6 +17,11 @@ public class VoucherLineDTO implements Serializable {
     private String ledgerName;
     private BigDecimal debit;
     private BigDecimal credit;
+    private String commodityId;
+    private String commodityName;
+    private BigDecimal quantity;
+    private BigDecimal rate;
+    private String lotId;
 
     public String getLineId() { return lineId; }
     public void setLineId(String lineId) { this.lineId = lineId; }
@@ -30,6 +35,16 @@ public class VoucherLineDTO implements Serializable {
     public void setDebit(BigDecimal debit) { this.debit = debit; }
     public BigDecimal getCredit() { return credit; }
     public void setCredit(BigDecimal credit) { this.credit = credit; }
+    public String getCommodityId() { return commodityId; }
+    public void setCommodityId(String commodityId) { this.commodityId = commodityId; }
+    public String getCommodityName() { return commodityName; }
+    public void setCommodityName(String commodityName) { this.commodityName = commodityName; }
+    public BigDecimal getQuantity() { return quantity; }
+    public void setQuantity(BigDecimal quantity) { this.quantity = quantity; }
+    public BigDecimal getRate() { return rate; }
+    public void setRate(BigDecimal rate) { this.rate = rate; }
+    public String getLotId() { return lotId; }
+    public void setLotId(String lotId) { this.lotId = lotId; }
 
     @Override
     public boolean equals(Object o) {

@@ -12,8 +12,21 @@ import BottomNav from '@/components/BottomNav';
 import { useDesktopMode } from '@/hooks/use-desktop';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
 import { arrivalsApi } from '@/services/api';
 import type { ArrivalDetail } from '@/services/api/arrivals';
+
+/** Firm info for print headers. Sourced from backend (auth profile trader). Fields not on Trader (apmcCode, gstin, bank) use empty fallback until a firm/settings API exists. */
+export type FirmInfo = {
+  name: string;
+  about: string;
+  address: string;
+  apmcCode: string;
+  phone: string;
+  email: string;
+  gstin: string;
+  bank: { name: string; acc: string; ifsc: string; branch: string };
+};
 
 /* ── Print Templates from SRS ── */
 const printTemplates = [
@@ -52,18 +65,6 @@ const stageBadgeColors: Record<string, string> = {
   'Compliance': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
 };
 
-/* ── Mock firm info ── */
-const FIRM = {
-  name: 'Krishna Trading Co.',
-  about: 'Commission Agents & Wholesalers',
-  address: 'Market Yard, Main Road, Pune - 411001',
-  apmcCode: 'APMC2024MH',
-  phone: '+91 98765 43210',
-  email: 'krishna@mercotrace.in',
-  gstin: '27AABCK1234F1Z5',
-  bank: { name: 'State Bank of India', acc: '1234567890', ifsc: 'SBIN0001234', branch: 'Market Yard Branch' },
-};
-
 /* ── Flatten arrival details to sample lot rows for print templates ── */
 function flattenArrivalDetailsToSampleLots(details: ArrivalDetail[]): { lot_name: string; lot_no: string; seller: string; vehicle: string; qty: number }[] {
   const out: { lot_name: string; lot_no: string; seller: string; vehicle: string; qty: number }[] = [];
@@ -84,7 +85,7 @@ function flattenArrivalDetailsToSampleLots(details: ArrivalDetail[]): { lot_name
 }
 
 /* ── Generate template HTML for printing ── */
-function generateTemplateHTML(templateId: string, arrivalDetails: ArrivalDetail[]): string {
+function generateTemplateHTML(templateId: string, arrivalDetails: ArrivalDetail[], firm: FirmInfo): string {
   const today = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const flatLots = flattenArrivalDetailsToSampleLots(arrivalDetails);
   const sampleLots = flatLots.length > 0
@@ -97,11 +98,11 @@ function generateTemplateHTML(templateId: string, arrivalDetails: ArrivalDetail[
 
   const commonHeader = `
     <div style="text-align:center; border-bottom:2px solid #222; padding-bottom:10px; margin-bottom:14px">
-      <div style="font-size:8px; color:#888; letter-spacing:1px">${FIRM.apmcCode}</div>
-      <div style="font-size:20px; font-weight:800; color:#1a1a2e">${FIRM.name}</div>
-      <div style="font-size:11px; color:#555">${FIRM.about}</div>
-      <div style="font-size:10px; color:#777">${FIRM.address}</div>
-      <div style="font-size:10px; color:#777">Ph: ${FIRM.phone} | ${FIRM.email}</div>
+      <div style="font-size:8px; color:#888; letter-spacing:1px">${firm.apmcCode || ''}</div>
+      <div style="font-size:20px; font-weight:800; color:#1a1a2e">${firm.name || '—'}</div>
+      <div style="font-size:11px; color:#555">${firm.about || ''}</div>
+      <div style="font-size:10px; color:#777">${firm.address || ''}</div>
+      <div style="font-size:10px; color:#777">Ph: ${firm.phone || ''} | ${firm.email || ''}</div>
     </div>`;
 
   const footer = `
@@ -141,7 +142,7 @@ function generateTemplateHTML(templateId: string, arrivalDetails: ArrivalDetail[
     case 'sales_sticker':
       const lot = sampleLots[0] || { lot_name: 'Onion', lot_no: 'ONI/001', seller: 'Seller', qty: 10 };
       return `<div style="font-family:'Segoe UI',Arial,sans-serif; width:150mm; padding:10px; font-size:11px; border:2px dashed #999">
-        <div style="text-align:center; font-weight:800; font-size:15px; color:#1a1a2e">${FIRM.name}</div>
+        <div style="text-align:center; font-weight:800; font-size:15px; color:#1a1a2e">${firm.name || '—'}</div>
         <div style="display:flex; justify-content:space-between; margin-top:8px">
           <div><strong>Slr Sr No:</strong> 1</div><div><strong>Qty:</strong> ${lot.qty}</div>
         </div>
@@ -171,10 +172,10 @@ function generateTemplateHTML(templateId: string, arrivalDetails: ArrivalDetail[
         <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px">
           ${[1, 2, 3].map(c => `<div style="border:1px solid #d0d8e8; padding:10px; border-radius:6px; background:#fafbff">
             <div style="font-weight:bold; font-size:10px; text-align:center; margin-bottom:6px; color:#5B8CFF">Copy ${c}</div>
-            <div style="font-size:10px; text-align:center; font-weight:700">${FIRM.name}</div>
-            <div style="font-size:9px; text-align:center; color:#666">${FIRM.about}</div>
-            <div style="font-size:9px; text-align:center; color:#666">${FIRM.address}</div>
-            <div style="font-size:9px; text-align:center; color:#888">APMC: ${FIRM.apmcCode}</div>
+            <div style="font-size:10px; text-align:center; font-weight:700">${firm.name || '—'}</div>
+            <div style="font-size:9px; text-align:center; color:#666">${firm.about || ''}</div>
+            <div style="font-size:9px; text-align:center; color:#666">${firm.address || ''}</div>
+            <div style="font-size:9px; text-align:center; color:#888">APMC: ${firm.apmcCode || ''}</div>
             <div style="font-size:9px; margin-top:4px">Date: ${today}</div>
             <table style="width:100%; border-collapse:collapse; font-size:9px; margin-top:4px">
               <tr style="background:#f0f4ff"><th style="border:1px solid #ddd; padding:3px">Lot</th><th style="border:1px solid #ddd; padding:3px">Qty</th><th style="border:1px solid #ddd; padding:3px">Rate</th></tr>
@@ -187,7 +188,7 @@ function generateTemplateHTML(templateId: string, arrivalDetails: ArrivalDetail[
 
     case 'chiti_buyer':
       return `<div style="font-family:'Segoe UI',Arial,sans-serif; width:80mm; padding:10px; font-size:10px; border:2px dashed #999">
-        <div style="text-align:center; font-weight:800; font-size:13px; color:#1a1a2e">${FIRM.name}</div>
+        <div style="text-align:center; font-weight:800; font-size:13px; color:#1a1a2e">${firm.name || '—'}</div>
         <div style="margin-top:6px"><strong>Buyer's Mark:</strong> ${sampleBuyer.mark}</div>
         <table style="width:100%; border-collapse:collapse; font-size:9px; margin-top:8px">
           <tr style="background:#f0f4ff"><th style="border:1px solid #ddd; padding:4px">Lot Name/No</th><th style="border:1px solid #ddd; padding:4px">Godown</th><th style="border:1px solid #ddd; padding:4px">Qty</th><th style="border:1px solid #ddd; padding:4px">Rate/50kg</th><th style="border:1px solid #ddd; padding:4px">Weight</th><th style="border:1px solid #ddd; padding:4px">Amount</th></tr>
@@ -234,13 +235,13 @@ function generateTemplateHTML(templateId: string, arrivalDetails: ArrivalDetail[
           <div style="display:flex; justify-content:space-between; margin-bottom:6px"><strong>${l.lot_name} / ${l.lot_no}</strong><span style="font-size:11px; color:#555">Qty: ${l.qty} | Weight: ${l.weight || l.qty * 50}kg | Rate: ₹${l.rate || 800}/50kg</span></div>
           <div style="font-size:10px; color:#888; word-break:break-all">${Array.from({ length: l.qty || 10 }, () => `${(48 + Math.random() * 4).toFixed(1)}`).join(' ')}</div>
         </div>`).join('')}
-        <div style="text-align:right; font-weight:bold; margin-top:10px">For ${FIRM.name}</div>
+        <div style="text-align:right; font-weight:bold; margin-top:10px">For ${firm.name || '—'}</div>
         ${footer}
       </div>`;
 
     case 'chiti_seller':
       return `<div style="font-family:'Segoe UI',Arial,sans-serif; width:80mm; padding:10px; font-size:10px; border:2px dashed #999">
-        <div style="text-align:center; font-weight:800; font-size:13px; color:#1a1a2e">${FIRM.name}</div>
+        <div style="text-align:center; font-weight:800; font-size:13px; color:#1a1a2e">${firm.name || '—'}</div>
         <div style="margin-top:6px"><strong>Seller:</strong> ${sampleLots[0]?.seller || 'Ramesh Kumar'} &nbsp; <strong>Slr Sr No:</strong> 1</div>
         <table style="width:100%; border-collapse:collapse; font-size:9px; margin-top:8px">
           <tr style="background:#f0f4ff"><th style="border:1px solid #ddd; padding:4px">Lot Name/No</th><th style="border:1px solid #ddd; padding:4px">Qty</th><th style="border:1px solid #ddd; padding:4px">Rate/50kg</th><th style="border:1px solid #ddd; padding:4px">Weight</th></tr>
@@ -263,7 +264,7 @@ function generateTemplateHTML(templateId: string, arrivalDetails: ArrivalDetail[
     case 'gst_bill':
       return `<div style="font-family:'Segoe UI',Arial,sans-serif; max-width:700px; margin:auto; padding:20px; font-size:12px">
         <div style="display:flex; justify-content:space-between; font-size:9px; margin-bottom:4px; color:#888">
-          <span>GSTIN: ${FIRM.gstin}</span><span>PAN: AABCK1234F</span>
+          <span>GSTIN: ${firm.gstin || '—'}</span><span>PAN: AABCK1234F</span>
         </div>
         ${commonHeader}
         <div style="text-align:center; font-weight:800; font-size:17px; margin-bottom:14px; color:#1a1a2e">TAX INVOICE</div>
@@ -289,10 +290,10 @@ function generateTemplateHTML(templateId: string, arrivalDetails: ArrivalDetail[
         <div style="margin-top:14px; font-size:12px; font-weight:700"><strong>Total Amount:</strong> ₹${(sampleLots.reduce((s: number, l: any) => s + ((l.rate || 800) * (l.weight || l.qty * 50) / 50), 0) * 1.05).toFixed(0)}</div>
         <div style="font-size:10px; margin-top:4px; color:#666">Total Amount in words: Rupees ${numberToWords(Math.round(sampleLots.reduce((s: number, l: any) => s + ((l.rate || 800) * (l.weight || l.qty * 50) / 50), 0) * 1.05))} Only</div>
         <div style="margin-top:16px; padding:10px; background:#f8faff; border-radius:6px; font-size:10px; border:1px solid #e0e4ec">
-          <strong>Bank Details:</strong> ${FIRM.bank.name} | A/c: ${FIRM.bank.acc} | IFSC: ${FIRM.bank.ifsc} | ${FIRM.bank.branch}
+          <strong>Bank Details:</strong> ${firm.bank.name || '—'} | A/c: ${firm.bank.acc || '—'} | IFSC: ${firm.bank.ifsc || '—'} | ${firm.bank.branch || '—'}
         </div>
         <div style="margin-top:6px; font-size:10px"><strong>COPY NAME:</strong> Original &nbsp; | &nbsp; <strong>BUYER'S MARK:</strong> ${sampleBuyer.mark}</div>
-        <div style="text-align:right; font-weight:bold; margin-top:14px">For ${FIRM.name}</div>
+        <div style="text-align:right; font-weight:bold; margin-top:14px">For ${firm.name || '—'}</div>
         ${footer}
       </div>`;
 
@@ -318,7 +319,7 @@ function generateTemplateHTML(templateId: string, arrivalDetails: ArrivalDetail[
         </div>
         <div style="font-size:9px; margin-top:4px; color:#888">Total Amount in words: Rupees Sixty-Two Thousand Seven Hundred Only</div>
         <div style="margin-top:6px; font-size:10px"><strong>COPY NAME:</strong> Original &nbsp; | &nbsp; <strong>BUYER'S MARK:</strong> ${sampleBuyer.mark}</div>
-        <div style="text-align:right; font-weight:bold; margin-top:10px">For ${FIRM.name}</div>
+        <div style="text-align:right; font-weight:bold; margin-top:10px">For ${firm.name || '—'}</div>
         ${footer}
       </div>`;
 
@@ -351,7 +352,7 @@ function generateTemplateHTML(templateId: string, arrivalDetails: ArrivalDetail[
         </div>
         <div style="font-size:9px; margin-top:4px; color:#888">Total Amount in words: Rupees Fifty-One Thousand Three Hundred Only</div>
         <div style="margin-top:6px; font-size:10px"><strong>COPY NAME:</strong> Original</div>
-        <div style="text-align:right; font-weight:bold; margin-top:10px">For ${FIRM.name}</div>
+        <div style="text-align:right; font-weight:bold; margin-top:10px">For ${firm.name || '—'}</div>
         ${footer}
       </div>`;
 
@@ -407,11 +408,26 @@ function numberToWords(n: number): string {
 const PrintsPage = () => {
   const navigate = useNavigate();
   const isDesktop = useDesktopMode();
+  const { trader } = useAuth();
   const [search, setSearch] = useState('');
   const [selectedPrint, setSelectedPrint] = useState<typeof printTemplates[0] | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [arrivalDetails, setArrivalDetails] = useState<ArrivalDetail[]>([]);
   const printRef = useRef<HTMLDivElement>(null);
+
+  const firm: FirmInfo = useMemo(() => {
+    const addressParts = [trader?.address, trader?.city, trader?.state, trader?.pin_code].filter(Boolean);
+    return {
+      name: trader?.business_name ?? '',
+      about: trader?.category ?? '',
+      address: addressParts.join(', '),
+      apmcCode: '',
+      phone: trader?.mobile ?? '',
+      email: trader?.email ?? '',
+      gstin: '',
+      bank: { name: '', acc: '', ifsc: '', branch: '' },
+    };
+  }, [trader]);
 
   useEffect(() => {
     arrivalsApi.listDetail(0, 100).then(setArrivalDetails).catch(() => setArrivalDetails([]));
@@ -453,7 +469,7 @@ const PrintsPage = () => {
     toast.info('Use "Save as PDF" in the print dialog to export as PDF');
   };
 
-  const templateHTML = selectedPrint ? generateTemplateHTML(selectedPrint.id, arrivalDetails) : '';
+  const templateHTML = selectedPrint ? generateTemplateHTML(selectedPrint.id, arrivalDetails, firm) : '';
 
   return (
     <div className="min-h-[100dvh] bg-background pb-28 lg:pb-6">

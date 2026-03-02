@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Index for voucher date range queries (Financial Reports). -->
+    <changeSet id="20260302210000-1" author="mercotrace">
+        <createIndex tableName="voucher_header" indexName="idx_voucher_header_voucher_date">
+            <column name="voucher_date"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Optional commodity columns on voucher_line for Commodity P&L. -->
+    <changeSet id="20260302210000-2" author="mercotrace">
+        <addColumn tableName="voucher_line">
+            <column name="commodity_id" type="bigint"/>
+            <column name="commodity_name" type="varchar(150)"/>
+            <column name="quantity" type="numeric(19,4)"/>
+            <column name="rate" type="numeric(19,4)"/>
+            <column name="lot_id" type="bigint"/>
+        </addColumn>
+    </changeSet>
+
+    <!-- AR/AP documents for aging reports. Aligned with frontend ARAPDocument. -->
+    <changeSet id="20260302210000-3" author="mercotrace">
+        <createTable tableName="ar_ap_document">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="trader_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="contact_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ledger_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="type" type="varchar(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reference_voucher_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reference_number" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="original_amount" type="numeric(19,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="outstanding_balance" type="numeric(19,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="document_date" type="date">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_date" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_modified_by" type="varchar(50)"/>
+            <column name="last_modified_date" type="${datetimeType}"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="ar_ap_document" baseColumnNames="trader_id"
+            constraintName="fk_ar_ap_document_trader" referencedTableName="trader" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="ar_ap_document" baseColumnNames="contact_id"
+            constraintName="fk_ar_ap_document_contact" referencedTableName="contact" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="ar_ap_document" baseColumnNames="ledger_id"
+            constraintName="fk_ar_ap_document_ledger" referencedTableName="chart_of_account" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="ar_ap_document" baseColumnNames="reference_voucher_id"
+            constraintName="fk_ar_ap_document_voucher" referencedTableName="voucher_header" referencedColumnNames="id"/>
+        <createIndex tableName="ar_ap_document" indexName="idx_ar_ap_document_trader">
+            <column name="trader_id"/>
+        </createIndex>
+        <createIndex tableName="ar_ap_document" indexName="idx_ar_ap_document_type">
+            <column name="type"/>
+        </createIndex>
+        <createIndex tableName="ar_ap_document" indexName="idx_ar_ap_document_contact">
+            <column name="contact_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

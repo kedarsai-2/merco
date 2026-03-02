@@ -53,3 +53,6 @@ export type {
   VoucherHeaderPage,
   VoucherHeaderCreateRequest,
 } from './voucherHeaders';
+export { voucherLinesApi } from './voucherLines';
+export { arapDocumentsApi } from './arapDocuments';
+export type { ArApDocumentDTO, ArApDocumentPage } from './arapDocuments';

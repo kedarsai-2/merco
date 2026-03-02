@@ -118,17 +118,25 @@ export const voucherHeadersApi = {
     sort?: string;
     voucherType?: VoucherType | '';
     status?: string;
+    dateFrom?: string;
+    dateTo?: string;
     search?: string;
   } = {}): Promise<{ content: VoucherHeader[]; totalElements: number; totalPages: number; size: number; number: number }> {
     const searchParams = new URLSearchParams();
     searchParams.set('page', String(params.page ?? 0));
     searchParams.set('size', String(params.size ?? 20));
-    searchParams.set('sort', params.sort ?? 'createdDate,desc');
+    searchParams.set('sort', params.sort ?? 'voucherDate,desc');
     if (params.voucherType != null && params.voucherType !== '') {
       searchParams.set('voucherType', params.voucherType);
     }
     if (params.status != null && params.status.trim() !== '') {
       searchParams.set('status', params.status.trim());
+    }
+    if (params.dateFrom != null && params.dateFrom.trim() !== '') {
+      searchParams.set('dateFrom', params.dateFrom.trim());
+    }
+    if (params.dateTo != null && params.dateTo.trim() !== '') {
+      searchParams.set('dateTo', params.dateTo.trim());
     }
     if (params.search != null && params.search.trim() !== '') {
       searchParams.set('search', params.search.trim());

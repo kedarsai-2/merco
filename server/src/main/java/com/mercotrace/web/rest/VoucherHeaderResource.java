@@ -3,6 +3,7 @@ package com.mercotrace.web.rest;
 import com.mercotrace.domain.enumeration.VoucherLifecycleStatus;
 import com.mercotrace.domain.enumeration.VoucherType;
 import com.mercotrace.service.VoucherHeaderService;
+import java.time.LocalDate;
 import com.mercotrace.service.dto.VoucherHeaderCreateRequest;
 import com.mercotrace.service.dto.VoucherHeaderDTO;
 import com.mercotrace.web.rest.errors.BadRequestAlertException;
@@ -45,13 +46,15 @@ public class VoucherHeaderResource {
     @GetMapping
     public ResponseEntity<Page<VoucherHeaderDTO>> getAll(
         @org.springdoc.core.annotations.ParameterObject
-        @PageableDefault(size = 20, sort = "createdDate", direction = Sort.Direction.DESC) Pageable pageable,
+        @PageableDefault(size = 20, sort = "voucherDate", direction = Sort.Direction.DESC) Pageable pageable,
         @RequestParam(required = false) VoucherType voucherType,
         @RequestParam(required = false) VoucherLifecycleStatus status,
+        @RequestParam(required = false) LocalDate dateFrom,
+        @RequestParam(required = false) LocalDate dateTo,
         @RequestParam(required = false) String search
     ) {
-        LOG.debug("REST request to get voucher headers: page={}, voucherType={}, status={}, search={}", pageable, voucherType, status, search);
-        Page<VoucherHeaderDTO> page = voucherHeaderService.getPage(pageable, voucherType, status, search);
+        LOG.debug("REST request to get voucher headers: page={}, voucherType={}, status={}, dateFrom={}, dateTo={}, search={}", pageable, voucherType, status, dateFrom, dateTo, search);
+        Page<VoucherHeaderDTO> page = voucherHeaderService.getPage(pageable, voucherType, status, dateFrom, dateTo, search);
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
         return ResponseEntity.ok().headers(headers).body(page);
     }

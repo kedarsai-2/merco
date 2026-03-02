@@ -45,6 +45,21 @@ public class VoucherLine implements Serializable {
     @Column(name = "credit", precision = 19, scale = 2, nullable = false)
     private BigDecimal credit = BigDecimal.ZERO;
 
+    @Column(name = "commodity_id")
+    private Long commodityId;
+
+    @Column(name = "commodity_name", length = 150)
+    private String commodityName;
+
+    @Column(name = "quantity", precision = 19, scale = 4)
+    private BigDecimal quantity;
+
+    @Column(name = "rate", precision = 19, scale = 4)
+    private BigDecimal rate;
+
+    @Column(name = "lot_id")
+    private Long lotId;
+
     public Long getId() {
         return id;
     }
@@ -91,6 +106,46 @@ public class VoucherLine implements Serializable {
 
     public void setCredit(BigDecimal credit) {
         this.credit = credit != null ? credit : BigDecimal.ZERO;
+    }
+
+    public Long getCommodityId() {
+        return commodityId;
+    }
+
+    public void setCommodityId(Long commodityId) {
+        this.commodityId = commodityId;
+    }
+
+    public String getCommodityName() {
+        return commodityName;
+    }
+
+    public void setCommodityName(String commodityName) {
+        this.commodityName = commodityName;
+    }
+
+    public BigDecimal getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(BigDecimal quantity) {
+        this.quantity = quantity;
+    }
+
+    public BigDecimal getRate() {
+        return rate;
+    }
+
+    public void setRate(BigDecimal rate) {
+        this.rate = rate;
+    }
+
+    public Long getLotId() {
+        return lotId;
+    }
+
+    public void setLotId(Long lotId) {
+        this.lotId = lotId;
     }
 
     @Override
