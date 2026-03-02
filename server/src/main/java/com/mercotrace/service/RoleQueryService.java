@@ -9,6 +9,7 @@ import com.mercotrace.service.mapper.RoleMapper;
 import jakarta.persistence.criteria.JoinType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -28,6 +29,12 @@ public class RoleQueryService extends QueryService<Role> {
 
     private static final Logger LOG = LoggerFactory.getLogger(RoleQueryService.class);
 
+    /**
+     * Cache for paginated role queries used by Settings RBAC (Role Management).
+     * Key is derived from Pageable + RoleCriteria via the global key generator.
+     */
+    public static final String CACHE_ROLES_BY_CRITERIA_PAGE = "rolesByCriteriaPage";
+
     private final RoleRepository roleRepository;
 
     private final RoleMapper roleMapper;
@@ -44,6 +51,7 @@ public class RoleQueryService extends QueryService<Role> {
      * @return the matching entities.
      */
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CACHE_ROLES_BY_CRITERIA_PAGE, unless = "#result == null || #result.empty")
     public Page<RoleDTO> findByCriteria(RoleCriteria criteria, Pageable page) {
         LOG.debug("find by criteria : {}, page: {}", criteria, page);
         final Specification<Role> specification = createSpecification(criteria);

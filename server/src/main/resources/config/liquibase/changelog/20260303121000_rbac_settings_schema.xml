@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+        RBAC Settings schema:
+        - Extend role table with description + module_permissions JSON + audit columns.
+        - Introduce user_role mapping table with audit columns and FKs to jhi_user and role.
+    -->
+
+    <changeSet id="20260303121000-1" author="mercotrace">
+        <addColumn tableName="role">
+            <column name="description" type="varchar(255)"/>
+            <column name="module_permissions" type="${clobType}"/>
+            <column name="created_by" type="varchar(50)"/>
+            <column name="created_date" type="${datetimeType}"/>
+            <column name="last_modified_by" type="varchar(50)"/>
+            <column name="last_modified_date" type="${datetimeType}"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260303121000-2" author="mercotrace">
+        <createTable tableName="user_role">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_date" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_modified_by" type="varchar(50)"/>
+            <column name="last_modified_date" type="${datetimeType}"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="user_role" baseColumnNames="user_id"
+                                 constraintName="fk_user_role_user"
+                                 referencedTableName="jhi_user"
+                                 referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint baseTableName="user_role" baseColumnNames="role_id"
+                                 constraintName="fk_user_role_role"
+                                 referencedTableName="role"
+                                 referencedColumnNames="id"/>
+
+        <addUniqueConstraint tableName="user_role"
+                             columnNames="user_id, role_id"
+                             constraintName="ux_user_role_user_role"/>
+
+        <createIndex tableName="user_role" indexName="idx_user_role_user">
+            <column name="user_id"/>
+        </createIndex>
+
+        <createIndex tableName="user_role" indexName="idx_user_role_role">
+            <column name="role_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
+

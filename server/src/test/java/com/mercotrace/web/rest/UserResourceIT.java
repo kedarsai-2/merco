@@ -298,6 +298,26 @@ class UserResourceIT {
 
     @Test
     @Transactional
+    void patchUserActivationStatusById() throws Exception {
+        // Initialize the database
+        userRepository.saveAndFlush(user);
+
+        Long id = user.getId();
+        assertThat(id).isNotNull();
+
+        // Deactivate via PATCH /api/admin/users/{id}
+        restUserMockMvc
+            .perform(
+                patch("/api/admin/users/{id}", id).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(Map.of("activated", false)))
+            )
+            .andExpect(status().isNoContent());
+
+        User updated = userRepository.findById(id).orElseThrow();
+        assertThat(updated.isActivated()).isFalse();
+    }
+
+    @Test
+    @Transactional
     void updateUser() throws Exception {
         // Initialize the database
         userRepository.saveAndFlush(user);

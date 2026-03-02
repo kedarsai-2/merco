@@ -3,7 +3,9 @@ package com.mercotrace.service.dto;
 import jakarta.validation.constraints.*;
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -22,6 +24,26 @@ public class RoleDTO implements Serializable {
     private Instant createdAt;
 
     private Set<PermissionDTO> permissions = new HashSet<>();
+
+    /**
+     * Optional human-readable description used by the Settings UI.
+     */
+    @Size(max = 255)
+    private String description;
+
+    /**
+     * Module/feature-level permissions as used by the frontend Settings module.
+     *
+     * Shape:
+     * {
+     *   "ModuleName": {
+     *     "enabled": true,
+     *     "features": { "View": true, "Edit": false, ... }
+     *   },
+     *   ...
+     * }
+     */
+    private Map<String, ModulePermissionEntry> modulePermissions = new HashMap<>();
 
     public Long getId() {
         return id;
@@ -55,6 +77,45 @@ public class RoleDTO implements Serializable {
         this.permissions = permissions;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public Map<String, ModulePermissionEntry> getModulePermissions() {
+        return modulePermissions;
+    }
+
+    public void setModulePermissions(Map<String, ModulePermissionEntry> modulePermissions) {
+        this.modulePermissions = modulePermissions;
+    }
+
+    public static class ModulePermissionEntry implements Serializable {
+
+        private Boolean enabled;
+
+        private Map<String, Boolean> features = new HashMap<>();
+
+        public Boolean getEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(Boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public Map<String, Boolean> getFeatures() {
+            return features;
+        }
+
+        public void setFeatures(Map<String, Boolean> features) {
+            this.features = features;
+        }
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -83,7 +144,9 @@ public class RoleDTO implements Serializable {
             "id=" + getId() +
             ", roleName='" + getRoleName() + "'" +
             ", createdAt='" + getCreatedAt() + "'" +
+            ", description='" + getDescription() + "'" +
             ", permissions=" + getPermissions() +
+            ", modulePermissions=" + getModulePermissions() +
             "}";
     }
 }

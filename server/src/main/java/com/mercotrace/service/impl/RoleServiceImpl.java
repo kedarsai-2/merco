@@ -5,12 +5,15 @@ import com.mercotrace.domain.Role;
 import com.mercotrace.repository.PermissionRepository;
 import com.mercotrace.repository.RoleRepository;
 import com.mercotrace.service.RoleService;
+import com.mercotrace.service.RoleQueryService;
 import com.mercotrace.service.dto.RoleDTO;
 import com.mercotrace.service.mapper.RoleMapper;
 import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -38,6 +41,11 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
+    @Caching(
+        evict = {
+            @CacheEvict(cacheNames = RoleQueryService.CACHE_ROLES_BY_CRITERIA_PAGE, allEntries = true)
+        }
+    )
     public RoleDTO save(RoleDTO roleDTO) {
         LOG.debug("Request to save Role : {}", roleDTO);
         Role role = roleMapper.toEntity(roleDTO);
@@ -46,6 +54,11 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
+    @Caching(
+        evict = {
+            @CacheEvict(cacheNames = RoleQueryService.CACHE_ROLES_BY_CRITERIA_PAGE, allEntries = true)
+        }
+    )
     public RoleDTO update(RoleDTO roleDTO) {
         LOG.debug("Request to update Role : {}", roleDTO);
         Role role = roleMapper.toEntity(roleDTO);
@@ -54,6 +67,11 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
+    @Caching(
+        evict = {
+            @CacheEvict(cacheNames = RoleQueryService.CACHE_ROLES_BY_CRITERIA_PAGE, allEntries = true)
+        }
+    )
     public Optional<RoleDTO> partialUpdate(RoleDTO roleDTO) {
         LOG.debug("Request to partially update Role : {}", roleDTO);
 
@@ -80,6 +98,11 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
+    @Caching(
+        evict = {
+            @CacheEvict(cacheNames = RoleQueryService.CACHE_ROLES_BY_CRITERIA_PAGE, allEntries = true)
+        }
+    )
     public void delete(Long id) {
         LOG.debug("Request to delete Role : {}", id);
         roleRepository.deleteById(id);
@@ -87,6 +110,11 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     @Transactional
+    @Caching(
+        evict = {
+            @CacheEvict(cacheNames = RoleQueryService.CACHE_ROLES_BY_CRITERIA_PAGE, allEntries = true)
+        }
+    )
     public RoleDTO addPermissionsToRole(Long roleId, Set<Long> permissionIds) {
         Role role = roleRepository.findOneWithEagerRelationships(roleId).orElseThrow();
         for (Long permId : permissionIds) {
@@ -99,6 +127,11 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     @Transactional
+    @Caching(
+        evict = {
+            @CacheEvict(cacheNames = RoleQueryService.CACHE_ROLES_BY_CRITERIA_PAGE, allEntries = true)
+        }
+    )
     public void removePermissionFromRole(Long roleId, Long permissionId) {
         Role role = roleRepository.findOneWithEagerRelationships(roleId).orElseThrow();
         role.getPermissions().removeIf(p -> p.getId().equals(permissionId));

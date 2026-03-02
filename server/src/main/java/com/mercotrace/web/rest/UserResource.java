@@ -214,4 +214,28 @@ public class UserResource {
         userService.deleteUser(login);
         return ResponseEntity.noContent().headers(HeaderUtil.createAlert(applicationName, "userManagement.deleted", login)).build();
     }
+
+    /**
+     * {@code PATCH /admin/users/:id} : toggle activation status for a user.
+     *
+     * This is a narrow endpoint used by the Settings User Management screen and only
+     * updates the "activated" flag.
+     */
+    @PatchMapping("/users/{id}")
+    @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
+    public ResponseEntity<Void> updateUserStatus(@PathVariable("id") Long id, @RequestBody UserStatusVM statusVM) {
+        LOG.debug("REST request to update activation status for User id {} to {}", id, statusVM != null ? statusVM.activated() : null);
+        if (statusVM == null || statusVM.activated() == null) {
+            throw new BadRequestAlertException("Activation flag is required", "userManagement", "activatednull");
+        }
+        User user = userRepository.findById(id).orElseThrow(() -> new BadRequestAlertException("Entity not found", "userManagement", "idnotfound"));
+        user.setActivated(statusVM.activated());
+        userRepository.save(user);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Minimal payload for status toggle requests.
+     */
+    public record UserStatusVM(Boolean activated) {}
 }

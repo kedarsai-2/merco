@@ -6,15 +6,30 @@
 import type { Role as RbacRole, Profile as RbacProfile, UserRole } from '@/types/rbac';
 import { apiFetch } from './http';
 
-type RoleDTO = { id?: number; roleName?: string; description?: string; createdAt?: string; permissions?: unknown[] };
+type RoleDTO = {
+  id?: number;
+  roleName?: string;
+  description?: string;
+  createdAt?: string;
+  modulePermissions?: RbacRole['permissions'];
+};
 type BackendRoleList = RoleDTO[];
+
+type AdminUserDTO = {
+  id?: number;
+  login?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  activated?: boolean;
+};
 
 function mapRoleDtoToRole(dto: RoleDTO): RbacRole {
   return {
     id: dto.id != null ? String(dto.id) : '',
     name: (dto as { roleName?: string }).roleName ?? '',
     description: (dto as { description?: string }).description ?? '',
-    permissions: (dto.permissions as RbacRole['permissions']) ?? {},
+    permissions: (dto.modulePermissions as RbacRole['permissions']) ?? {},
     created_at: (dto as { createdAt?: string }).createdAt ?? new Date().toISOString(),
     updated_at: (dto as { updatedAt?: string }).updatedAt ?? new Date().toISOString(),
   };
@@ -47,7 +62,7 @@ export const rbacApi = {
   async createRole(data: { name: string; description: string; permissions: RbacRole['permissions'] }): Promise<RbacRole> {
     const res = await apiFetch('/roles', {
       method: 'POST',
-      body: JSON.stringify({ roleName: data.name, description: data.description, permissions: data.permissions }),
+      body: JSON.stringify({ roleName: data.name, description: data.description, modulePermissions: data.permissions }),
     });
     const dto = await handleRes<RoleDTO>(res, 'Failed to create role');
     return mapRoleDtoToRole(dto);
@@ -59,7 +74,12 @@ export const rbacApi = {
   ): Promise<RbacRole> {
     const res = await apiFetch(`/roles/${encodeURIComponent(roleId)}`, {
       method: 'PUT',
-      body: JSON.stringify({ id: Number(roleId), roleName: data.name, description: data.description, permissions: data.permissions }),
+      body: JSON.stringify({
+        id: Number(roleId),
+        roleName: data.name,
+        description: data.description,
+        modulePermissions: data.permissions,
+      }),
     });
     const dto = await handleRes<RoleDTO>(res, 'Failed to update role');
     return mapRoleDtoToRole(dto);
@@ -74,9 +94,9 @@ export const rbacApi = {
     try {
       const params = new URLSearchParams({ page: '0', size: '500' });
       const res = await apiFetch(`/admin/users?${params.toString()}`, { method: 'GET' });
-      const data = await handleRes<{ content?: Array<{ id?: number; login?: string; firstName?: string; lastName?: string; email?: string; activated?: boolean }> }>(res, 'Failed to load users');
-      const content = data.content ?? [];
-      return content.map((u: { id?: number; login?: string; firstName?: string; lastName?: string; email?: string; activated?: boolean }) => ({
+      const data = await handleRes<AdminUserDTO[] | { content?: AdminUserDTO[] }>(res, 'Failed to load users');
+      const users: AdminUserDTO[] = Array.isArray(data) ? data : data.content ?? [];
+      return users.map((u) => ({
         id: String(u.id ?? ''),
         user_id: String(u.id ?? ''),
         full_name: ([u.firstName, u.lastName].filter(Boolean).join(' ') || u.login) ?? '',
@@ -141,16 +161,34 @@ export const rbacApi = {
   },
 
   async setProfileStatus(profileId: string, _status: 'active' | 'inactive'): Promise<void> {
-    // TODO: backend PATCH /api/admin/users/:id for activated flag
-    await apiFetch(`/admin/users/${encodeURIComponent(profileId)}`, { method: 'PATCH', body: JSON.stringify({ activated: _status === 'active' }) });
+    await apiFetch(`/admin/users/${encodeURIComponent(profileId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ activated: _status === 'active' }),
+    });
   },
 
   async listUserRoles(): Promise<UserRole[]> {
-    // TODO: backend endpoint for user-role assignments (e.g. GET /api/admin/user-roles)
-    return [];
+    const params = new URLSearchParams({ page: '0', size: '500' });
+    const res = await apiFetch(`/admin/user-roles?${params.toString()}`, { method: 'GET' });
+    const data = await handleRes<Array<{ id?: number; userId?: number; roleId?: number; assignedBy?: string | null; createdAt?: string }>>(
+      res,
+      'Failed to load user roles',
+    );
+    if (!Array.isArray(data)) return [];
+    return data.map((ur) => ({
+      id: String(ur.id ?? ''),
+      user_id: String(ur.userId ?? ''),
+      role_id: String(ur.roleId ?? ''),
+      assigned_by: ur.assignedBy ?? null,
+      created_at: ur.createdAt ?? new Date().toISOString(),
+    }));
   },
 
-  async setUserRoles(profileId: string, _roleIds: string[]): Promise<void> {
-    // TODO: backend endpoint to assign roles to user (e.g. PUT /api/admin/users/:id/roles)
+  async setUserRoles(profileId: string, roleIds: string[]): Promise<void> {
+    const numericIds = roleIds.map((r) => Number(r)).filter((n) => !Number.isNaN(n));
+    await apiFetch(`/admin/users/${encodeURIComponent(profileId)}/roles`, {
+      method: 'PUT',
+      body: JSON.stringify(numericIds),
+    });
   },
 };

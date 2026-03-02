@@ -18,11 +18,13 @@ import org.springframework.boot.info.BuildProperties;
 import org.springframework.boot.info.GitProperties;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.interceptor.KeyGenerator;
+import com.mercotrace.service.RoleQueryService;
 import com.mercotrace.service.TraderContextService;
 import com.mercotrace.service.dto.WeighingSessionCreateRequest;
 import com.mercotrace.service.impl.ChartOfAccountServiceImpl;
 import com.mercotrace.service.impl.HighLevelReportsServiceImpl;
 import com.mercotrace.service.impl.ReportsServiceImpl;
+import com.mercotrace.service.impl.UserRoleServiceImpl;
 import org.springframework.context.annotation.*;
 import org.springframework.data.domain.Pageable;
 import org.springframework.context.annotation.Bean;
@@ -95,6 +97,11 @@ public class CacheConfiguration {
             createCache(cm, com.mercotrace.domain.Trader.class.getName(), jcacheConfiguration);
             createCache(cm, com.mercotrace.domain.Role.class.getName(), jcacheConfiguration);
             createCache(cm, com.mercotrace.domain.Role.class.getName() + ".permissions", jcacheConfiguration);
+            // Settings / RBAC: Role & UserRole caches
+            createCache(cm, RoleQueryService.CACHE_ROLES_BY_CRITERIA_PAGE, jcacheConfiguration);
+            createCache(cm, com.mercotrace.domain.UserRole.class.getName(), jcacheConfiguration);
+            createCache(cm, UserRoleServiceImpl.CACHE_USER_ROLES_PAGE, jcacheConfiguration);
+            createCache(cm, UserRoleServiceImpl.CACHE_USER_ROLES_BY_USER, jcacheConfiguration);
             createCache(cm, com.mercotrace.domain.Permission.class.getName(), jcacheConfiguration);
             createCache(cm, com.mercotrace.domain.Permission.class.getName() + ".roles", jcacheConfiguration);
             createCache(cm, com.mercotrace.domain.BusinessCategory.class.getName(), jcacheConfiguration);

@@ -17,7 +17,7 @@ import org.hibernate.annotations.CacheConcurrencyStrategy;
 @Table(name = "role")
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class Role implements Serializable {
+public class Role extends AbstractAuditingEntity<Long> implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -32,8 +32,16 @@ public class Role implements Serializable {
     @Column(name = "role_name", length = 100, nullable = false, unique = true)
     private String roleName;
 
+    @Size(max = 255)
+    @Column(name = "description", length = 255)
+    private String description;
+
     @Column(name = "created_at")
     private Instant createdAt;
+
+    @Lob
+    @Column(name = "module_permissions")
+    private String modulePermissions;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -73,6 +81,19 @@ public class Role implements Serializable {
         this.roleName = roleName;
     }
 
+    public String getDescription() {
+        return this.description;
+    }
+
+    public Role description(String description) {
+        this.setDescription(description);
+        return this;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
     public Instant getCreatedAt() {
         return this.createdAt;
     }
@@ -84,6 +105,19 @@ public class Role implements Serializable {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getModulePermissions() {
+        return this.modulePermissions;
+    }
+
+    public Role modulePermissions(String modulePermissions) {
+        this.setModulePermissions(modulePermissions);
+        return this;
+    }
+
+    public void setModulePermissions(String modulePermissions) {
+        this.modulePermissions = modulePermissions;
     }
 
     public Set<Permission> getPermissions() {
@@ -134,6 +168,7 @@ public class Role implements Serializable {
         return "Role{" +
             "id=" + getId() +
             ", roleName='" + getRoleName() + "'" +
+            ", description='" + getDescription() + "'" +
             ", createdAt='" + getCreatedAt() + "'" +
             "}";
     }

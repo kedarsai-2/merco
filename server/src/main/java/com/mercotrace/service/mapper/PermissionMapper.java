@@ -20,6 +20,11 @@ public interface PermissionMapper extends EntityMapper<PermissionDTO, Permission
     @Mapping(target = "removeRole", ignore = true)
     Permission toEntity(PermissionDTO permissionDTO);
 
+    @Override
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "roles", ignore = true)
+    void partialUpdate(@MappingTarget Permission entity, PermissionDTO dto);
+
     @Named("roleId")
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "id", source = "id")
