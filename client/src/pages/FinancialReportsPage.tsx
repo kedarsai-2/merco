@@ -1,16 +1,16 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, BarChart3, TrendingUp, TrendingDown, FileSpreadsheet, Receipt, Clock, Sparkles, PieChart, Scale, Landmark, HandCoins, ChevronRight, ChevronLeft, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart as RPieChart, Pie, Legend } from 'recharts';
 import type { COALedger, VoucherHeader, VoucherLine, ARAPDocument, TrialBalanceRow, PLRow, BalanceSheetRow, AgingBucket, CommodityProfitRow } from '@/types/accounting';
-import { initializeAccountingData } from '@/services/accountingData';
+import { chartOfAccountsApi, dtoToCOALedger } from '@/services/api/chartOfAccounts';
 import BottomNav from '@/components/BottomNav';
 import { useDesktopMode } from '@/hooks/use-desktop';
 import { toast } from 'sonner';
 
-initializeAccountingData();
+// TODO: Vouchers, voucher lines, and ARAP docs require backend APIs. Until then, trial balance uses ledger balances only; AR/AP aging and commodity P&L show empty.
 
 type ReportTab = 'TRIAL_BALANCE' | 'PL' | 'BALANCE_SHEET' | 'AR_AGING' | 'AP_AGING' | 'COMMODITY' | 'GST' | 'MARKET_FEE' | 'BROKER';
 
@@ -36,10 +36,32 @@ const FinancialReportsPage = () => {
   const [dateTo, setDateTo] = useState('');
   const tabScrollRef = useRef<HTMLDivElement>(null);
 
-  const [ledgers] = useState<COALedger[]>(() => JSON.parse(localStorage.getItem('mkt_coa_ledgers') || '[]'));
-  const [vouchers] = useState<VoucherHeader[]>(() => JSON.parse(localStorage.getItem('mkt_acc_vouchers') || '[]'));
-  const [voucherLines] = useState<VoucherLine[]>(() => JSON.parse(localStorage.getItem('mkt_acc_voucher_lines') || '[]'));
-  const [arapDocs] = useState<ARAPDocument[]>(() => JSON.parse(localStorage.getItem('mkt_arap_docs') || '[]'));
+  const [ledgers, setLedgers] = useState<COALedger[]>([]);
+  const [vouchers] = useState<VoucherHeader[]>([]);
+  const [voucherLines] = useState<VoucherLine[]>([]);
+  const [arapDocs] = useState<ARAPDocument[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const all: COALedger[] = [];
+        let page = 0;
+        let hasMore = true;
+        while (hasMore && !cancelled) {
+          const res = await chartOfAccountsApi.getPage({ page, size: 100, sort: 'ledgerName,asc' });
+          res.content.forEach(dto => all.push(dtoToCOALedger(dto)));
+          hasMore = page + 1 < res.totalPages;
+          page += 1;
+        }
+        if (!cancelled) setLedgers(all);
+      } catch {
+        if (!cancelled) setLedgers([]);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, []);
 
   const filteredVoucherLines = useMemo(() => {
     if (!dateFrom && !dateTo) return voucherLines;

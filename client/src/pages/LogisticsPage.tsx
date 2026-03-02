@@ -29,27 +29,21 @@ interface BidInfo {
   commodityName: string;
 }
 
-// REQ-LOG-001: Daily seller serial (reset daily)
+// REQ-LOG-001/002: In-session only (no localStorage/Mkt). Reset on page load.
+const sessionSellerSerials: Record<string, number> = {};
+const sessionLotNumbers: Record<string, number> = {};
+
 function getDailySellerSerial(sellerName: string): number {
-  const today = new Date().toISOString().split('T')[0];
-  const key = `mkt_seller_serials_${today}`;
-  const serials: Record<string, number> = JSON.parse(localStorage.getItem(key) || '{}');
-  if (serials[sellerName]) return serials[sellerName];
-  const next = Object.keys(serials).length + 1;
-  serials[sellerName] = next;
-  localStorage.setItem(key, JSON.stringify(serials));
+  if (sessionSellerSerials[sellerName]) return sessionSellerSerials[sellerName];
+  const next = Object.keys(sessionSellerSerials).length + 1;
+  sessionSellerSerials[sellerName] = next;
   return next;
 }
 
-// REQ-LOG-002: Daily lot number (reset daily)
 function getDailyLotNumber(lotId: string): number {
-  const today = new Date().toISOString().split('T')[0];
-  const key = `mkt_lot_numbers_${today}`;
-  const numbers: Record<string, number> = JSON.parse(localStorage.getItem(key) || '{}');
-  if (numbers[lotId]) return numbers[lotId];
-  const next = Object.keys(numbers).length + 1;
-  numbers[lotId] = next;
-  localStorage.setItem(key, JSON.stringify(numbers));
+  if (sessionLotNumbers[lotId]) return sessionLotNumbers[lotId];
+  const next = Object.keys(sessionLotNumbers).length + 1;
+  sessionLotNumbers[lotId] = next;
   return next;
 }
 

@@ -20,33 +20,47 @@ const AdminCategoriesPage = () => {
 
   const filtered = categories.filter(c => c.category_name.toLowerCase().includes(search.toLowerCase()));
 
-  const handleAdd = () => {
-    const newCat: BusinessCategory = { category_id: crypto.randomUUID(), category_name: form.category_name, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
-    const updated = [...categories, newCat];
-    setCategories(updated);
-    localStorage.setItem('mkt_categories', JSON.stringify(updated));
-    setForm({ category_name: '' });
-    setShowAdd(false);
+  const handleAdd = async () => {
+    try {
+      const created = await categoryApi.create({ category_name: form.category_name, is_active: true });
+      setCategories(prev => [...prev, created]);
+      setForm({ category_name: '' });
+      setShowAdd(false);
+    } catch (e) {
+      console.error('Failed to create category', e);
+    }
   };
 
-  const handleUpdate = (id: string) => {
-    const updated = categories.map(c => c.category_id === id ? { ...c, category_name: form.category_name, updated_at: new Date().toISOString() } : c);
-    setCategories(updated);
-    localStorage.setItem('mkt_categories', JSON.stringify(updated));
-    setEditId(null);
-    setForm({ category_name: '' });
+  const handleUpdate = async (id: string) => {
+    try {
+      const cat = categories.find(c => c.category_id === id);
+      const updated = await categoryApi.update(id, { category_name: form.category_name, is_active: cat?.is_active ?? true });
+      setCategories(prev => prev.map(c => c.category_id === id ? updated : c));
+      setEditId(null);
+      setForm({ category_name: '' });
+    } catch (e) {
+      console.error('Failed to update category', e);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    const updated = categories.filter(c => c.category_id !== id);
-    setCategories(updated);
-    localStorage.setItem('mkt_categories', JSON.stringify(updated));
+  const handleDelete = async (id: string) => {
+    try {
+      await categoryApi.delete(id);
+      setCategories(prev => prev.filter(c => c.category_id !== id));
+    } catch (e) {
+      console.error('Failed to delete category', e);
+    }
   };
 
-  const handleToggle = (id: string) => {
-    const updated = categories.map(c => c.category_id === id ? { ...c, is_active: !c.is_active, updated_at: new Date().toISOString() } : c);
-    setCategories(updated);
-    localStorage.setItem('mkt_categories', JSON.stringify(updated));
+  const handleToggle = async (id: string) => {
+    const cat = categories.find(c => c.category_id === id);
+    if (!cat) return;
+    try {
+      const updated = await categoryApi.update(id, { category_name: cat.category_name, is_active: !cat.is_active });
+      setCategories(prev => prev.map(c => c.category_id === id ? updated : c));
+    } catch (e) {
+      console.error('Failed to toggle category', e);
+    }
   };
 
   return (

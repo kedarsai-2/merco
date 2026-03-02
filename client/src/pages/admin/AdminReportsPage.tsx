@@ -1,10 +1,11 @@
 import { motion } from 'framer-motion';
 import { BarChart3, TrendingUp, Truck, Gavel, Receipt, HandCoins, Sparkles, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { SEED_DAILY_SUMMARY } from '@/services/mockData';
+// TODO: Daily summary from backend API. Placeholder until endpoint exists.
+const DEFAULT_DAILY_SUMMARY = { totalArrivals: 0, totalLots: 0, totalAuctions: 0, totalBills: 0, totalRevenue: 0, totalCollected: 0, totalPending: 0 };
 
 const AdminReportsPage = () => {
-  const s = SEED_DAILY_SUMMARY;
+  const s = DEFAULT_DAILY_SUMMARY;
 
   const metrics = [
     { label: 'Total Arrivals', value: s.totalArrivals, icon: Truck, gradient: 'from-blue-500 via-blue-400 to-cyan-400', glow: 'shadow-blue-500/20' },

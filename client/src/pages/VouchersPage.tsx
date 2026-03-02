@@ -1,15 +1,15 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Plus, FileText, Receipt, HandCoins, ArrowRightLeft, Landmark, BadgeAlert, Eraser, Search, Filter, ChevronDown, Check, X, Banknote, Smartphone, Building2, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import type { VoucherHeader, VoucherLine, VoucherType, VoucherLifecycle, COALedger, PaymentModeType } from '@/types/accounting';
-import { initializeAccountingData } from '@/services/accountingData';
+import { chartOfAccountsApi, dtoToCOALedger } from '@/services/api/chartOfAccounts';
 import BottomNav from '@/components/BottomNav';
 import { useDesktopMode } from '@/hooks/use-desktop';
 
-initializeAccountingData();
+// TODO: Voucher and voucher-line create/post/reverse require backend APIs (e.g. POST/GET /api/vouchers, /api/voucher-lines). Until then, list is empty and create/post only update local state (not persisted).
 
 const VOUCHER_CONFIG: Record<VoucherType, { label: string; icon: typeof FileText; gradient: string; debitLabel: string; creditLabel: string }> = {
   SALES_BILL: { label: 'Sales Bill', icon: FileText, gradient: 'from-blue-400 to-cyan-500', debitLabel: 'Receivable', creditLabel: 'Income/Payable' },
@@ -33,13 +33,35 @@ const STATUS_COLORS: Record<VoucherLifecycle, string> = {
 const VouchersPage = () => {
   const navigate = useNavigate();
   const isDesktop = useDesktopMode();
-  const [vouchers, setVouchers] = useState<VoucherHeader[]>(() => JSON.parse(localStorage.getItem('mkt_acc_vouchers') || '[]'));
-  const [voucherLines, setVoucherLines] = useState<VoucherLine[]>(() => JSON.parse(localStorage.getItem('mkt_acc_voucher_lines') || '[]'));
-  const [ledgers] = useState<COALedger[]>(() => JSON.parse(localStorage.getItem('mkt_coa_ledgers') || '[]'));
+  const [vouchers, setVouchers] = useState<VoucherHeader[]>([]);
+  const [voucherLines, setVoucherLines] = useState<VoucherLine[]>([]);
+  const [ledgers, setLedgers] = useState<COALedger[]>([]);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<VoucherType | 'ALL'>('ALL');
   const [showCreate, setShowCreate] = useState(false);
   const [selectedVoucher, setSelectedVoucher] = useState<VoucherHeader | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const all: COALedger[] = [];
+        let page = 0;
+        let hasMore = true;
+        while (hasMore && !cancelled) {
+          const res = await chartOfAccountsApi.getPage({ page, size: 100, sort: 'ledgerName,asc' });
+          res.content.forEach(dto => all.push(dtoToCOALedger(dto)));
+          hasMore = page + 1 < res.totalPages;
+          page += 1;
+        }
+        if (!cancelled) setLedgers(all);
+      } catch {
+        if (!cancelled) setLedgers([]);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, []);
 
   // Create form state
   const [createType, setCreateType] = useState<VoucherType>('RECEIPT');
@@ -101,44 +123,20 @@ const VouchersPage = () => {
         credit: parseFloat(l.credit) || 0,
       }));
 
-    const updatedVouchers = [...vouchers, newVoucher];
-    const updatedLines = [...voucherLines, ...newLines];
-    setVouchers(updatedVouchers);
-    setVoucherLines(updatedLines);
-    localStorage.setItem('mkt_acc_vouchers', JSON.stringify(updatedVouchers));
-    localStorage.setItem('mkt_acc_voucher_lines', JSON.stringify(updatedLines));
+    setVouchers(prev => [...prev, newVoucher]);
+    setVoucherLines(prev => [...prev, ...newLines]);
     setShowCreate(false);
     setNarration('');
     setLines([{ ledger_id: '', debit: '', credit: '' }, { ledger_id: '', debit: '', credit: '' }]);
   };
 
   const handlePost = (v: VoucherHeader) => {
-    const updated = vouchers.map(x => x.voucher_id === v.voucher_id ? { ...x, status: 'POSTED' as VoucherLifecycle, posted_at: new Date().toISOString() } : x);
-    setVouchers(updated);
-    localStorage.setItem('mkt_acc_vouchers', JSON.stringify(updated));
-    // Update ledger balances and lock after first posting (Section 3.2)
-    const relatedLines = voucherLines.filter(l => l.voucher_id === v.voucher_id);
-    const updatedLedgers: COALedger[] = JSON.parse(localStorage.getItem('mkt_coa_ledgers') || '[]');
-    relatedLines.forEach(line => {
-      const idx = updatedLedgers.findIndex(l => l.ledger_id === line.ledger_id);
-      if (idx >= 0) {
-        updatedLedgers[idx].is_locked = true;
-        const isDebitNature = updatedLedgers[idx].accounting_class === 'ASSET' || updatedLedgers[idx].accounting_class === 'EXPENSE';
-        if (isDebitNature) {
-          updatedLedgers[idx].current_balance += (line.debit - line.credit);
-        } else {
-          updatedLedgers[idx].current_balance += (line.credit - line.debit);
-        }
-      }
-    });
-    localStorage.setItem('mkt_coa_ledgers', JSON.stringify(updatedLedgers));
+    setVouchers(prev => prev.map(x => x.voucher_id === v.voucher_id ? { ...x, status: 'POSTED' as VoucherLifecycle, posted_at: new Date().toISOString() } : x));
     setSelectedVoucher(null);
   };
 
   const handleReverse = (v: VoucherHeader) => {
-    const updated = vouchers.map(x => x.voucher_id === v.voucher_id ? { ...x, status: 'REVERSED' as VoucherLifecycle, reversed_at: new Date().toISOString() } : x);
-    setVouchers(updated);
-    localStorage.setItem('mkt_acc_vouchers', JSON.stringify(updated));
+    setVouchers(prev => prev.map(x => x.voucher_id === v.voucher_id ? { ...x, status: 'REVERSED' as VoucherLifecycle, reversed_at: new Date().toISOString() } : x));
     setSelectedVoucher(null);
   };
 

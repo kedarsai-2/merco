@@ -63,18 +63,8 @@ const ScribblePadPage = () => {
   const currentStroke = useRef<Stroke>({ xs: [], ys: [], ts: [] });
   const strokeStartTime = useRef(0);
 
-  // Load saved entries
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('mkt_scribble_entries') || '[]');
-      setEntries(saved);
-    } catch { /* empty */ }
-  }, []);
-
-  const saveEntries = (newEntries: ScribbleEntry[]) => {
-    setEntries(newEntries);
-    localStorage.setItem('mkt_scribble_entries', JSON.stringify(newEntries));
-  };
+  // In-memory only; no localStorage for business data. TODO: backend API for scribble entries if persistence needed.
+  const saveEntries = (newEntries: ScribbleEntry[]) => setEntries(newEntries);
 
   // Resize canvas
   useEffect(() => {

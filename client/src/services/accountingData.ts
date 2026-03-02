@@ -112,17 +112,8 @@ export const SEED_PERIOD_LOCK: PeriodLock = {
 };
 
 // ── Initialize Accounting Data ─────────────────────────────
+// No localStorage: Chart of Accounts from chartOfAccountsApi; vouchers/ARAP require backend (TODO).
 
 export function initializeAccountingData() {
-  if (!localStorage.getItem('mkt_accounting_v2')) {
-    const allLedgers = [...SYSTEM_LEDGERS, ...USER_LEDGERS];
-    localStorage.setItem('mkt_coa_ledgers', JSON.stringify(allLedgers));
-    localStorage.setItem('mkt_acc_vouchers', JSON.stringify(SEED_VOUCHERS));
-    localStorage.setItem('mkt_acc_voucher_lines', JSON.stringify(SEED_VOUCHER_LINES));
-    localStorage.setItem('mkt_arap_docs', JSON.stringify(SEED_ARAP_DOCS));
-    localStorage.setItem('mkt_bank_accounts', JSON.stringify(SEED_BANK_ACCOUNTS));
-    localStorage.setItem('mkt_period_lock', JSON.stringify(SEED_PERIOD_LOCK));
-    localStorage.setItem('mkt_allocations', JSON.stringify([]));
-    localStorage.setItem('mkt_accounting_v2', 'true');
-  }
+  // No-op. Ledgers come from GET /api/chart-of-accounts. Vouchers/ARAP need backend APIs.
 }

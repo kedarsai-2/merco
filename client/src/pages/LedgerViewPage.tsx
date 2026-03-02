@@ -1,14 +1,14 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Search, ChevronRight, Wallet, TrendingDown, PiggyBank, TrendingUp, Building2, BookOpen, Calendar, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import type { COALedger, VoucherHeader, VoucherLine, LedgerTransaction, AccountingClass } from '@/types/accounting';
-import { initializeAccountingData } from '@/services/accountingData';
+import { chartOfAccountsApi, dtoToCOALedger } from '@/services/api/chartOfAccounts';
 import BottomNav from '@/components/BottomNav';
 import { useDesktopMode } from '@/hooks/use-desktop';
 
-initializeAccountingData();
+// TODO: Vouchers and voucher lines require backend API (e.g. GET /api/vouchers, /api/voucher-lines). Until then, transactions are empty.
 
 const CLASS_THEME: Record<AccountingClass, {
   gradient: string;
@@ -82,11 +82,38 @@ const LedgerViewPage = () => {
   const navigate = useNavigate();
   const isDesktop = useDesktopMode();
   const { ledgerId } = useParams<{ ledgerId: string }>();
-  const [ledgers] = useState<COALedger[]>(() => JSON.parse(localStorage.getItem('mkt_coa_ledgers') || '[]'));
-  const [vouchers] = useState<VoucherHeader[]>(() => JSON.parse(localStorage.getItem('mkt_acc_vouchers') || '[]'));
-  const [voucherLines] = useState<VoucherLine[]>(() => JSON.parse(localStorage.getItem('mkt_acc_voucher_lines') || '[]'));
+  const [ledgers, setLedgers] = useState<COALedger[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [vouchers] = useState<VoucherHeader[]>([]);
+  const [voucherLines] = useState<VoucherLine[]>([]);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!ledgerId) return;
+      setLoading(true);
+      try {
+        const all: COALedger[] = [];
+        let page = 0;
+        let hasMore = true;
+        while (hasMore && !cancelled) {
+          const res = await chartOfAccountsApi.getPage({ page, size: 100, sort: 'ledgerName,asc' });
+          res.content.forEach(dto => all.push(dtoToCOALedger(dto)));
+          hasMore = page + 1 < res.totalPages;
+          page += 1;
+        }
+        if (!cancelled) setLedgers(all);
+      } catch {
+        if (!cancelled) setLedgers([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [ledgerId]);
 
   const ledger = ledgers.find(l => l.ledger_id === ledgerId);
 
@@ -129,6 +156,14 @@ const LedgerViewPage = () => {
   const receivableBalance = contactLedgers.filter(l => l.classification === 'RECEIVABLE').reduce((s, l) => s + l.current_balance, 0);
   const payableBalance = contactLedgers.filter(l => l.classification === 'PAYABLE').reduce((s, l) => s + l.current_balance, 0);
   const netExposure = receivableBalance - payableBalance;
+
+  if (loading) {
+    return (
+      <div className="min-h-[100dvh] bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Loading ledger…</p>
+      </div>
+    );
+  }
 
   if (!ledger) return (
     <div className="min-h-[100dvh] bg-background flex items-center justify-center">

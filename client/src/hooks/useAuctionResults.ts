@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { fetchAllAuctionResults, type AuctionResultDTO } from '@/services/api';
 
 /**
- * Thin compatibility layer for pages that previously used getStore('mkt_auction_results').
+ * Thin compatibility layer for pages that need auction results from the backend API.
  * Returns the same array shape (AuctionResultDTO[]) so UI needs minimal changes.
  */
 export function useAuctionResults(): {

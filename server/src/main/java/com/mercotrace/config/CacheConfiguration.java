@@ -18,9 +18,10 @@ import org.springframework.boot.info.BuildProperties;
 import org.springframework.boot.info.GitProperties;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.interceptor.KeyGenerator;
-import org.springframework.context.annotation.*;
 import com.mercotrace.service.TraderContextService;
 import com.mercotrace.service.dto.WeighingSessionCreateRequest;
+import com.mercotrace.service.impl.ChartOfAccountServiceImpl;
+import org.springframework.context.annotation.*;
 import org.springframework.data.domain.Pageable;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -110,6 +111,10 @@ public class CacheConfiguration {
             createCache(cm, com.mercotrace.domain.FreightDistribution.class.getName(), jcacheConfiguration);
             createCache(cm, com.mercotrace.domain.Voucher.class.getName(), jcacheConfiguration);
             createCache(cm, com.mercotrace.domain.DailySerial.class.getName(), jcacheConfiguration);
+            // Accounting: Chart of Accounts
+            createCache(cm, com.mercotrace.domain.ChartOfAccount.class.getName(), jcacheConfiguration);
+            createCache(cm, ChartOfAccountServiceImpl.CACHE_COA_BY_ID, jcacheConfiguration);
+            createCache(cm, ChartOfAccountServiceImpl.CACHE_COA_PAGE_BY_TRADER, jcacheConfiguration);
             // Auction module (Sales Pad)
             createCache(cm, com.mercotrace.domain.Auction.class.getName(), jcacheConfiguration);
             createCache(cm, com.mercotrace.domain.AuctionEntry.class.getName(), jcacheConfiguration);
@@ -212,6 +217,38 @@ public class CacheConfiguration {
                 search = params[1].toString().trim();
             }
             return traderId + "::" + page + "::" + size + "::" + sort + "::" + search;
+        };
+    }
+
+    /**
+     * Key generator for chartOfAccounts page cache:
+     * key = "traderId::page::size::sort::search::accountingClass::classification".
+     */
+    @Bean(name = "chartOfAccountsPageKeyGenerator")
+    public KeyGenerator chartOfAccountsPageKeyGenerator() {
+        return (target, method, params) -> {
+            if (traderContextService == null) return "default::0::10::::::";
+            Long traderId = traderContextService.getCurrentTraderId();
+            int page = 0, size = 10;
+            String sort = "";
+            String search = "";
+            String accountingClass = "";
+            String classification = "";
+            if (params != null && params.length >= 1 && params[0] instanceof Pageable p) {
+                page = p.getPageNumber();
+                size = p.getPageSize();
+                sort = p.getSort().isSorted() ? p.getSort().toString() : "";
+            }
+            if (params != null && params.length >= 2 && params[1] != null) {
+                search = params[1].toString().trim();
+            }
+            if (params != null && params.length >= 3 && params[2] != null) {
+                accountingClass = params[2].toString().trim();
+            }
+            if (params != null && params.length >= 4 && params[3] != null) {
+                classification = params[3].toString().trim();
+            }
+            return traderId + "::" + page + "::" + size + "::" + sort + "::" + search + "::" + accountingClass + "::" + classification;
         };
     }
 }

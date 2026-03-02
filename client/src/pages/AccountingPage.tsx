@@ -1,15 +1,13 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, BookOpen, Plus, Lock, Unlock, Shield, Search, ChevronRight, Layers, Wallet, TrendingUp, TrendingDown, Building2, PiggyBank } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import type { COALedger, AccountingClass, LedgerClassification } from '@/types/accounting';
-import { initializeAccountingData } from '@/services/accountingData';
+import { chartOfAccountsApi, dtoToCOALedger } from '@/services/api/chartOfAccounts';
 import BottomNav from '@/components/BottomNav';
 import { useDesktopMode } from '@/hooks/use-desktop';
-
-initializeAccountingData();
 
 const CLASS_CONFIG: Record<AccountingClass, { label: string; icon: typeof Wallet; gradient: string; glow: string; chartColor: string }> = {
   ASSET: { label: 'Assets', icon: Wallet, gradient: 'from-emerald-400 to-teal-500', glow: 'shadow-emerald-500/20', chartColor: '#10b981' },
@@ -37,16 +35,39 @@ const CLASSIFICATION_TO_CLASS: Record<string, AccountingClass> = {
 const AccountingPage = () => {
   const navigate = useNavigate();
   const isDesktop = useDesktopMode();
-  const [ledgers, setLedgers] = useState<COALedger[]>(() => {
-    const stored = localStorage.getItem('mkt_coa_ledgers');
-    return stored ? JSON.parse(stored) : [];
-  });
+  const [ledgers, setLedgers] = useState<COALedger[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [expandedClass, setExpandedClass] = useState<AccountingClass | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState('');
   const [newClassification, setNewClassification] = useState<LedgerClassification>('RECEIVABLE');
   const [newOpening, setNewOpening] = useState('0');
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const all: COALedger[] = [];
+        let page = 0;
+        let hasMore = true;
+        while (hasMore && !cancelled) {
+          const res = await chartOfAccountsApi.getPage({ page, size: 100, sort: 'ledgerName,asc' });
+          res.content.forEach(dto => all.push(dtoToCOALedger(dto)));
+          hasMore = page + 1 < res.totalPages;
+          page += 1;
+        }
+        if (!cancelled) setLedgers(all);
+      } catch {
+        if (!cancelled) setLedgers([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, []);
 
   const filtered = useMemo(() => {
     if (!search) return ledgers;
@@ -69,35 +90,40 @@ const AccountingPage = () => {
     })).filter(d => d.total > 0);
   }, [grouped]);
 
-  const arControlBalance = ledgers.find(l => l.ledger_id === 'ledger-ar-control')?.current_balance || 0;
+  const arControlLedger = ledgers.find(l => l.ledger_name.toLowerCase().includes('accounts receivable') && l.classification === 'CONTROL');
+  const apControlLedger = ledgers.find(l => l.ledger_name.toLowerCase().includes('accounts payable') && l.classification === 'CONTROL');
+  const arControlBalance = arControlLedger?.current_balance ?? 0;
   const arSubledgerSum = ledgers.filter(l => l.classification === 'RECEIVABLE').reduce((s, l) => s + l.current_balance, 0);
-  const apControlBalance = ledgers.find(l => l.ledger_id === 'ledger-ap-control')?.current_balance || 0;
+  const apControlBalance = apControlLedger?.current_balance ?? 0;
   const apSubledgerSum = ledgers.filter(l => l.classification === 'PAYABLE' && !l.is_system).reduce((s, l) => s + l.current_balance, 0);
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!newName.trim()) return;
-    const acClass = CLASSIFICATION_TO_CLASS[newClassification] || 'ASSET';
-    const parentControl = newClassification === 'RECEIVABLE' ? 'ledger-ar-control' : newClassification === 'PAYABLE' ? 'ledger-ap-control' : undefined;
-    const newLedger: COALedger = {
-      ledger_id: crypto.randomUUID(),
-      trader_id: 'trader-001',
-      ledger_name: newName.trim(),
-      accounting_class: acClass,
-      classification: newClassification,
-      parent_control_id: parentControl,
-      is_system: false,
-      is_locked: false,
-      opening_balance: parseFloat(newOpening) || 0,
-      current_balance: parseFloat(newOpening) || 0,
-      created_at: new Date().toISOString(),
-    };
-    const updated = [...ledgers, newLedger];
-    setLedgers(updated);
-    localStorage.setItem('mkt_coa_ledgers', JSON.stringify(updated));
-    setNewName('');
-    setNewOpening('0');
-    setShowAdd(false);
+    const parentId = newClassification === 'RECEIVABLE' ? arControlLedger?.ledger_id : newClassification === 'PAYABLE' ? apControlLedger?.ledger_id : undefined;
+    const parentControlId = parentId != null && parentId !== '' ? Number(parentId) : null;
+    try {
+      const dto = await chartOfAccountsApi.create({
+        ledgerName: newName.trim(),
+        classification: newClassification,
+        openingBalance: parseFloat(newOpening) || 0,
+        parentControlId: parentControlId ?? undefined,
+      });
+      setLedgers(prev => [...prev, dtoToCOALedger(dto)]);
+      setNewName('');
+      setNewOpening('0');
+      setShowAdd(false);
+    } catch (err) {
+      console.error('Failed to create ledger', err);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-[100dvh] bg-background flex items-center justify-center pb-28 lg:pb-6">
+        <p className="text-muted-foreground">Loading chart of accounts…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[100dvh] bg-background pb-28 lg:pb-6">

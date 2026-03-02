@@ -92,7 +92,7 @@ const ArrivalsPage = () => {
   const [desktopTab, setDesktopTab] = useState<'summary' | 'new-arrival'>('summary');
 
   // ── Draft auto-save key ──────────────────────────────────
-  const DRAFT_KEY = 'mkt_arrival_draft';
+  const DRAFT_KEY = 'mercotrace_arrival_draft';
 
   function loadDraft() {
     try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}'); } catch { return {}; }

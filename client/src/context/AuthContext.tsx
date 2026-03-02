@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { AuthState, Trader, User } from '@/types/models';
 import { authApi } from '@/services/api';
-import { initializeMockData } from '@/services/mockData';
 
 interface AuthContextType extends AuthState {
   /** True once initial auth check (getProfile) has completed. Used by ProtectedRoute to avoid redirecting before bootstrap. */
@@ -38,10 +37,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [hasBootstrapped, setHasBootstrapped] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    initializeMockData();
-  }, []);
 
   useEffect(() => {
     let cancelled = false;

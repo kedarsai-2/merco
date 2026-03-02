@@ -1,0 +1,196 @@
+package com.mercotrace.service.impl;
+
+import com.mercotrace.domain.ChartOfAccount;
+import com.mercotrace.repository.ChartOfAccountRepository;
+import com.mercotrace.service.ChartOfAccountService;
+import com.mercotrace.service.TraderContextService;
+import com.mercotrace.service.dto.ChartOfAccountCreateRequest;
+import com.mercotrace.service.dto.ChartOfAccountDTO;
+import com.mercotrace.service.dto.ChartOfAccountUpdateRequest;
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * Service implementation for Chart of Accounts. Maps classification -> accountingClass (frontend contract).
+ */
+@Service
+@Transactional
+public class ChartOfAccountServiceImpl implements ChartOfAccountService {
+
+    /** Per-ledger cache by id (ChartOfAccountDTO). */
+    public static final String CACHE_COA_BY_ID = "chartOfAccountsById";
+
+    /** Paginated list cache by trader + filters (Page<ChartOfAccountDTO>). */
+    public static final String CACHE_COA_PAGE_BY_TRADER = "chartOfAccountsPageByTrader";
+
+    private static final Logger LOG = LoggerFactory.getLogger(ChartOfAccountServiceImpl.class);
+
+    /** From frontend CLASSIFICATION_TO_CLASS. */
+    private static final Map<String, String> CLASSIFICATION_TO_CLASS = new HashMap<>();
+    static {
+        CLASSIFICATION_TO_CLASS.put("RECEIVABLE", "ASSET");
+        CLASSIFICATION_TO_CLASS.put("BANK", "ASSET");
+        CLASSIFICATION_TO_CLASS.put("CASH", "ASSET");
+        CLASSIFICATION_TO_CLASS.put("INVENTORY", "ASSET");
+        CLASSIFICATION_TO_CLASS.put("TAX", "ASSET");
+        CLASSIFICATION_TO_CLASS.put("CONTROL", "ASSET");
+        CLASSIFICATION_TO_CLASS.put("PAYABLE", "LIABILITY");
+        CLASSIFICATION_TO_CLASS.put("LOAN", "LIABILITY");
+        CLASSIFICATION_TO_CLASS.put("INCOME", "INCOME");
+        CLASSIFICATION_TO_CLASS.put("EXPENSE", "EXPENSE");
+        CLASSIFICATION_TO_CLASS.put("EQUITY", "EQUITY");
+    }
+
+    private final ChartOfAccountRepository repository;
+    private final TraderContextService traderContextService;
+
+    public ChartOfAccountServiceImpl(ChartOfAccountRepository repository, TraderContextService traderContextService) {
+        this.repository = repository;
+        this.traderContextService = traderContextService;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @Cacheable(
+        cacheNames = CACHE_COA_PAGE_BY_TRADER,
+        keyGenerator = "chartOfAccountsPageKeyGenerator",
+        unless = "#result == null || #result.empty"
+    )
+    public Page<ChartOfAccountDTO> getPage(Pageable pageable, String search, String accountingClass, String classification) {
+        Long traderId = traderContextService.getCurrentTraderId();
+        String s = (search != null && !search.isBlank()) ? search.trim() : null;
+        String ac = (accountingClass != null && !accountingClass.isBlank()) ? accountingClass.trim() : null;
+        String cl = (classification != null && !classification.isBlank()) ? classification.trim() : null;
+        return repository.findAllByTraderIdAndFilters(traderId, s, ac, cl, pageable).map(this::toDto);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CACHE_COA_BY_ID, key = "#id", unless = "#result == null")
+    public ChartOfAccountDTO getById(Long id) {
+        Long traderId = traderContextService.getCurrentTraderId();
+        ChartOfAccount entity = repository.findOneByTraderIdAndId(traderId, id)
+            .orElseThrow(() -> new IllegalArgumentException("Chart of account not found: " + id));
+        return toDto(entity);
+    }
+
+    @Override
+    @Caching(
+        put = {
+            @CachePut(cacheNames = CACHE_COA_BY_ID, key = "#result.id")
+        },
+        evict = {
+            @CacheEvict(cacheNames = CACHE_COA_PAGE_BY_TRADER, allEntries = true)
+        }
+    )
+    public ChartOfAccountDTO create(ChartOfAccountCreateRequest request) {
+        Long traderId = traderContextService.getCurrentTraderId();
+        String name = request.getLedgerName().trim();
+        if (repository.findOneByTraderIdAndLedgerNameIgnoreCase(traderId, name).isPresent()) {
+            throw new IllegalArgumentException("A ledger with this name already exists");
+        }
+        String classification = request.getClassification().trim();
+        String accountingClass = CLASSIFICATION_TO_CLASS.getOrDefault(classification, "ASSET");
+
+        ChartOfAccount entity = new ChartOfAccount();
+        entity.setTraderId(traderId);
+        entity.setLedgerName(name);
+        entity.setAccountingClass(accountingClass);
+        entity.setClassification(classification);
+        entity.setParentControlId(request.getParentControlId());
+        entity.setContactId(request.getContactId());
+        entity.setSystem(false);
+        entity.setLocked(false);
+        BigDecimal ob = request.getOpeningBalance() != null ? request.getOpeningBalance() : BigDecimal.ZERO;
+        entity.setOpeningBalance(ob);
+        entity.setCurrentBalance(ob);
+        entity = repository.save(entity);
+        LOG.debug("Created chart of account: id={}, ledgerName={}", entity.getId(), entity.getLedgerName());
+        return toDto(entity);
+    }
+
+    @Override
+    @Caching(
+        put = {
+            @CachePut(cacheNames = CACHE_COA_BY_ID, key = "#id")
+        },
+        evict = {
+            @CacheEvict(cacheNames = CACHE_COA_PAGE_BY_TRADER, allEntries = true)
+        }
+    )
+    public ChartOfAccountDTO update(Long id, ChartOfAccountUpdateRequest request) {
+        Long traderId = traderContextService.getCurrentTraderId();
+        ChartOfAccount entity = repository.findOneByTraderIdAndId(traderId, id)
+            .orElseThrow(() -> new IllegalArgumentException("Chart of account not found: " + id));
+        if (Boolean.TRUE.equals(entity.getSystem())) {
+            throw new IllegalArgumentException("System ledgers cannot be updated");
+        }
+        String name = request.getLedgerName().trim();
+        repository.findOneByTraderIdAndLedgerNameIgnoreCase(traderId, name).ifPresent(existing -> {
+            if (!existing.getId().equals(id)) {
+                throw new IllegalArgumentException("A ledger with this name already exists");
+            }
+        });
+        String classification = request.getClassification().trim();
+        String accountingClass = CLASSIFICATION_TO_CLASS.getOrDefault(classification, entity.getAccountingClass());
+
+        entity.setLedgerName(name);
+        entity.setAccountingClass(accountingClass);
+        entity.setClassification(classification);
+        entity.setParentControlId(request.getParentControlId());
+        entity.setContactId(request.getContactId());
+        if (request.getOpeningBalance() != null) entity.setOpeningBalance(request.getOpeningBalance());
+        if (request.getCurrentBalance() != null) entity.setCurrentBalance(request.getCurrentBalance());
+        if (request.getLocked() != null) entity.setLocked(request.getLocked());
+        entity = repository.save(entity);
+        return toDto(entity);
+    }
+
+    @Override
+    @Caching(
+        evict = {
+            @CacheEvict(cacheNames = CACHE_COA_BY_ID, key = "#id"),
+            @CacheEvict(cacheNames = CACHE_COA_PAGE_BY_TRADER, allEntries = true)
+        }
+    )
+    public void delete(Long id) {
+        Long traderId = traderContextService.getCurrentTraderId();
+        ChartOfAccount entity = repository.findOneByTraderIdAndId(traderId, id)
+            .orElseThrow(() -> new IllegalArgumentException("Chart of account not found: " + id));
+        if (Boolean.TRUE.equals(entity.getSystem())) {
+            throw new IllegalArgumentException("System ledgers cannot be deleted");
+        }
+        repository.delete(entity);
+        LOG.debug("Deleted chart of account: id={}", id);
+    }
+
+    private ChartOfAccountDTO toDto(ChartOfAccount e) {
+        ChartOfAccountDTO d = new ChartOfAccountDTO();
+        d.setId(e.getId());
+        d.setTraderId(e.getTraderId());
+        d.setLedgerName(e.getLedgerName());
+        d.setAccountingClass(e.getAccountingClass());
+        d.setClassification(e.getClassification());
+        d.setParentControlId(e.getParentControlId());
+        d.setContactId(e.getContactId());
+        d.setSystem(e.getSystem());
+        d.setLocked(e.getLocked());
+        d.setOpeningBalance(e.getOpeningBalance());
+        d.setCurrentBalance(e.getCurrentBalance());
+        d.setCreatedAt(e.getCreatedDate());
+        d.setCreatedBy(e.getCreatedBy());
+        d.setLastModifiedBy(e.getLastModifiedBy());
+        return d;
+    }
+}

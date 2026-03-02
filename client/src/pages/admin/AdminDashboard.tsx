@@ -5,7 +5,8 @@ import {
   Sparkles, Zap, Crown, Gem, ShieldCheck, CircleDollarSign
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { SEED_DAILY_SUMMARY } from '@/services/mockData';
+// TODO: Daily summary from backend API. Placeholder until endpoint exists.
+const DEFAULT_DAILY_SUMMARY = { date: '', totalArrivals: 0, totalLots: 0, totalAuctions: 0, totalBills: 0, totalRevenue: 0, totalCollected: 0, totalPending: 0 };
 
 const statCards = [
   { label: 'Total Traders', value: '24', change: '+3', up: true, icon: Crown, gradient: 'from-blue-500 via-blue-400 to-cyan-400', glow: 'shadow-blue-500/30' },
@@ -31,7 +32,7 @@ const recentActivity = [
 ];
 
 const AdminDashboard = () => {
-  const summary = SEED_DAILY_SUMMARY;
+  const summary = DEFAULT_DAILY_SUMMARY;
 
   return (
     <div className="space-y-6 relative">
@@ -115,10 +116,10 @@ const AdminDashboard = () => {
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: 'Arrivals', value: summary.totalArrivals, icon: Truck, gradient: 'from-blue-500 to-cyan-400', glow: 'shadow-blue-500/20' },
-                { label: 'Lots', value: summary.totalLots, icon: Package, gradient: 'from-violet-500 to-fuchsia-500', glow: 'shadow-violet-500/20' },
-                { label: 'Auctions', value: summary.totalAuctions, icon: Gavel, gradient: 'from-amber-400 to-orange-500', glow: 'shadow-amber-500/20' },
-                { label: 'Bills', value: summary.totalBills, icon: Receipt, gradient: 'from-emerald-400 to-teal-500', glow: 'shadow-emerald-500/20' },
+                { label: 'Arrivals', value: summary.totalArrivals ?? 0, icon: Truck, gradient: 'from-blue-500 to-cyan-400', glow: 'shadow-blue-500/20' },
+                { label: 'Lots', value: summary.totalLots ?? 0, icon: Package, gradient: 'from-violet-500 to-fuchsia-500', glow: 'shadow-violet-500/20' },
+                { label: 'Auctions', value: summary.totalAuctions ?? 0, icon: Gavel, gradient: 'from-amber-400 to-orange-500', glow: 'shadow-amber-500/20' },
+                { label: 'Bills', value: summary.totalBills ?? 0, icon: Receipt, gradient: 'from-emerald-400 to-teal-500', glow: 'shadow-emerald-500/20' },
               ].map((item) => (
                 <motion.div
                   key={item.label}
@@ -139,19 +140,19 @@ const AdminDashboard = () => {
             <div className="mt-5 space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Collected</span>
-                <span className="font-semibold text-success">₹{(summary.totalCollected / 1000).toFixed(0)}K</span>
+                <span className="font-semibold text-success">₹{((summary.totalCollected ?? 0) / 1000).toFixed(0)}K</span>
               </div>
               <div className="w-full h-3 bg-muted/50 rounded-full overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}
-                  animate={{ width: `${(summary.totalCollected / summary.totalRevenue) * 100}%` }}
+                  animate={{ width: `${((summary.totalCollected ?? 0) / ((summary.totalRevenue ?? 1) || 1)) * 100}%` }}
                   transition={{ delay: 0.5, duration: 0.8 }}
                   className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
                 />
               </div>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Pending: ₹{(summary.totalPending / 1000).toFixed(0)}K</span>
-                <span>Total: ₹{(summary.totalRevenue / 1000).toFixed(0)}K</span>
+                <span>Pending: ₹{((summary.totalPending ?? 0) / 1000).toFixed(0)}K</span>
+                <span>Total: ₹{((summary.totalRevenue ?? 0) / 1000).toFixed(0)}K</span>
               </div>
             </div>
           </div>

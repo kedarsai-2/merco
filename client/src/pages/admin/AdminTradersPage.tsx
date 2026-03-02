@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, CheckCircle2, XCircle, Clock, Eye,
@@ -7,14 +7,8 @@ import {
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { traderApi } from '@/services/api';
 import type { Trader, ApprovalStatus } from '@/types/models';
-
-const mockTraders: Trader[] = [
-  { trader_id: '1', business_name: 'Raj Vegetable Mart', owner_name: 'Rajesh Kumar', mobile: '9876543210', email: 'raj@test.com', address: 'Market Yard', city: 'Pune', state: 'Maharashtra', pin_code: '411001', category: 'Vegetables', approval_status: 'PENDING', bill_prefix: '', created_at: new Date(Date.now() - 2 * 3600000).toISOString(), updated_at: new Date().toISOString() },
-  { trader_id: '2', business_name: 'Patel Onion Traders', owner_name: 'Vikram Patel', mobile: '9876543211', email: 'patel@test.com', address: 'APMC Market', city: 'Nashik', state: 'Maharashtra', pin_code: '422001', category: 'Vegetables', approval_status: 'APPROVED', bill_prefix: 'PO', created_at: new Date(Date.now() - 86400000).toISOString(), updated_at: new Date().toISOString() },
-  { trader_id: '3', business_name: 'Krishna Spice Hub', owner_name: 'Krishna Das', mobile: '9876543212', email: 'krishna@test.com', address: 'Spice Market', city: 'Guntur', state: 'Andhra Pradesh', pin_code: '522001', category: 'Spices', approval_status: 'APPROVED', bill_prefix: 'KS', created_at: new Date(Date.now() - 2 * 86400000).toISOString(), updated_at: new Date().toISOString() },
-  { trader_id: '4', business_name: 'Ganesh Fruits Co.', owner_name: 'Ganesh Patil', mobile: '9876543213', email: 'ganesh@test.com', address: 'Fruit Market', city: 'Mumbai', state: 'Maharashtra', pin_code: '400001', category: 'Fruits', approval_status: 'PENDING', bill_prefix: '', created_at: new Date(Date.now() - 3 * 86400000).toISOString(), updated_at: new Date().toISOString() },
-];
 
 const statusConfig: Record<ApprovalStatus, { color: string; icon: typeof CheckCircle2; label: string }> = {
   PENDING: { color: 'bg-amber-500/10 text-amber-600 dark:text-amber-400', icon: Clock, label: 'Pending' },
@@ -22,10 +16,14 @@ const statusConfig: Record<ApprovalStatus, { color: string; icon: typeof CheckCi
 };
 
 const AdminTradersPage = () => {
-  const [traders, setTraders] = useState(mockTraders);
+  const [traders, setTraders] = useState<Trader[]>([]);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<ApprovalStatus | 'ALL'>('ALL');
   const [selectedTrader, setSelectedTrader] = useState<Trader | null>(null);
+
+  useEffect(() => {
+    traderApi.listForAdmin({ page: 0, size: 500 }).then(setTraders).catch(() => setTraders([]));
+  }, []);
 
   const filtered = traders.filter(t => {
     const matchSearch = t.business_name.toLowerCase().includes(search.toLowerCase()) || t.owner_name.toLowerCase().includes(search.toLowerCase()) || (t.city || '').toLowerCase().includes(search.toLowerCase());
@@ -33,9 +31,14 @@ const AdminTradersPage = () => {
     return matchSearch && matchStatus;
   });
 
-  const handleApprove = (id: string) => {
-    setTraders(prev => prev.map(t => t.trader_id === id ? { ...t, approval_status: 'APPROVED' as ApprovalStatus } : t));
-    setSelectedTrader(null);
+  const handleApprove = async (id: string) => {
+    try {
+      const updated = await traderApi.approve(id);
+      setTraders(prev => prev.map(t => t.trader_id === id ? updated : t));
+      setSelectedTrader(null);
+    } catch {
+      // keep UI state unchanged on error
+    }
   };
 
   const counts = { ALL: traders.length, PENDING: traders.filter(t => t.approval_status === 'PENDING').length, APPROVED: traders.filter(t => t.approval_status === 'APPROVED').length };

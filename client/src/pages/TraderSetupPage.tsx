@@ -110,12 +110,6 @@ const TraderSetupPage = () => {
     if (!validateAll()) { toast.error('Please fill all required fields'); return; }
     setIsSubmitting(true);
     try {
-      localStorage.setItem('mkt_trader_profile', JSON.stringify({
-        business_name: form.businessName.trim(), business_category: form.businessCategory,
-        gstin: form.gstin.toUpperCase() || null, address: form.address.trim(),
-        shop_no: form.shopNo.trim(), state: form.state, market: form.market.trim(),
-        description: form.description.trim() || null, setup_completed: true, created_at: new Date().toISOString(),
-      }));
       await register({
         businessName: form.businessName.trim(), ownerName: form.businessName.trim(),
         mobile: '', email: `trader_${Date.now()}@mercotrace.app`, password: 'trader123456',

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+        Chart of Accounts (CoA) — ledger definitions.
+        Aligned with frontend COALedger in client/src/types/accounting.ts.
+        Audit: created_by, created_date, last_modified_by, last_modified_date.
+    -->
+    <changeSet id="20260302180000-1" author="mercotrace">
+        <createTable tableName="chart_of_account">
+            <column name="id" type="bigint">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="trader_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ledger_name" type="varchar(150)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="accounting_class" type="varchar(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="classification" type="varchar(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="parent_control_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+            <column name="contact_id" type="bigint">
+                <constraints nullable="true"/>
+            </column>
+            <column name="is_system" type="boolean" valueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_locked" type="boolean" valueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="opening_balance" type="numeric(19,2)" valueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="current_balance" type="numeric(19,2)" valueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="varchar(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_date" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_modified_by" type="varchar(50)"/>
+            <column name="last_modified_date" type="${datetimeType}"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="chart_of_account" baseColumnNames="trader_id"
+            constraintName="fk_chart_of_account_trader" referencedTableName="trader" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="chart_of_account" baseColumnNames="parent_control_id"
+            constraintName="fk_chart_of_account_parent" referencedTableName="chart_of_account" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="chart_of_account" baseColumnNames="contact_id"
+            constraintName="fk_chart_of_account_contact" referencedTableName="contact" referencedColumnNames="id"/>
+
+        <addUniqueConstraint tableName="chart_of_account"
+            columnNames="trader_id, ledger_name"
+            constraintName="ux_chart_of_account_trader_name"/>
+
+        <createIndex tableName="chart_of_account" indexName="idx_chart_of_account_trader">
+            <column name="trader_id"/>
+        </createIndex>
+        <createIndex tableName="chart_of_account" indexName="idx_chart_of_account_parent">
+            <column name="parent_control_id"/>
+        </createIndex>
+        <createIndex tableName="chart_of_account" indexName="idx_chart_of_account_contact">
+            <column name="contact_id"/>
+        </createIndex>
+        <createIndex tableName="chart_of_account" indexName="idx_chart_of_account_class">
+            <column name="accounting_class"/>
+        </createIndex>
+        <createIndex tableName="chart_of_account" indexName="idx_chart_of_account_classification">
+            <column name="classification"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

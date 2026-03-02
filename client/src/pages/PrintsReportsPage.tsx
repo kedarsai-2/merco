@@ -97,12 +97,8 @@ const PrintsReportsPage = () => {
     return { totalBills, totalBags, grossSale, commission, userFee, coolie, netSales, cashReceived, bankReceived, totalCollected, outstanding };
   }, [bills, auctionResults]);
 
-  // Party exposure mock data
-  const partyExposure = useMemo(() => [
-    { party: 'Vijay Traders', totalSale: 125000, totalCollected: 80000, outstanding: 45000, oldestDue: '2026-02-10', riskLevel: 'Medium' },
-    { party: 'Mahalaxmi Store', totalSale: 89000, totalCollected: 89000, outstanding: 0, oldestDue: '-', riskLevel: 'Low' },
-    { party: 'Ganesh Mart', totalSale: 56000, totalCollected: 20000, outstanding: 36000, oldestDue: '2026-01-25', riskLevel: 'High' },
-  ], []);
+  // TODO: Party exposure from backend API (e.g. AR/AP aging or settlement). No mock data.
+  const partyExposure = useMemo(() => [], []);
 
   const lotReconciliation = useMemo(() => [
     { seller: 'Ramesh Kumar', arrivalDate: '2026-02-20', commodity: 'Onion', arrivedBags: 30, soldBags: 30, pendingBags: 0, avgRate: 825, grossSale: 24750, status: 'Complete' },

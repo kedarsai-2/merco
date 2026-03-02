@@ -5,7 +5,7 @@ export { arrivalsApi } from './arrivals';
 export { traderApi } from './trader';
 export { vehicleApi } from './vehicles';
 export { categoryApi } from './categories';
-export { rbacApi } from './mock';
+export { rbacApi } from './rbac';
 export { auctionApi, fetchAllAuctionResults } from './auction';
 export { weighingApi } from './weighing';
 export { printLogApi } from './printLog';
@@ -39,4 +39,10 @@ export type {
   ListPattisParams,
 } from './settlement';
 export type { SalesBillDTO, SalesBillPage, SalesBillCreateOrUpdateRequest } from './billing';
-
+export { chartOfAccountsApi } from './chartOfAccounts';
+export type {
+  ChartOfAccountDTO,
+  ChartOfAccountPage,
+  ChartOfAccountCreateRequest,
+  ChartOfAccountUpdateRequest,
+} from './chartOfAccounts';

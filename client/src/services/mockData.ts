@@ -159,18 +159,7 @@ const SEED_ARRIVAL_RECORDS = () => {
   return { arrivals, auctionResults, weighingSessions, vouchers };
 };
 
+/** No localStorage or mock seeding. Auth, categories, traders, etc. come from backend APIs only. */
 export function initializeMockData() {
-  if (!localStorage.getItem('mkt_initialized')) {
-    // Categories: temporary mock until backend /api/business-categories (see NOT_IMPLEMENTED.md)
-    localStorage.setItem('mkt_categories', JSON.stringify(SEED_CATEGORIES));
-    // Contacts, commodities, arrivals: backend exists — do not seed
-    localStorage.setItem('mkt_users', JSON.stringify([SEED_USER]));
-    localStorage.setItem('mkt_traders', JSON.stringify([SEED_TRADER]));
-    localStorage.setItem('mkt_initialized', 'true');
-  }
-  if (!localStorage.getItem('mkt_users')) {
-    localStorage.setItem('mkt_users', JSON.stringify([SEED_USER]));
-    localStorage.setItem('mkt_traders', JSON.stringify([SEED_TRADER]));
-  }
-  // Arrival/weighing/vouchers: no backend for detail records — do not seed (see NOT_IMPLEMENTED.md)
+  // No-op.
 }

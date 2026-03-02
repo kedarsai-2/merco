@@ -103,15 +103,14 @@ const WritersPadPage = () => {
     return () => clearInterval(interval);
   }, [connectedScale, isLoadOnScale, weightLocked]);
 
-  // Req 12: Check for end-of-day cleanup
+  // Req 12: Check for end-of-day cleanup (UI-only preference key; no Mkt)
   useEffect(() => {
-    const lastCleanup = localStorage.getItem('mkt_writer_last_cleanup');
+    const lastCleanup = localStorage.getItem('mercotrace_writer_last_cleanup');
     const today = new Date().toISOString().split('T')[0];
     if (lastCleanup !== today) {
-      // Clear cards and log from previous day
       setBidCards([]);
       setWeightLog([]);
-      localStorage.setItem('mkt_writer_last_cleanup', today);
+      localStorage.setItem('mercotrace_writer_last_cleanup', today);
     }
   }, []);
 
@@ -230,7 +229,7 @@ const WritersPadPage = () => {
   const endOfDayCleanup = () => {
     setBidCards([]);
     setWeightLog([]);
-    localStorage.setItem('mkt_writer_last_cleanup', new Date().toISOString().split('T')[0]);
+    localStorage.setItem('mercotrace_writer_last_cleanup', new Date().toISOString().split('T')[0]);
     toast.success('All bid cards cleared for end of day');
   };
 

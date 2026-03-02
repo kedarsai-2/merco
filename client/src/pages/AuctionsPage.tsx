@@ -65,7 +65,7 @@ interface SaleEntry {
 const presetButtons = [10, 20, 50];
 
 // ── Draft key for auto-save (only auction localStorage key; all other auction data is from API) ──
-const AUCTION_DRAFT_KEY = 'mkt_auction_draft';
+const AUCTION_DRAFT_KEY = 'mercotrace_auction_draft';
 
 interface AuctionDraft {
   selectedLotId: string | null;

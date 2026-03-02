@@ -7,7 +7,7 @@ export { arrivalsApi } from './api/arrivals';
 export { traderApi } from './api/trader';
 export { vehicleApi } from './api/vehicles';
 export { categoryApi } from './api/categories';
-export { rbacApi } from './api/mock';
+export { rbacApi } from './api/rbac';
 export { auctionApi, fetchAllAuctionResults } from './api/auction';
 export { weighingApi } from './api/weighing';
 export { printLogApi } from './api/printLog';
@@ -16,6 +16,7 @@ export { stockPurchaseApi } from './api/stockPurchase';
 export { cdnApi } from './api/cdn';
 export { settlementApi } from './api/settlement';
 export { billingApi } from './api/billing';
+export { chartOfAccountsApi } from './api/chartOfAccounts';
 export type {
   SellerSettlementDTO,
   SettlementLotDTO,
@@ -51,3 +52,9 @@ export type { PrintLogDTO, PrintLogCreateRequest } from './api/printLog';
 export type { OpenLotDTO, ClosureDTO, CreateClosureRequest } from './api/selfSale';
 export type { StockPurchaseDTO, StockPurchasePage, CreateStockPurchaseRequest } from './api/stockPurchase';
 export type { SalesBillDTO, SalesBillPage, SalesBillCreateOrUpdateRequest } from './api/billing';
+export type {
+  ChartOfAccountDTO,
+  ChartOfAccountPage,
+  ChartOfAccountCreateRequest,
+  ChartOfAccountUpdateRequest,
+} from './api/chartOfAccounts';

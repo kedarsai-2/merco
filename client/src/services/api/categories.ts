@@ -58,6 +58,36 @@ export const categoryApi = {
     const data = await handleResponse<BusinessCategoryDto[]>(res, 'Failed to load categories');
     return data.map(mapDtoToCategory);
   },
+
+  async create(payload: { category_name: string; is_active?: boolean }): Promise<BusinessCategory> {
+    const res = await apiFetch('/business-categories', {
+      method: 'POST',
+      body: JSON.stringify({
+        categoryName: payload.category_name,
+        isActive: payload.is_active ?? true,
+      }),
+    });
+    const dto = await handleResponse<BusinessCategoryDto>(res, 'Failed to create category');
+    return mapDtoToCategory(dto);
+  },
+
+  async update(id: string, payload: { category_name: string; is_active?: boolean }): Promise<BusinessCategory> {
+    const res = await apiFetch(`/business-categories/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        id: Number(id),
+        categoryName: payload.category_name,
+        isActive: payload.is_active,
+      }),
+    });
+    const dto = await handleResponse<BusinessCategoryDto>(res, 'Failed to update category');
+    return mapDtoToCategory(dto);
+  },
+
+  async delete(id: string): Promise<void> {
+    const res = await apiFetch(`/business-categories/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (!res.ok) await handleResponse<unknown>(res, 'Failed to delete category');
+  },
 };
 
 

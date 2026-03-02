@@ -238,7 +238,7 @@ export const auctionApi = {
 
 /**
  * Fetches all auction results (paginated) and returns a single array.
- * Use this as a drop-in replacement for getStore('mkt_auction_results') so
+ * Use this so
  * downstream pages (Billing, Weighing, Logistics, etc.) need minimal changes.
  * Result shape is normalized to include lotId, entries[].bidNumber, etc.
  */

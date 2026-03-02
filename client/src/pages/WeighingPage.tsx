@@ -252,7 +252,7 @@ const WeighingPage = () => {
     );
   };
 
-  // Complete session and save (backend + localStorage for BillingPage compatibility)
+  // Complete session and save (backend only; no localStorage for business data)
   const completeSession = async () => {
     if (!session || !selectedBid) return;
 
