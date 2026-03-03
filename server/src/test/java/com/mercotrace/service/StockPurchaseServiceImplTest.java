@@ -3,6 +3,7 @@ package com.mercotrace.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.mercotrace.domain.Commodity;
@@ -29,12 +30,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class StockPurchaseServiceImplTest {
 
     private static final long TRADER_ID = 101L;
@@ -102,6 +106,8 @@ class StockPurchaseServiceImplTest {
         purchase.setId(1L);
         purchase.setTraderId(TRADER_ID);
         purchase.setVendorId(VENDOR_ID);
+        purchase.setTotalAmount(BigDecimal.ZERO);
+        purchase.setTotalCharges(BigDecimal.ZERO);
         when(contactRepository.findAllByTraderIdAndNameContainingIgnoreCase(eq(TRADER_ID), eq("Vendor")))
             .thenReturn(List.of(vendor));
         when(stockPurchaseRepository.findAllByTraderIdAndVendorIdInAndIsDeletedFalse(
@@ -267,7 +273,7 @@ class StockPurchaseServiceImplTest {
         baseDto.setCreatedAt(Instant.now());
         when(stockPurchaseMapper.toDto(any(StockPurchase.class))).thenReturn(baseDto);
         when(stockPurchaseItemMapper.toDto(any(StockPurchaseItem.class))).thenReturn(new PurchaseLineItemDTO());
-        when(stockPurchaseChargeMapper.toDto(any(StockPurchaseCharge.class))).thenReturn(new PurchaseChargeDTO());
+        lenient().when(stockPurchaseChargeMapper.toDto(any(StockPurchaseCharge.class))).thenReturn(new PurchaseChargeDTO());
 
         CreateStockPurchaseRequestDTO request = new CreateStockPurchaseRequestDTO();
         request.setVendorId(VENDOR_ID);

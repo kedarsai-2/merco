@@ -21,6 +21,7 @@ import com.mercotrace.repository.SellerInVehicleRepository;
 import com.mercotrace.repository.VehicleRepository;
 import com.mercotrace.repository.VehicleWeightRepository;
 import com.mercotrace.repository.VoucherRepository;
+import com.mercotrace.service.TraderContextService;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -67,11 +68,15 @@ class ArrivalServiceTest {
     @Mock
     private ContactRepository contactRepository;
 
+    @Mock
+    private TraderContextService traderContextService;
+
     @InjectMocks
     private ArrivalService arrivalService;
 
     @Test
     void listArrivalsReturnsEmptyPageWhenNoVehicles() {
+        when(traderContextService.getCurrentTraderId()).thenReturn(1L);
         Pageable pageable = PageRequest.of(0, 20);
         when(vehicleRepository.findAllByTraderIdOrderByArrivalDatetimeDesc(anyLong(), any(Pageable.class)))
             .thenReturn(Page.empty(pageable));
@@ -84,6 +89,7 @@ class ArrivalServiceTest {
 
     @Test
     void listArrivalsAggregatesSummaryFields() {
+        when(traderContextService.getCurrentTraderId()).thenReturn(1L);
         Pageable pageable = PageRequest.of(0, 20);
 
         Vehicle vehicle = new Vehicle();

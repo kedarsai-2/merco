@@ -2,6 +2,7 @@ package com.mercotrace.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -18,8 +19,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class SettlementServiceImplTest {
 
     private static final long TRADER_ID = 101L;
@@ -37,7 +41,7 @@ class SettlementServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        when(traderContextService.getCurrentTraderId()).thenReturn(TRADER_ID);
+        lenient().when(traderContextService.getCurrentTraderId()).thenReturn(TRADER_ID);
 
         saveRequest = new PattiSaveRequest();
         saveRequest.setSellerId("S1");

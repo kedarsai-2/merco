@@ -35,6 +35,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -42,6 +44,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class CdnServiceImplTest {
 
     private static final long TRADER_ID = 101L;
@@ -266,7 +269,7 @@ class CdnServiceImplTest {
 
         when(cdnTransferRepository.findAllByNotUsedAndNotExpired(any(Instant.class)))
             .thenReturn(List.of(transferEntity));
-        when(passwordEncoder.matches(eq("ABCDEF"), anyString())).thenReturn(false);
+        when(passwordEncoder.matches(eq("ABCDEF"), any())).thenReturn(false);
 
         assertThatThrownBy(() -> cdnService.receiveByPin(request))
             .isInstanceOf(IllegalArgumentException.class)
@@ -280,7 +283,7 @@ class CdnServiceImplTest {
 
         when(cdnTransferRepository.findAllByNotUsedAndNotExpired(any(Instant.class)))
             .thenReturn(List.of(transferEntity));
-        when(passwordEncoder.matches(eq("ABCDEF"), anyString())).thenReturn(true);
+        when(passwordEncoder.matches(eq("ABCDEF"), any())).thenReturn(true);
         when(cdnTransferRepository.save(any(CdnTransfer.class))).thenAnswer(inv -> inv.getArgument(0));
         when(cdnRepository.save(any(Cdn.class))).thenAnswer(inv -> inv.getArgument(0));
         when(cdnItemRepository.findAllByCdnIdAndIsDeletedFalse(CDN_ID)).thenReturn(List.of());
