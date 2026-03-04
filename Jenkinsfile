@@ -128,6 +128,7 @@ pipeline {
                         def pathAdd = params.NODE_HOME?.trim() ? "export PATH=\"${params.NODE_HOME.trim()}/bin:\$PATH\" && " : ''
                         sh 'mkdir -p test-results/html'
                         sh "${pathAdd}CI=true npm run test:coverage"
+                        sh 'test -f test-results/html/index.html && wc -c test-results/html/index.html || (echo "ERROR: Frontend test report not generated"; exit 1)'
                     }
                 }
             }

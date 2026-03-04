@@ -1,32 +1,369 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" href="./favicon.ico" sizes="48x48">
-    <link rel="icon" href="./favicon.svg" sizes="any" type="image/svg+xml">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vitest</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400&display=swap"
-      rel="stylesheet"
-    />
-    <script>
-      (function () {
-        const prefersDark =
-          window.matchMedia &&
-          window.matchMedia("(prefers-color-scheme: dark)").matches;
-        const setting = localStorage.getItem("vueuse-color-scheme") || "auto";
-        if (setting === "dark" || (prefersDark && setting !== "light"))
-          document.documentElement.classList.toggle("dark", true);
-      })();
-    </script>
-    <script>window.METADATA_PATH="html.meta.json.gz"</script>
-    <script type="module" src="./assets/index-D_ryMEPs.js"></script>
-    <link rel="stylesheet" href="./assets/index-X8b7Z_4p.css">
-  </head>
-  <body>
-    <div id="app"></div>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Frontend Test Report</title>
+</head>
+<body>
+  <!-- MercoTrace static test report - no JavaScript required -->
+  <h1>Frontend Test Report</h1>
+  <p><b>Total:</b> 40 | <b>Passed:</b> 40 | <b>Failed:</b> 0 | <b>Time:</b> 0.785913917s</p>
+  <table border="1" cellpadding="8" cellspacing="0" width="100%">
+    <thead>
+      <tr>
+        <th>Test</th>
+        <th>Tests</th>
+        <th>Failures</th>
+        <th>Skipped</th>
+        <th>Time</th>
+      </tr>
+    </thead>
+    <tbody>
+    <tr class="suite pass">
+      <td>src/components/MercotraceLogo.test.tsx</td>
+      <td>7</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.071086s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">MercotraceLogo &amp;gt; renders with text by default</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.037311291s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">MercotraceLogo &amp;gt; hides text when showText is false</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.001843s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">MercotraceLogo &amp;gt; renders with different sizes</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.012867916s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">MercotraceLogo &amp;gt; applies custom className</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.007755125s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">MercotraceIcon &amp;gt; renders SVG with default size</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.006945417s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">MercotraceIcon &amp;gt; renders with custom size</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.001748542s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">MercotraceIcon &amp;gt; renders with custom color</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.001042333s</td>
+    </tr>
+    <tr class="suite pass">
+      <td>src/components/MobileBackButton.test.tsx</td>
+      <td>3</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.143262167s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">MobileBackButton &amp;gt; renders with aria-label for accessibility</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.101624083s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">MobileBackButton &amp;gt; calls onClick when clicked</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.025629208s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">MobileBackButton &amp;gt; applies custom className</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.013503708s</td>
+    </tr>
+    <tr class="suite pass">
+      <td>src/components/PortraitLock.test.tsx</td>
+      <td>4</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.140850583s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">PortraitLock &amp;gt; returns null when not in landscape (desktop size)</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.030225958s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">PortraitLock &amp;gt; returns null when height is large (not mobile landscape)</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.001768375s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">PortraitLock &amp;gt; shows overlay when in mobile landscape</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.090200166s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">PortraitLock &amp;gt; adds and removes resize listener</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.016837334s</td>
+    </tr>
+    <tr class="suite pass">
+      <td>src/components/ProtectedRoute.test.tsx</td>
+      <td>3</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.0702085s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">ProtectedRoute &amp;gt; shows loading spinner when not bootstrapped</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.04581925s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">ProtectedRoute &amp;gt; redirects to login when bootstrapped but not authenticated</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.010698209s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">ProtectedRoute &amp;gt; renders children when authenticated</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.012524791s</td>
+    </tr>
+    <tr class="suite pass">
+      <td>src/pages/NotFound.test.tsx</td>
+      <td>4</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.088020958s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">NotFound &amp;gt; renders 404 heading</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.067076708s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">NotFound &amp;gt; renders page not found message</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.002197s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">NotFound &amp;gt; renders link to home</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.01271675s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">NotFound &amp;gt; logs 404 error on mount</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.003890375s</td>
+    </tr>
+    <tr class="suite pass">
+      <td>src/test/example.test.ts</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.001359167s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">example &amp;gt; should pass</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.00070325s</td>
+    </tr>
+    <tr class="suite pass">
+      <td>src/components/ui/button.test.tsx</td>
+      <td>8</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.165125667s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">Button &amp;gt; renders with default variant and size</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.100294875s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">Button &amp;gt; calls onClick when clicked</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.015599416s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">Button &amp;gt; renders destructive variant</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.00765575s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">Button &amp;gt; renders outline variant</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.004300333s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">Button &amp;gt; renders small size</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.004034459s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">Button &amp;gt; renders large size</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.016194333s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">Button &amp;gt; is disabled when disabled prop is true</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.010410458s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">Button &amp;gt; applies custom className</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.004251667s</td>
+    </tr>
+    <tr class="suite pass">
+      <td>src/components/ui/card.test.tsx</td>
+      <td>4</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.079390834s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">Card &amp;gt; renders Card with children</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.021160709s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">Card &amp;gt; renders full card structure</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.003421292s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">Card &amp;gt; CardTitle renders as heading</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.052051542s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">Card &amp;gt; applies custom className to Card</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.001807584s</td>
+    </tr>
+    <tr class="suite pass">
+      <td>src/components/ui/input.test.tsx</td>
+      <td>6</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.026610041s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">Input &amp;gt; renders with placeholder</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.01706125s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">Input &amp;gt; accepts and displays value</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.001942958s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">Input &amp;gt; calls onChange when user types</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.003722416s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">Input &amp;gt; is disabled when disabled prop is true</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.000957292s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">Input &amp;gt; renders with type password</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.001013458s</td>
+    </tr>
+    <tr class="case pass">
+      <td class="indent">Input &amp;gt; applies custom className</td>
+      <td>1</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0.001008125s</td>
+    </tr>
+    </tbody>
+  </table>
+</body>
 </html>
