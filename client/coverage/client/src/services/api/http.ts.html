@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">94.11% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>16/17</span>
+                <span class='fraction'>0/17</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">80% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>4/5</span>
+                <span class='fraction'>0/1</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>1/1</span>
+                <span class='fraction'>0/1</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">94.11% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>16/17</span>
+                <span class='fraction'>0/17</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line low'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -84,48 +84,48 @@
 <a name='L19'></a><a href='#L19'>19</a>
 <a name='L20'></a><a href='#L20'>20</a>
 <a name='L21'></a><a href='#L21'>21</a>
-<a name='L22'></a><a href='#L22'>22</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L22'></a><a href='#L22'>22</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const RAW_API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080';
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >const RAW_API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080';</span></span></span>
 &nbsp;
-// Always talk to the backend under the /api prefix, regardless of whether
-// VITE_API_URL includes it or not.
-export const API_BASE = RAW_API_URL.replace(/\/+$/, '').endsWith(<span class="branch-0 cbranch-no" title="branch not covered" >'/api')</span>
+<span class="cstat-no" title="statement not covered" >// Always talk to the backend under the /api prefix, regardless of whether</span>
+<span class="cstat-no" title="statement not covered" >// VITE_API_URL includes it or not.</span>
+<span class="cstat-no" title="statement not covered" >export const API_BASE = RAW_API_URL.replace(/\/+$/, '').endsWith('/api')</span>
 <span class="cstat-no" title="statement not covered" >  ? RAW_API_URL.replace(/\/+$/, '')</span>
-  : `${RAW_API_URL.replace(/\/+$/, '')}/api`;
+<span class="cstat-no" title="statement not covered" >  : `${RAW_API_URL.replace(/\/+$/, '')}/api`;</span>
 &nbsp;
-export async function apiFetch(path: string, init: RequestInit = {}): Promise&lt;Response&gt; {
-  const headers = new Headers(init.headers || {});
+<span class="cstat-no" title="statement not covered" >export async function apiFetch(path: string, init: RequestInit = {}): Promise&lt;Response&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  const headers = new Headers(init.headers || {});</span>
 &nbsp;
-  if (!headers.has('Content-Type') &amp;&amp; !(init.body instanceof FormData)) {
-    headers.set('Content-Type', 'application/json');
-  }
+<span class="cstat-no" title="statement not covered" >  if (!headers.has('Content-Type') &amp;&amp; !(init.body instanceof FormData)) {</span>
+<span class="cstat-no" title="statement not covered" >    headers.set('Content-Type', 'application/json');</span>
+<span class="cstat-no" title="statement not covered" >  }</span>
 &nbsp;
-  return fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers,
-    credentials: 'include',
-  });
-}
+<span class="cstat-no" title="statement not covered" >  return fetch(`${API_BASE}${path}`, {</span>
+<span class="cstat-no" title="statement not covered" >    ...init,</span>
+<span class="cstat-no" title="statement not covered" >    headers,</span>
+<span class="cstat-no" title="statement not covered" >    credentials: 'include',</span>
+<span class="cstat-no" title="statement not covered" >  });</span>
+<span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -133,7 +133,7 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise&lt
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-03T05:16:16.686Z
+                at 2026-03-04T08:43:55.389Z
             </div>
         <script src="../../../../prettify.js"></script>
         <script>
