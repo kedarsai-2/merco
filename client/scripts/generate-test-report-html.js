@@ -98,7 +98,7 @@ function buildHtml(data) {
 
   const passed = total.tests - total.failures - total.errors;
   const failed = total.failures + total.errors;
-  const passRate = total.tests ? ((passed / total.tests) * 100).toFixed(1) : 0;
+  const passRate = total.tests ? ((passed / total.tests) * 100).toFixed(1) : "0";
 
   const date = new Date().toLocaleString();
 
@@ -106,28 +106,28 @@ function buildHtml(data) {
 
   for (const suite of suites) {
     const status = suite.failures + suite.errors > 0 ? "FAIL" : "PASS";
-    const color = status === "PASS" ? "#16a34a" : "#dc2626";
+    const suiteColor = status === "PASS" ? "#d1fae5" : "#fecaca";
 
     rows += `
-<tr style="background:#eef2ff;font-weight:bold">
-<td colspan="5">${escapeHtml(suite.name)} <span style="color:${color}">[${status}]</span></td>
-</tr>
-`;
+<tr bgcolor="${suiteColor}">
+<td colspan="5" style="padding:10px;font-weight:bold">
+${escapeHtml(suite.name)} [${status}]
+</td>
+</tr>`;
 
     for (const c of suite.cases) {
-      const failColor = c.status === "fail" ? "#dc2626" : "#16a34a";
+      const failColor = c.status === "fail" ? "#b91c1c" : "#047857";
 
       rows += `
 <tr>
-<td style="padding-left:30px">${escapeHtml(c.name)}</td>
+<td style="padding:8px 20px">${escapeHtml(c.name)}</td>
 <td align="center">1</td>
-<td align="center" style="color:${failColor}">
+<td align="center"><font color="${failColor}">
 ${c.status === "fail" ? "1" : "0"}
-</td>
+</font></td>
 <td align="center">0</td>
 <td align="right">${c.time}s</td>
-</tr>
-`;
+</tr>`;
     }
   }
 
@@ -136,156 +136,51 @@ ${c.status === "fail" ? "1" : "0"}
 <head>
 <meta charset="UTF-8">
 <title>Frontend Test Report</title>
-
-<style>
-
-body{
-font-family:Arial,Helvetica,sans-serif;
-background:#f3f4f6;
-margin:0;
-padding:30px;
-}
-
-.container{
-max-width:1100px;
-margin:auto;
-}
-
-.header{
-margin-bottom:25px;
-}
-
-h1{
-margin:0;
-font-size:32px;
-color:#111827;
-}
-
-.subtitle{
-color:#6b7280;
-margin-top:5px;
-}
-
-.summary{
-margin:25px 0;
-}
-
-.summary table{
-width:100%;
-border-collapse:collapse;
-}
-
-.summary td{
-padding:18px;
-text-align:center;
-color:white;
-font-weight:bold;
-font-size:18px;
-}
-
-.total{background:#6366f1;}
-.pass{background:#16a34a;}
-.fail{background:#dc2626;}
-.rate{background:#0ea5e9;}
-.time{background:#334155;}
-
-.summary span{
-display:block;
-font-size:26px;
-margin-top:6px;
-}
-
-table.report{
-width:100%;
-border-collapse:collapse;
-background:white;
-margin-top:20px;
-}
-
-table.report th{
-background:#4f46e5;
-color:white;
-padding:12px;
-text-align:left;
-}
-
-table.report td{
-padding:10px;
-border-bottom:1px solid #e5e7eb;
-}
-
-table.report tr:hover{
-background:#f9fafb;
-}
-
-</style>
 </head>
 
-<body>
+<body style="font-family:Arial;background:#e2e8f0;padding:25px">
 
-<div class="container">
+<h1 style="margin-bottom:5px">Frontend Test Report</h1>
 
-<div class="header">
-<h1>Frontend Test Report</h1>
-<div class="subtitle">
+<p style="color:#475569">
 Project: MercoTrace | Framework: Vitest | Generated: ${date}
-</div>
-</div>
+</p>
 
-<div class="summary">
+<table border="1" cellpadding="10" cellspacing="0" style="margin-top:20px;background:white">
 
-<table>
-<tr>
-<td class="total">
-Total Tests
-<span>${total.tests}</span>
-</td>
-
-<td class="pass">
-Passed
-<span>${passed}</span>
-</td>
-
-<td class="fail">
-Failed
-<span>${failed}</span>
-</td>
-
-<td class="rate">
-Pass Rate
-<span>${passRate}%</span>
-</td>
-
-<td class="time">
-Execution Time
-<span>${total.time}s</span>
-</td>
+<tr bgcolor="#6366f1">
+<td><font color="white"><b>Total Tests</b></font></td>
+<td><font color="white"><b>Passed</b></font></td>
+<td><font color="white"><b>Failed</b></font></td>
+<td><font color="white"><b>Pass Rate</b></font></td>
+<td><font color="white"><b>Execution Time</b></font></td>
 </tr>
+
+<tr>
+<td align="center">${total.tests}</td>
+<td align="center"><font color="#16a34a">${passed}</font></td>
+<td align="center"><font color="#dc2626">${failed}</font></td>
+<td align="center">${passRate}%</td>
+<td align="center">${total.time}s</td>
+</tr>
+
 </table>
 
-</div>
+<br>
 
-<table class="report">
+<table border="1" cellpadding="10" cellspacing="0" width="100%" style="background:white">
 
-<thead>
-<tr>
-<th style="width:50%">Test Name</th>
-<th style="width:10%">Tests</th>
-<th style="width:10%">Failures</th>
-<th style="width:10%">Skipped</th>
-<th style="width:20%">Time</th>
+<tr bgcolor="#4f46e5">
+<th><font color="white">Test Name</font></th>
+<th><font color="white">Tests</font></th>
+<th><font color="white">Failures</font></th>
+<th><font color="white">Skipped</font></th>
+<th><font color="white">Time</font></th>
 </tr>
-</thead>
-
-<tbody>
 
 ${rows}
 
-</tbody>
-
 </table>
-
-</div>
 
 </body>
 </html>`;
