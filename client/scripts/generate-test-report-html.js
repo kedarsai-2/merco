@@ -94,52 +94,45 @@ suites.push({
 /* -------------------- Build HTML -------------------- */
 
 function buildHtml(data) {
-const { total, suites } = data;
+  const { total, suites } = data;
 
-const passed = total.tests - total.failures - total.errors;
-const failed = total.failures + total.errors;
-const passRate =
-total.tests > 0 ? ((passed / total.tests) * 100).toFixed(1) : "0";
+  const passed = total.tests - total.failures - total.errors;
+  const failed = total.failures + total.errors;
+  const passRate = total.tests ? ((passed / total.tests) * 100).toFixed(1) : 0;
 
-const date = new Date().toLocaleString();
+  const date = new Date().toLocaleString();
 
-let rows = "";
+  let rows = "";
 
-for (const suite of suites) {
-const status = suite.failures + suite.errors > 0 ? "FAIL" : "PASS";
-const suiteColor = status === "PASS" ? "#16a34a" : "#dc2626";
+  for (const suite of suites) {
+    const status = suite.failures + suite.errors > 0 ? "FAIL" : "PASS";
+    const color = status === "PASS" ? "#16a34a" : "#dc2626";
 
     rows += `
-
-<tr class="suite">
-<td colspan="5">
-${escapeHtml(suite.name)}
-<span class="suite-status" style="color:${suiteColor}">
-[${status}]
-</span>
-</td>
-</tr>`;
+<tr style="background:#eef2ff;font-weight:bold">
+<td colspan="5">${escapeHtml(suite.name)} <span style="color:${color}">[${status}]</span></td>
+</tr>
+`;
 
     for (const c of suite.cases) {
-  const statusColor = c.status === "fail" ? "#dc2626" : "#16a34a";
+      const failColor = c.status === "fail" ? "#dc2626" : "#16a34a";
 
-  rows += `
+      rows += `
 <tr>
-<td class="test">${escapeHtml(c.name)}</td>
+<td style="padding-left:30px">${escapeHtml(c.name)}</td>
 <td align="center">1</td>
-<td align="center" style="color:${statusColor}">
+<td align="center" style="color:${failColor}">
 ${c.status === "fail" ? "1" : "0"}
 </td>
 <td align="center">0</td>
 <td align="right">${c.time}s</td>
-</tr>`;
+</tr>
+`;
     }
   }
 
-return `<!DOCTYPE html>
-
-<html lang="en">
-
+  return `<!DOCTYPE html>
+<html>
 <head>
 <meta charset="UTF-8">
 <title>Frontend Test Report</title>
@@ -147,11 +140,10 @@ return `<!DOCTYPE html>
 <style>
 
 body{
-font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial;
+font-family:Arial,Helvetica,sans-serif;
 background:#f3f4f6;
 margin:0;
-padding:40px;
-color:#111827;
+padding:30px;
 }
 
 .container{
@@ -160,34 +152,35 @@ margin:auto;
 }
 
 .header{
-margin-bottom:30px;
+margin-bottom:25px;
 }
 
 h1{
 margin:0;
-font-size:34px;
+font-size:32px;
+color:#111827;
 }
 
 .subtitle{
-margin-top:6px;
 color:#6b7280;
-font-size:14px;
+margin-top:5px;
 }
 
 .summary{
-display:grid;
-grid-template-columns:repeat(5,1fr);
-gap:18px;
-margin:30px 0;
+margin:25px 0;
 }
 
-.card{
-padding:20px;
-border-radius:10px;
-color:white;
-font-weight:600;
+.summary table{
+width:100%;
+border-collapse:collapse;
+}
+
+.summary td{
+padding:18px;
 text-align:center;
-box-shadow:0 6px 15px rgba(0,0,0,0.1);
+color:white;
+font-weight:bold;
+font-size:18px;
 }
 
 .total{background:#6366f1;}
@@ -196,54 +189,36 @@ box-shadow:0 6px 15px rgba(0,0,0,0.1);
 .rate{background:#0ea5e9;}
 .time{background:#334155;}
 
-.card span{
+.summary span{
 display:block;
-font-size:30px;
-margin-top:8px;
+font-size:26px;
+margin-top:6px;
 }
 
-table{
+table.report{
 width:100%;
 border-collapse:collapse;
 background:white;
-border-radius:10px;
-overflow:hidden;
-box-shadow:0 4px 10px rgba(0,0,0,0.08);
+margin-top:20px;
 }
 
-th{
+table.report th{
 background:#4f46e5;
 color:white;
-padding:14px;
+padding:12px;
 text-align:left;
 }
 
-td{
-padding:12px;
+table.report td{
+padding:10px;
 border-bottom:1px solid #e5e7eb;
 }
 
-tr:hover{
+table.report tr:hover{
 background:#f9fafb;
 }
 
-.suite{
-background:#eef2ff;
-font-weight:600;
-}
-
-.suite-status{
-margin-left:10px;
-font-weight:bold;
-}
-
-.test{
-padding-left:28px;
-color:#374151;
-}
-
 </style>
-
 </head>
 
 <body>
@@ -259,47 +234,53 @@ Project: MercoTrace | Framework: Vitest | Generated: ${date}
 
 <div class="summary">
 
-<div class="card total">
+<table>
+<tr>
+<td class="total">
 Total Tests
 <span>${total.tests}</span>
-</div>
+</td>
 
-<div class="card pass">
+<td class="pass">
 Passed
 <span>${passed}</span>
-</div>
+</td>
 
-<div class="card fail">
+<td class="fail">
 Failed
 <span>${failed}</span>
-</div>
+</td>
 
-<div class="card rate">
+<td class="rate">
 Pass Rate
 <span>${passRate}%</span>
-</div>
+</td>
 
-<div class="card time">
+<td class="time">
 Execution Time
 <span>${total.time}s</span>
-</div>
+</td>
+</tr>
+</table>
 
 </div>
 
-<table>
+<table class="report">
 
 <thead>
 <tr>
-<th>Test Name</th>
-<th>Tests</th>
-<th>Failures</th>
-<th>Skipped</th>
-<th>Time</th>
+<th style="width:50%">Test Name</th>
+<th style="width:10%">Tests</th>
+<th style="width:10%">Failures</th>
+<th style="width:10%">Skipped</th>
+<th style="width:20%">Time</th>
 </tr>
 </thead>
 
 <tbody>
+
 ${rows}
+
 </tbody>
 
 </table>
@@ -309,7 +290,6 @@ ${rows}
 </body>
 </html>`;
 }
-
 /* -------------------- Run -------------------- */
 
 try {
