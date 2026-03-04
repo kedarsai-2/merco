@@ -58,101 +58,180 @@ function parseJunit(xml) {
 
   return { total, suites };
 }
-
 function buildHtml(data) {
   const { total, suites } = data;
   const passed = total.tests - total.failures - total.errors;
   const failed = total.failures + total.errors;
 
+  const date = new Date().toLocaleString();
+
   let rows = "";
-  let rowIdx = 0;
+
   for (const suite of suites) {
-    const status = suite.failures + suite.errors > 0 ? "fail" : "pass";
-    const suiteBg = status === "pass" ? "#d1fae5" : "#fecaca";
-    const failColor = status === "fail" ? "#b91c1c" : "#047857";
+    const status = suite.failures + suite.errors > 0 ? "FAIL" : "PASS";
+    const suiteColor = status === "PASS" ? "#16a34a" : "#dc2626";
+
     rows += `
-    <tr bgcolor="${suiteBg}" style="background:${suiteBg};font-weight:600">
-      <td style="padding:10px 14px;border:1px solid #9ca3af" bgcolor="${suiteBg}">${escapeHtml(suite.name)}</td>
-      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center" bgcolor="${suiteBg}" align="center">${suite.tests}</td>
-      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center;color:${failColor}" bgcolor="${suiteBg}" align="center"><font color="${failColor}">${suite.failures + suite.errors}</font></td>
-      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center" bgcolor="${suiteBg}" align="center">${suite.skipped}</td>
-      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:right" bgcolor="${suiteBg}" align="right">${suite.time}s</td>
+    <tr style="background:#f1f5f9;font-weight:bold">
+      <td colspan="5" style="padding:10px">
+        ${escapeHtml(suite.name)} 
+        <span style="color:${suiteColor};margin-left:10px">[${status}]</span>
+      </td>
     </tr>`;
+
     for (const c of suite.cases) {
-      const caseBg = rowIdx % 2 === 0 ? "#ffffff" : "#f1f5f9";
-      const caseColor = c.status === "fail" ? "#b91c1c" : "#047857";
+      const statusColor = c.status === "fail" ? "#dc2626" : "#16a34a";
+
       rows += `
-    <tr bgcolor="${caseBg}" style="background:${caseBg}">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="${caseBg}">${escapeHtml(c.name)}</td>
-      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="${caseBg}" align="center">1</td>
-      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:${caseColor}" bgcolor="${caseBg}" align="center"><font color="${caseColor}">${c.status === "fail" ? "1" : "0"}</font></td>
-      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="${caseBg}" align="center">0</td>
-      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="${caseBg}" align="right"><font color="#64748b">${c.time}s</font></td>
-    </tr>`;
-      rowIdx++;
-      if (c.status === "fail" && c.message) {
-        rows += `
-    <tr bgcolor="#fecaca" style="background:#fecaca">
-      <td colspan="5" style="padding:12px 28px;border:1px solid #f87171;font-size:12px;white-space:pre-wrap;word-break:break-word" bgcolor="#fecaca"><font color="#991b1b">${escapeHtml(c.message)}</font></td>
-    </tr>`;
-      }
+      <tr>
+        <td style="padding-left:30px">${escapeHtml(c.name)}</td>
+        <td align="center">1</td>
+        <td align="center" style="color:${statusColor}">
+          ${c.status === "fail" ? "1" : "0"}
+        </td>
+        <td align="center">0</td>
+        <td align="right">${c.time}s</td>
+      </tr>`;
     }
   }
 
-  const failBadgeBg = failed > 0 ? "#dc2626" : "#64748b";
-  return `<!DOCTYPE html>
-<html lang="en">
+  return `
+<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Frontend Test Report - MercoTrace</title>
-  <style type="text/css">
-    body{margin:0;padding:24px;font-family:system-ui,sans-serif;background:#e2e8f0}
-    .wrap{max-width:1200px;margin:0 auto}
-    .header{display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:20px;border-bottom:3px solid #7c3aed}
-    h1{margin:0;font-size:26px;font-weight:700;color:#1e293b}
-    .subtitle{font-size:14px;color:#64748b}
-    .badges{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:24px}
-    .badge{display:inline-block;padding:10px 18px;border-radius:8px;font-weight:700;font-size:15px;color:#fff}
-    .badge-total{background:#7c3aed}
-    .badge-pass{background:#059669}
-    .badge-fail{background:${failBadgeBg}}
-    .badge-time{background:#475569}
-    .card{background:#fff;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.1);overflow:hidden;border:1px solid #cbd5e1}
-    table{width:100%;border-collapse:collapse}
-    th{padding:14px 16px;text-align:left;font-weight:700;font-size:14px;background:#7c3aed;color:#fff;border:1px solid #6d28d9}
-  </style>
+<title>Frontend Test Report</title>
+
+<style>
+body{
+  font-family: Arial, sans-serif;
+  background:#f8fafc;
+  margin:0;
+  padding:30px;
+}
+
+.container{
+  max-width:1200px;
+  margin:auto;
+}
+
+.header{
+  margin-bottom:30px;
+}
+
+h1{
+  margin:0;
+  color:#1e293b;
+}
+
+.subtitle{
+  color:#64748b;
+  margin-top:5px;
+}
+
+.summary{
+  display:flex;
+  gap:20px;
+  margin:30px 0;
+}
+
+.card{
+  flex:1;
+  padding:20px;
+  border-radius:8px;
+  color:white;
+  font-weight:bold;
+  text-align:center;
+}
+
+.total{background:#6366f1;}
+.pass{background:#16a34a;}
+.fail{background:#dc2626;}
+.time{background:#475569;}
+
+.card span{
+  display:block;
+  font-size:28px;
+  margin-top:10px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:white;
+}
+
+th{
+  background:#6366f1;
+  color:white;
+  padding:12px;
+}
+
+td{
+  padding:10px;
+  border-bottom:1px solid #e2e8f0;
+}
+
+</style>
 </head>
-<body bgcolor="#e2e8f0" style="margin:0;padding:24px;background:#e2e8f0;font-family:system-ui,sans-serif;color:#1e293b">
-  <div class="wrap">
-    <div class="header" style="margin-bottom:24px;padding-bottom:20px;border-bottom:3px solid #7c3aed">
-      <h1 style="margin:0;font-size:26px;font-weight:700;color:#1e293b">Frontend Test Report</h1>
-      <span class="subtitle" style="font-size:14px;color:#64748b">MercoTrace · Vitest</span>
-    </div>
-    <div class="badges">
-      <span class="badge badge-total" bgcolor="#7c3aed" style="background:#7c3aed;color:#fff;padding:10px 18px;border-radius:8px;font-weight:700;font-size:15px"><font color="#fff">Total: ${total.tests}</font></span>
-      <span class="badge badge-pass" bgcolor="#059669" style="background:#059669;color:#fff;padding:10px 18px;border-radius:8px;font-weight:700;font-size:15px"><font color="#fff">Passed: ${passed}</font></span>
-      <span class="badge badge-fail" bgcolor="${failBadgeBg}" style="background:${failBadgeBg};color:#fff;padding:10px 18px;border-radius:8px;font-weight:700;font-size:15px"><font color="#fff">Failed: ${failed}</font></span>
-      <span class="badge badge-time" bgcolor="#475569" style="background:#475569;color:#fff;padding:10px 18px;border-radius:8px;font-weight:700;font-size:15px"><font color="#fff">Time: ${total.time}s</font></span>
-    </div>
-    <div class="card" style="background:#fff;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.1);overflow:hidden;border:1px solid #cbd5e1">
-      <table border="1" cellpadding="0" cellspacing="0" bordercolor="#cbd5e1">
-        <thead>
-          <tr bgcolor="#7c3aed">
-            <th style="padding:14px 16px;background:#7c3aed;color:#fff" bgcolor="#7c3aed"><font color="#fff">Test</font></th>
-            <th style="padding:14px 16px;background:#7c3aed;color:#fff;text-align:center" bgcolor="#7c3aed" align="center"><font color="#fff">Tests</font></th>
-            <th style="padding:14px 16px;background:#7c3aed;color:#fff;text-align:center" bgcolor="#7c3aed" align="center"><font color="#fff">Failures</font></th>
-            <th style="padding:14px 16px;background:#7c3aed;color:#fff;text-align:center" bgcolor="#7c3aed" align="center"><font color="#fff">Skipped</font></th>
-            <th style="padding:14px 16px;background:#7c3aed;color:#fff;text-align:right" bgcolor="#7c3aed" align="right"><font color="#fff">Time</font></th>
-          </tr>
-        </thead>
-        <tbody>${rows}
-        </tbody>
-      </table>
-    </div>
-  </div>
+
+<body>
+
+<div class="container">
+
+<div class="header">
+<h1>Frontend Test Report</h1>
+<div class="subtitle">
+Project: MercoTrace | Framework: Vitest | Generated: ${date}
+</div>
+</div>
+
+<div class="summary">
+
+<div class="card total">
+Total Tests
+<span>${total.tests}</span>
+</div>
+
+<div class="card pass">
+Passed
+<span>${passed}</span>
+</div>
+
+<div class="card fail">
+Failed
+<span>${failed}</span>
+</div>
+
+<div class="card time">
+Execution Time
+<span>${total.time}s</span>
+</div>
+
+</div>
+
+<table>
+
+<thead>
+<tr>
+<th>Test Name</th>
+<th>Tests</th>
+<th>Failures</th>
+<th>Skipped</th>
+<th>Time</th>
+</tr>
+</thead>
+
+<tbody>
+${rows}
+</tbody>
+
+</table>
+
+</div>
+
 </body>
-</html>`;
+</html>
+`;
 }
 
 try {
