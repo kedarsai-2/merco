@@ -11,6 +11,8 @@ import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+
+
 const reportsDir = join(__dirname, "..", "..", "server", "target", "surefire-reports");
 const outPath = join(__dirname, "..", "..", "server", "target", "surefire-report.html");
 
@@ -29,7 +31,7 @@ function escapeHtml(s) {
 function parseSuite(xml) {
 
   const getAttr = (str, key) => {
-    const m = str.match(new RegExp(`${key}="([^"]*)"'));
+    const m = str.match(new RegExp(`${key}="([^"]*)"`));
     return m ? m[1] : "";
   };
 
