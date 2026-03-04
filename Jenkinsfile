@@ -1,6 +1,7 @@
 // MercoTrace — Jenkins Pipeline
 // Builds backend (Spring Boot) and frontend (Vite/React), runs tests, archives artifacts.
 // Fetches from https://github.com/kedarsai-2/merco.git by default. Override REPO_URL/BRANCH if needed.
+// SonarQube: Configure server in Manage Jenkins → SonarQube servers. Add token. Set SKIP_SONAR=true to skip.
 
 pipeline {
     agent any
@@ -10,6 +11,8 @@ pipeline {
         string(name: 'BRANCH', defaultValue: 'main', description: 'Branch to build (e.g. main, master)')
         string(name: 'JAVA_21_HOME', defaultValue: '/opt/homebrew/opt/openjdk@21', description: 'Path to JDK 21. Homebrew: /opt/homebrew/opt/openjdk@21')
         string(name: 'NODE_HOME', defaultValue: '/opt/homebrew', description: 'Path to Node.js (e.g. /opt/homebrew, /usr/local). Required for frontend.')
+        string(name: 'SONAR_SERVER', defaultValue: 'SonarQube', description: 'Jenkins SonarQube server name. Configure in Manage Jenkins → SonarQube servers.')
+        booleanParam(name: 'SKIP_SONAR', defaultValue: false, description: 'Skip SonarQube analysis (e.g. when SonarQube is not configured)')
     }
 
     options {
@@ -139,6 +142,32 @@ pipeline {
                     script {
                         def pathAdd = params.NODE_HOME?.trim() ? "export PATH=\"${params.NODE_HOME.trim()}/bin:\$PATH\" && " : ''
                         sh "${pathAdd}npm run build"
+                    }
+                }
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            when {
+                expression { (currentBuild.result == null || currentBuild.result == 'SUCCESS') && !params.SKIP_SONAR }
+            }
+            steps {
+                dir('server') {
+                    script {
+                        def jhome = params.JAVA_21_HOME?.trim()
+                        def sonarServer = params.SONAR_SERVER?.trim() ?: 'SonarQube'
+                        def runSonar = {
+                            withSonarQubeEnv(sonarServer) {
+                                if (jhome) {
+                                    withEnv(["JAVA_HOME=${jhome}"]) {
+                                        sh './mvnw -ntp -B sonar:sonar'
+                                    }
+                                } else {
+                                    sh './mvnw -ntp -B sonar:sonar'
+                                }
+                            }
+                        }
+                        runSonar()
                     }
                 }
             }
