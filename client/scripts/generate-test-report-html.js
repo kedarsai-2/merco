@@ -17,12 +17,12 @@ const outPath = join(__dirname, "..", "test-results", "html", "index.html");
 /* -------------------- Utilities -------------------- */
 
 function escapeHtml(s) {
-if (!s) return "";
-return String(s)
-.replace(/&/g, "&")
-.replace(/</g, "<")
-.replace(/>/g, ">")
-.replace(/"/g, """);
+  if (!s) return "";
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 /* -------------------- Parse JUnit -------------------- */
@@ -53,8 +53,7 @@ const suiteStart = m.index;
 const suiteEnd = xml.indexOf("</testsuite>", suiteStart) + 12;
 const suiteXml = xml.slice(suiteStart, suiteEnd);
 
-```
-const cases = [];
+    const cases = [];
 
 const caseRegex =
   /<testcase[^>]*\s+classname="([^"]*)"[^>]*\s+name="([^"]*)"[^>]*\s+time="([^"]*)"[^>]*>([\s\S]*?)<\/testcase>/g;
@@ -86,11 +85,10 @@ suites.push({
   time: m[6],
   cases,
 });
-```
 
-}
+  }
 
-return { total, suites };
+  return { total, suites };
 }
 
 /* -------------------- Build HTML -------------------- */
@@ -111,9 +109,7 @@ for (const suite of suites) {
 const status = suite.failures + suite.errors > 0 ? "FAIL" : "PASS";
 const suiteColor = status === "PASS" ? "#16a34a" : "#dc2626";
 
-```
-rows += `
-```
+    rows += `
 
 <tr class="suite">
 <td colspan="5">
@@ -124,13 +120,10 @@ ${escapeHtml(suite.name)}
 </td>
 </tr>`;
 
-```
-for (const c of suite.cases) {
+    for (const c of suite.cases) {
   const statusColor = c.status === "fail" ? "#dc2626" : "#16a34a";
 
   rows += `
-```
-
 <tr>
 <td class="test">${escapeHtml(c.name)}</td>
 <td align="center">1</td>

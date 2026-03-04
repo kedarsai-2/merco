@@ -205,7 +205,7 @@ pipeline {
             publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: 'server/target/site/jacoco', reportFiles: 'index.html', reportName: 'Backend Coverage (JaCoCo)'])
             publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: 'client/test-results/html', reportFiles: 'index.html', reportName: 'Frontend Test Report (HTML)'])
             publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: 'client/coverage', reportFiles: 'index.html', reportName: 'Frontend Coverage'])
-            sh 'node scripts/generate-executive-report.js 2>/dev/null || true'
+            sh 'node scripts/generate-executive-report.js || (mkdir -p reports && echo "<html><body><h1>Executive Summary</h1><p>Report generation skipped (tests may have failed earlier).</p></body></html>" > reports/executive-summary.html)'
             publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: 'reports', reportFiles: 'executive-summary.html', reportName: 'Executive Summary'])
         }
     }
