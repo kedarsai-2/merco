@@ -123,6 +123,10 @@ pipeline {
                 expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' }
             }
             steps {
+                script {
+                    def pathAdd = params.NODE_HOME?.trim() ? "export PATH=\"${params.NODE_HOME.trim()}/bin:\$PATH\" && " : ''
+                    sh "${pathAdd}node client/scripts/generate-backend-test-report-html.js"
+                }
                 dir('client') {
                     script {
                         def pathAdd = params.NODE_HOME?.trim() ? "export PATH=\"${params.NODE_HOME.trim()}/bin:\$PATH\" && " : ''
@@ -179,6 +183,7 @@ pipeline {
         success {
             archiveArtifacts artifacts: 'server/target/*.jar', fingerprint: true, allowEmptyArchive: false
             archiveArtifacts artifacts: 'client/dist/**/*', fingerprint: true, allowEmptyArchive: true
+            archiveArtifacts artifacts: 'server/target/surefire-reports-html/**/*', fingerprint: true, allowEmptyArchive: true
             archiveArtifacts artifacts: 'server/target/site/jacoco/**/*', fingerprint: true, allowEmptyArchive: true
             archiveArtifacts artifacts: 'client/coverage/**/*', fingerprint: true, allowEmptyArchive: true
             archiveArtifacts artifacts: 'client/test-results/**/*', fingerprint: true, allowEmptyArchive: true
@@ -196,6 +201,7 @@ pipeline {
             junit allowEmptyResults: true, testResults: 'server/target/surefire-reports/*.xml'
             junit allowEmptyResults: true, testResults: 'client/test-results/junit.xml'
             // Publish HTML reports — visible as links in the job sidebar (requires "HTML Publisher" plugin)
+            publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: 'server/target/surefire-reports-html', reportFiles: 'surefire.html', reportName: 'Backend Test Report (HTML)'])
             publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: 'server/target/site/jacoco', reportFiles: 'index.html', reportName: 'Backend Coverage (JaCoCo)'])
             publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: 'client/test-results/html', reportFiles: 'index.html', reportName: 'Frontend Test Report (HTML)'])
             publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: 'client/coverage', reportFiles: 'index.html', reportName: 'Frontend Coverage'])
