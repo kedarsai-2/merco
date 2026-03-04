@@ -9,6 +9,7 @@ pipeline {
         string(name: 'REPO_URL', defaultValue: 'https://github.com/kedarsai-2/merco.git', description: 'Git repo URL to fetch code and tests from')
         string(name: 'BRANCH', defaultValue: 'main', description: 'Branch to build (e.g. main, master)')
         string(name: 'JAVA_21_HOME', defaultValue: '/opt/homebrew/opt/openjdk@21', description: 'Path to JDK 21. Homebrew: /opt/homebrew/opt/openjdk@21')
+        string(name: 'NODE_HOME', defaultValue: '/opt/homebrew', description: 'Path to Node.js (e.g. /opt/homebrew, /usr/local). Required for frontend.')
     }
 
     options {
@@ -104,8 +105,12 @@ pipeline {
             }
             steps {
                 dir('client') {
-                    sh 'npm ci --no-audit --prefer-offline'
-                    sh 'npm run lint'
+                    script {
+                        def nodeHome = params.NODE_HOME?.trim()
+                        def pathAdd = nodeHome ? "export PATH=\"${nodeHome}/bin:\$PATH\" && " : ''
+                        sh "${pathAdd}npm ci --no-audit --prefer-offline"
+                        sh "${pathAdd}npm run lint"
+                    }
                 }
             }
         }
@@ -116,9 +121,11 @@ pipeline {
             }
             steps {
                 dir('client') {
-                    sh 'mkdir -p test-results/html'
-                    // Runs Vitest with coverage; allure reporter (from vitest.config) writes to allure-results for dashboard report
-                    sh 'CI=true npm run test:coverage'
+                    script {
+                        def pathAdd = params.NODE_HOME?.trim() ? "export PATH=\"${params.NODE_HOME.trim()}/bin:\$PATH\" && " : ''
+                        sh 'mkdir -p test-results/html'
+                        sh "${pathAdd}CI=true npm run test:coverage"
+                    }
                 }
             }
         }
@@ -129,7 +136,10 @@ pipeline {
             }
             steps {
                 dir('client') {
-                    sh 'npm run build'
+                    script {
+                        def pathAdd = params.NODE_HOME?.trim() ? "export PATH=\"${params.NODE_HOME.trim()}/bin:\$PATH\" && " : ''
+                        sh "${pathAdd}npm run build"
+                    }
                 }
             }
         }
