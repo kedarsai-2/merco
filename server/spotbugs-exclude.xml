@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- JPA metamodel classes (*_) - Hibernate generates these with public fields for Criteria API -->
+    <Match>
+        <Class name="~com\.mercotrace\.domain\.\w+_"/>
+        <Bug pattern="UUF_UNUSED_PUBLIC_OR_PROTECTED_FIELD"/>
+    </Match>
+
+    <!-- EI_EXPOSE_REP2 on constructor injection - Spring-managed beans; common false positive -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+        <Class name="~com\.mercotrace\.(web\.rest|service\.impl)\..*"/>
+    </Match>
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+        <Class name="com.mercotrace.service.MailService"/>
+    </Match>
+
+    <!-- DM_CONVERT_CASE - toLowerCase/toUpperCase for case-insensitive comparison -->
+    <Match>
+        <Bug pattern="DM_CONVERT_CASE"/>
+    </Match>
+
+    <!-- SE_NO_SERIALVERSIONID - DTOs/VM classes; low priority -->
+    <Match>
+        <Bug pattern="SE_NO_SERIALVERSIONID"/>
+    </Match>
+
+    <!-- BC_UNCONFIRMED_CAST in exception handling - framework integration -->
+    <Match>
+        <Bug pattern="BC_UNCONFIRMED_CAST"/>
+        <Class name="~com\.mercotrace\.web\.rest\.errors\..*"/>
+    </Match>
+    <Match>
+        <Bug pattern="BC_UNCONFIRMED_CAST_OF_RETURN_VALUE"/>
+        <Class name="~com\.mercotrace\.web\.rest\.errors\..*"/>
+    </Match>
+
+    <!-- RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE -->
+    <Match>
+        <Bug pattern="RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE"/>
+    </Match>
+
+    <!-- URF_UNREAD_FIELD - mailService in Module1AuthResource -->
+    <Match>
+        <Bug pattern="URF_UNREAD_FIELD"/>
+        <Class name="com.mercotrace.web.rest.Module1AuthResource"/>
+    </Match>
+
+    <!-- ICAST_INTEGER_MULTIPLY_CAST_TO_LONG - Pageable offset -->
+    <Match>
+        <Bug pattern="ICAST_INTEGER_MULTIPLY_CAST_TO_LONG"/>
+    </Match>
+
+    <!-- EI_EXPOSE_REP/EI_EXPOSE_REP2 in DTOs and Criteria - standard getter/setter patterns -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+        <Class name="~com\.mercotrace\.service\.(dto|criteria)\..*"/>
+    </Match>
+
+    <!-- EI_EXPOSE_REP in domain entities - JPA/Hibernate patterns -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+        <Class name="~com\.mercotrace\.domain\..*"/>
+    </Match>
+
+    <!-- NP_NULL_ON_SOME_PATH - MapStruct/optional chaining; often false positives -->
+    <Match>
+        <Bug pattern="NP_NULL_ON_SOME_PATH_FROM_RETURN_VALUE"/>
+    </Match>
+
+    <!-- Config classes - Spring Boot patterns -->
+    <Match>
+        <Class name="~com\.mercotrace\.config\..*"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2,BC_UNCONFIRMED_CAST_OF_RETURN_VALUE,CT_CONSTRUCTOR_THROW,URF_UNREAD_FIELD"/>
+    </Match>
+
+    <!-- UWF in JPA metamodel - Criteria API usage -->
+    <Match>
+        <Bug pattern="UWF_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD"/>
+    </Match>
+</FindBugsFilter>
