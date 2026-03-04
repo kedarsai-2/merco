@@ -1,226 +1,120 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuites name="vitest tests" tests="75" failures="0" errors="0" time="3.789772038">
-    <testsuite name="src/lib/utils.test.ts" timestamp="2026-03-03T05:16:16.657Z" hostname="sais-MacBook-Pro-2.local" tests="5" failures="0" errors="0" skipped="0" time="0.005347916">
-        <testcase classname="src/lib/utils.test.ts" name="cn (utils) &gt; merges single class" time="0.003864708">
+<testsuites name="vitest tests" tests="40" failures="0" errors="0" time="1.076968291">
+    <testsuite name="src/components/MercotraceLogo.test.tsx" timestamp="2026-03-04T09:34:08.961Z" hostname="sais-MacBook-Pro-2.local" tests="7" failures="0" errors="0" skipped="0" time="0.131908459">
+        <testcase classname="src/components/MercotraceLogo.test.tsx" name="MercotraceLogo &gt; renders with text by default" time="0.079006958">
         </testcase>
-        <testcase classname="src/lib/utils.test.ts" name="cn (utils) &gt; merges multiple classes" time="0.000160791">
+        <testcase classname="src/components/MercotraceLogo.test.tsx" name="MercotraceLogo &gt; hides text when showText is false" time="0.005872542">
         </testcase>
-        <testcase classname="src/lib/utils.test.ts" name="cn (utils) &gt; handles conditional classes" time="0.000204584">
+        <testcase classname="src/components/MercotraceLogo.test.tsx" name="MercotraceLogo &gt; renders with different sizes" time="0.031443833">
         </testcase>
-        <testcase classname="src/lib/utils.test.ts" name="cn (utils) &gt; merges tailwind conflicting classes" time="0.000268084">
+        <testcase classname="src/components/MercotraceLogo.test.tsx" name="MercotraceLogo &gt; applies custom className" time="0.0035645">
         </testcase>
-        <testcase classname="src/lib/utils.test.ts" name="cn (utils) &gt; handles undefined and null" time="0.000053958">
+        <testcase classname="src/components/MercotraceLogo.test.tsx" name="MercotraceIcon &gt; renders SVG with default size" time="0.007187875">
         </testcase>
-    </testsuite>
-    <testsuite name="src/components/FontSizeControls.test.tsx" timestamp="2026-03-03T05:16:16.660Z" hostname="sais-MacBook-Pro-2.local" tests="4" failures="0" errors="0" skipped="0" time="0.429393041">
-        <testcase classname="src/components/FontSizeControls.test.tsx" name="FontSizeControls &gt; renders three font size buttons" time="0.346018458">
+        <testcase classname="src/components/MercotraceLogo.test.tsx" name="MercotraceIcon &gt; renders with custom size" time="0.000893">
         </testcase>
-        <testcase classname="src/components/FontSizeControls.test.tsx" name="FontSizeControls &gt; decrease is disabled at level 0" time="0.039330125">
-        </testcase>
-        <testcase classname="src/components/FontSizeControls.test.tsx" name="FontSizeControls &gt; increase is disabled at level 2" time="0.026039375">
-        </testcase>
-        <testcase classname="src/components/FontSizeControls.test.tsx" name="FontSizeControls &gt; has group role and aria-label" time="0.015474">
+        <testcase classname="src/components/MercotraceLogo.test.tsx" name="MercotraceIcon &gt; renders with custom color" time="0.000944459">
         </testcase>
     </testsuite>
-    <testsuite name="src/components/GlassCard.test.tsx" timestamp="2026-03-03T05:16:16.660Z" hostname="sais-MacBook-Pro-2.local" tests="4" failures="0" errors="0" skipped="0" time="0.0556565">
-        <testcase classname="src/components/GlassCard.test.tsx" name="GlassCard &gt; renders children" time="0.048321583">
+    <testsuite name="src/components/MobileBackButton.test.tsx" timestamp="2026-03-04T09:34:08.964Z" hostname="sais-MacBook-Pro-2.local" tests="3" failures="0" errors="0" skipped="0" time="0.141195">
+        <testcase classname="src/components/MobileBackButton.test.tsx" name="MobileBackButton &gt; renders with aria-label for accessibility" time="0.1040435">
         </testcase>
-        <testcase classname="src/components/GlassCard.test.tsx" name="GlassCard &gt; applies glass-panel and rounded-3xl by default" time="0.003394083">
+        <testcase classname="src/components/MobileBackButton.test.tsx" name="MobileBackButton &gt; calls onClick when clicked" time="0.017262875">
         </testcase>
-        <testcase classname="src/components/GlassCard.test.tsx" name="GlassCard &gt; applies hover classes when hover is true" time="0.001767875">
-        </testcase>
-        <testcase classname="src/components/GlassCard.test.tsx" name="GlassCard &gt; merges custom className" time="0.000904625">
+        <testcase classname="src/components/MobileBackButton.test.tsx" name="MobileBackButton &gt; applies custom className" time="0.018824125">
         </testcase>
     </testsuite>
-    <testsuite name="src/components/GoldButton.test.tsx" timestamp="2026-03-03T05:16:16.661Z" hostname="sais-MacBook-Pro-2.local" tests="5" failures="0" errors="0" skipped="0" time="0.145614416">
-        <testcase classname="src/components/GoldButton.test.tsx" name="GoldButton &gt; renders children" time="0.126518708">
+    <testsuite name="src/components/PortraitLock.test.tsx" timestamp="2026-03-04T09:34:08.964Z" hostname="sais-MacBook-Pro-2.local" tests="4" failures="0" errors="0" skipped="0" time="0.10185975">
+        <testcase classname="src/components/PortraitLock.test.tsx" name="PortraitLock &gt; returns null when not in landscape (desktop size)" time="0.019961792">
         </testcase>
-        <testcase classname="src/components/GoldButton.test.tsx" name="GoldButton &gt; applies primary variant by default" time="0.002648833">
+        <testcase classname="src/components/PortraitLock.test.tsx" name="PortraitLock &gt; returns null when height is large (not mobile landscape)" time="0.000882125">
         </testcase>
-        <testcase classname="src/components/GoldButton.test.tsx" name="GoldButton &gt; applies outline variant" time="0.001727875">
+        <testcase classname="src/components/PortraitLock.test.tsx" name="PortraitLock &gt; shows overlay when in mobile landscape" time="0.0740875">
         </testcase>
-        <testcase classname="src/components/GoldButton.test.tsx" name="GoldButton &gt; applies size classes" time="0.00089075">
-        </testcase>
-        <testcase classname="src/components/GoldButton.test.tsx" name="GoldButton &gt; calls onClick when clicked" time="0.012790916">
+        <testcase classname="src/components/PortraitLock.test.tsx" name="PortraitLock &gt; adds and removes resize listener" time="0.00503325">
         </testcase>
     </testsuite>
-    <testsuite name="src/components/MercotraceLogo.test.tsx" timestamp="2026-03-03T05:16:16.661Z" hostname="sais-MacBook-Pro-2.local" tests="5" failures="0" errors="0" skipped="0" time="0.058790541">
-        <testcase classname="src/components/MercotraceLogo.test.tsx" name="MercotraceIcon &gt; renders svg with default size" time="0.033940917">
-        </testcase>
-        <testcase classname="src/components/MercotraceLogo.test.tsx" name="MercotraceIcon &gt; renders svg with custom size and color" time="0.00415325">
-        </testcase>
-        <testcase classname="src/components/MercotraceLogo.test.tsx" name="MercotraceLogo &gt; renders icon and text by default" time="0.014113209">
-        </testcase>
-        <testcase classname="src/components/MercotraceLogo.test.tsx" name="MercotraceLogo &gt; hides text when showText is false" time="0.002037583">
-        </testcase>
-        <testcase classname="src/components/MercotraceLogo.test.tsx" name="MercotraceLogo &gt; applies size variant classes" time="0.002870959">
-        </testcase>
-    </testsuite>
-    <testsuite name="src/components/MobileBackButton.test.tsx" timestamp="2026-03-03T05:16:16.661Z" hostname="sais-MacBook-Pro-2.local" tests="3" failures="0" errors="0" skipped="0" time="0.2632305">
-        <testcase classname="src/components/MobileBackButton.test.tsx" name="MobileBackButton &gt; renders button with aria-label" time="0.2302415">
-        </testcase>
-        <testcase classname="src/components/MobileBackButton.test.tsx" name="MobileBackButton &gt; calls onClick when clicked" time="0.022775417">
-        </testcase>
-        <testcase classname="src/components/MobileBackButton.test.tsx" name="MobileBackButton &gt; applies custom className" time="0.008131375">
-        </testcase>
-    </testsuite>
-    <testsuite name="src/components/NavLink.test.tsx" timestamp="2026-03-03T05:16:16.661Z" hostname="sais-MacBook-Pro-2.local" tests="3" failures="0" errors="0" skipped="0" time="0.13865225">
-        <testcase classname="src/components/NavLink.test.tsx" name="NavLink &gt; renders link with to path" time="0.074026625">
+    <testsuite name="src/components/ProtectedRoute.test.tsx" timestamp="2026-03-04T09:34:08.964Z" hostname="sais-MacBook-Pro-2.local" tests="3" failures="0" errors="0" skipped="0" time="0.084358333">
+        <testcase classname="src/components/ProtectedRoute.test.tsx" name="ProtectedRoute &gt; shows loading spinner when not bootstrapped" time="0.069250708">
             <system-err>
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
 
             </system-err>
         </testcase>
-        <testcase classname="src/components/NavLink.test.tsx" name="NavLink &gt; applies activeClassName when route is active" time="0.059274625">
+        <testcase classname="src/components/ProtectedRoute.test.tsx" name="ProtectedRoute &gt; redirects to login when bootstrapped but not authenticated" time="0.006652541">
         </testcase>
-        <testcase classname="src/components/NavLink.test.tsx" name="NavLink &gt; renders children" time="0.002582125">
-        </testcase>
-    </testsuite>
-    <testsuite name="src/components/PortraitLock.test.tsx" timestamp="2026-03-03T05:16:16.662Z" hostname="sais-MacBook-Pro-2.local" tests="2" failures="0" errors="0" skipped="0" time="0.059537167">
-        <testcase classname="src/components/PortraitLock.test.tsx" name="PortraitLock &gt; renders nothing when not in landscape (default)" time="0.015892458">
-        </testcase>
-        <testcase classname="src/components/PortraitLock.test.tsx" name="PortraitLock &gt; shows overlay with rotate message when in landscape" time="0.042278958">
+        <testcase classname="src/components/ProtectedRoute.test.tsx" name="ProtectedRoute &gt; renders children when authenticated" time="0.003981167">
         </testcase>
     </testsuite>
-    <testsuite name="src/components/ProtectedRoute.test.tsx" timestamp="2026-03-03T05:16:16.662Z" hostname="sais-MacBook-Pro-2.local" tests="3" failures="0" errors="0" skipped="0" time="0.049861708">
-        <testcase classname="src/components/ProtectedRoute.test.tsx" name="ProtectedRoute &gt; shows loading spinner when not bootstrapped" time="0.03729925">
+    <testsuite name="src/test/example.test.ts" timestamp="2026-03-04T09:34:08.965Z" hostname="sais-MacBook-Pro-2.local" tests="1" failures="0" errors="0" skipped="0" time="0.0014795">
+        <testcase classname="src/test/example.test.ts" name="example &gt; should pass" time="0.0007485">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/pages/NotFound.test.tsx" timestamp="2026-03-04T09:34:08.965Z" hostname="sais-MacBook-Pro-2.local" tests="4" failures="0" errors="0" skipped="0" time="0.150132833">
+        <testcase classname="src/pages/NotFound.test.tsx" name="NotFound &gt; renders 404 heading" time="0.110130625">
             <system-err>
+404 Error: User attempted to access non-existent route: /
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
 
             </system-err>
         </testcase>
-        <testcase classname="src/components/ProtectedRoute.test.tsx" name="ProtectedRoute &gt; redirects to /login when bootstrapped and not authenticated" time="0.008283">
-        </testcase>
-        <testcase classname="src/components/ProtectedRoute.test.tsx" name="ProtectedRoute &gt; renders children when bootstrapped and authenticated" time="0.001744333">
-        </testcase>
-    </testsuite>
-    <testsuite name="src/components/RootClassManager.test.tsx" timestamp="2026-03-03T05:16:16.664Z" hostname="sais-MacBook-Pro-2.local" tests="3" failures="0" errors="0" skipped="0" time="0.03248225">
-        <testcase classname="src/components/RootClassManager.test.tsx" name="RootClassManager &gt; renders nothing" time="0.02128975">
+        <testcase classname="src/pages/NotFound.test.tsx" name="NotFound &gt; renders page not found message" time="0.004428958">
             <system-err>
-⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
-⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+404 Error: User attempted to access non-existent route: /
 
             </system-err>
         </testcase>
-        <testcase classname="src/components/RootClassManager.test.tsx" name="RootClassManager &gt; adds is-trader-app to #root on non-admin path" time="0.00181475">
-        </testcase>
-        <testcase classname="src/components/RootClassManager.test.tsx" name="RootClassManager &gt; removes is-trader-app from #root on admin path" time="0.007021458">
-        </testcase>
-    </testsuite>
-    <testsuite name="src/components/ScrollToTop.test.tsx" timestamp="2026-03-03T05:16:16.664Z" hostname="sais-MacBook-Pro-2.local" tests="1" failures="0" errors="0" skipped="0" time="0.049523125">
-        <testcase classname="src/components/ScrollToTop.test.tsx" name="ScrollToTop &gt; renders nothing" time="0.047371292">
+        <testcase classname="src/pages/NotFound.test.tsx" name="NotFound &gt; renders link to home" time="0.022095458">
             <system-err>
-⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
-⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+404 Error: User attempted to access non-existent route: /
 
             </system-err>
         </testcase>
-    </testsuite>
-    <testsuite name="src/components/Watermark.test.tsx" timestamp="2026-03-03T05:16:16.664Z" hostname="sais-MacBook-Pro-2.local" tests="4" failures="0" errors="0" skipped="0" time="0.067041375">
-        <testcase classname="src/components/Watermark.test.tsx" name="Watermark &gt; renders children inside wrapper" time="0.050221041">
-        </testcase>
-        <testcase classname="src/components/Watermark.test.tsx" name="Watermark &gt; applies animate-watermark class" time="0.005147208">
-        </testcase>
-        <testcase classname="src/components/Watermark.test.tsx" name="RegistrationWatermark &gt; renders LISTING ONLY and AWAITING APPROVAL text" time="0.004391875">
-        </testcase>
-        <testcase classname="src/components/Watermark.test.tsx" name="CommodityWatermark &gt; renders price formula and weight labels" time="0.006091708">
+        <testcase classname="src/pages/NotFound.test.tsx" name="NotFound &gt; logs 404 error on mount" time="0.011186708">
         </testcase>
     </testsuite>
-    <testsuite name="src/hooks/use-desktop.test.tsx" timestamp="2026-03-03T05:16:16.665Z" hostname="sais-MacBook-Pro-2.local" tests="1" failures="0" errors="0" skipped="0" time="0.043333417">
-        <testcase classname="src/hooks/use-desktop.test.tsx" name="useDesktopMode &gt; returns boolean and subscribes to matchMedia" time="0.042313417">
+    <testsuite name="src/components/ui/button.test.tsx" timestamp="2026-03-04T09:34:08.967Z" hostname="sais-MacBook-Pro-2.local" tests="8" failures="0" errors="0" skipped="0" time="0.297321208">
+        <testcase classname="src/components/ui/button.test.tsx" name="Button &gt; renders with default variant and size" time="0.145474166">
+        </testcase>
+        <testcase classname="src/components/ui/button.test.tsx" name="Button &gt; calls onClick when clicked" time="0.016154667">
+        </testcase>
+        <testcase classname="src/components/ui/button.test.tsx" name="Button &gt; renders destructive variant" time="0.008894666">
+        </testcase>
+        <testcase classname="src/components/ui/button.test.tsx" name="Button &gt; renders outline variant" time="0.007564416">
+        </testcase>
+        <testcase classname="src/components/ui/button.test.tsx" name="Button &gt; renders small size" time="0.0081995">
+        </testcase>
+        <testcase classname="src/components/ui/button.test.tsx" name="Button &gt; renders large size" time="0.010284417">
+        </testcase>
+        <testcase classname="src/components/ui/button.test.tsx" name="Button &gt; is disabled when disabled prop is true" time="0.073995209">
+        </testcase>
+        <testcase classname="src/components/ui/button.test.tsx" name="Button &gt; applies custom className" time="0.021630042">
         </testcase>
     </testsuite>
-    <testsuite name="src/hooks/use-mobile.test.tsx" timestamp="2026-03-03T05:16:16.665Z" hostname="sais-MacBook-Pro-2.local" tests="1" failures="0" errors="0" skipped="0" time="0.042629291">
-        <testcase classname="src/hooks/use-mobile.test.tsx" name="useIsMobile &gt; returns boolean and subscribes to matchMedia" time="0.039562833">
+    <testsuite name="src/components/ui/card.test.tsx" timestamp="2026-03-04T09:34:08.967Z" hostname="sais-MacBook-Pro-2.local" tests="4" failures="0" errors="0" skipped="0" time="0.140540875">
+        <testcase classname="src/components/ui/card.test.tsx" name="Card &gt; renders Card with children" time="0.071274458">
+        </testcase>
+        <testcase classname="src/components/ui/card.test.tsx" name="Card &gt; renders full card structure" time="0.008037417">
+        </testcase>
+        <testcase classname="src/components/ui/card.test.tsx" name="Card &gt; CardTitle renders as heading" time="0.058869292">
+        </testcase>
+        <testcase classname="src/components/ui/card.test.tsx" name="Card &gt; applies custom className to Card" time="0.001233958">
         </testcase>
     </testsuite>
-    <testsuite name="src/pages/Index.test.tsx" timestamp="2026-03-03T05:16:16.665Z" hostname="sais-MacBook-Pro-2.local" tests="1" failures="0" errors="0" skipped="0" time="0.114025333">
-        <testcase classname="src/pages/Index.test.tsx" name="Index &gt; renders welcome heading and message" time="0.111603167">
+    <testsuite name="src/components/ui/input.test.tsx" timestamp="2026-03-04T09:34:08.968Z" hostname="sais-MacBook-Pro-2.local" tests="6" failures="0" errors="0" skipped="0" time="0.028172333">
+        <testcase classname="src/components/ui/input.test.tsx" name="Input &gt; renders with placeholder" time="0.018036292">
         </testcase>
-    </testsuite>
-    <testsuite name="src/pages/NotFound.test.tsx" timestamp="2026-03-03T05:16:16.665Z" hostname="sais-MacBook-Pro-2.local" tests="1" failures="0" errors="0" skipped="0" time="0.106036041">
-        <testcase classname="src/pages/NotFound.test.tsx" name="NotFound &gt; renders 404 message and link to home" time="0.105010334">
-            <system-err>
-⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
-⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
-
-            </system-err>
+        <testcase classname="src/components/ui/input.test.tsx" name="Input &gt; accepts and displays value" time="0.001691917">
         </testcase>
-    </testsuite>
-    <testsuite name="src/context/AuthContext.test.tsx" timestamp="2026-03-03T05:16:16.665Z" hostname="sais-MacBook-Pro-2.local" tests="2" failures="0" errors="0" skipped="0" time="0.700688709">
-        <testcase classname="src/context/AuthContext.test.tsx" name="AuthContext &gt; bootstraps and sets hasBootstrapped true when getProfile returns null" time="0.594255458">
+        <testcase classname="src/components/ui/input.test.tsx" name="Input &gt; calls onChange when user types" time="0.004137792">
         </testcase>
-        <testcase classname="src/context/AuthContext.test.tsx" name="AuthContext &gt; sets authenticated state when getProfile returns profile" time="0.105171875">
+        <testcase classname="src/components/ui/input.test.tsx" name="Input &gt; is disabled when disabled prop is true" time="0.001336958">
         </testcase>
-    </testsuite>
-    <testsuite name="src/context/FontSizeContext.test.tsx" timestamp="2026-03-03T05:16:16.665Z" hostname="sais-MacBook-Pro-2.local" tests="5" failures="0" errors="0" skipped="0" time="0.57798875">
-        <testcase classname="src/context/FontSizeContext.test.tsx" name="FontSizeContext &gt; provides default level 0, scale 1, label Default" time="0.037552459">
+        <testcase classname="src/components/ui/input.test.tsx" name="Input &gt; renders with type password" time="0.001026125">
         </testcase>
-        <testcase classname="src/context/FontSizeContext.test.tsx" name="FontSizeContext &gt; increase moves to level 1 then 2" time="0.234041334">
-        </testcase>
-        <testcase classname="src/context/FontSizeContext.test.tsx" name="FontSizeContext &gt; increase does not go above 2" time="0.198167083">
-        </testcase>
-        <testcase classname="src/context/FontSizeContext.test.tsx" name="FontSizeContext &gt; decrease moves level down and does not go below 0" time="0.084061667">
-        </testcase>
-        <testcase classname="src/context/FontSizeContext.test.tsx" name="FontSizeContext &gt; reset sets level to 0" time="0.022488541">
-        </testcase>
-    </testsuite>
-    <testsuite name="src/context/ThemeContext.test.tsx" timestamp="2026-03-03T05:16:16.666Z" hostname="sais-MacBook-Pro-2.local" tests="3" failures="0" errors="0" skipped="0" time="0.3947845">
-        <testcase classname="src/context/ThemeContext.test.tsx" name="ThemeContext &gt; provides isDark false by default" time="0.111536167">
-        </testcase>
-        <testcase classname="src/context/ThemeContext.test.tsx" name="ThemeContext &gt; toggles isDark when toggleTheme is called" time="0.225078833">
-        </testcase>
-        <testcase classname="src/context/ThemeContext.test.tsx" name="ThemeContext &gt; persists theme to localStorage" time="0.055730208">
-        </testcase>
-    </testsuite>
-    <testsuite name="src/test/example.test.ts" timestamp="2026-03-03T05:16:16.666Z" hostname="sais-MacBook-Pro-2.local" tests="1" failures="0" errors="0" skipped="0" time="0.002279541">
-        <testcase classname="src/test/example.test.ts" name="example &gt; should pass" time="0.001380041">
-        </testcase>
-    </testsuite>
-    <testsuite name="src/services/storage.test.ts" timestamp="2026-03-03T05:16:16.666Z" hostname="sais-MacBook-Pro-2.local" tests="5" failures="0" errors="0" skipped="0" time="0.007306667">
-        <testcase classname="src/services/storage.test.ts" name="storage &gt; delay &gt; resolves after specified ms" time="0.002159667">
-        </testcase>
-        <testcase classname="src/services/storage.test.ts" name="storage &gt; delay &gt; returns a promise" time="0.00027525">
-        </testcase>
-        <testcase classname="src/services/storage.test.ts" name="storage &gt; id &gt; returns a string" time="0.000644417">
-        </testcase>
-        <testcase classname="src/services/storage.test.ts" name="storage &gt; id &gt; returns UUID-like format (8-4-4-4-12 hex)" time="0.002368875">
-        </testcase>
-        <testcase classname="src/services/storage.test.ts" name="storage &gt; now &gt; returns ISO date string" time="0.0009765">
-        </testcase>
-    </testsuite>
-    <testsuite name="src/components/ui/button.test.tsx" timestamp="2026-03-03T05:16:16.666Z" hostname="sais-MacBook-Pro-2.local" tests="4" failures="0" errors="0" skipped="0" time="0.419499167">
-        <testcase classname="src/components/ui/button.test.tsx" name="Button &gt; renders children" time="0.362372542">
-        </testcase>
-        <testcase classname="src/components/ui/button.test.tsx" name="Button &gt; applies default variant classes" time="0.00737225">
-        </testcase>
-        <testcase classname="src/components/ui/button.test.tsx" name="Button &gt; applies destructive variant" time="0.00360325">
-        </testcase>
-        <testcase classname="src/components/ui/button.test.tsx" name="Button &gt; calls onClick when clicked" time="0.032901208">
-        </testcase>
-    </testsuite>
-    <testsuite name="src/services/api/auth.test.ts" timestamp="2026-03-03T05:16:16.667Z" hostname="sais-MacBook-Pro-2.local" tests="4" failures="0" errors="0" skipped="0" time="0.015747583">
-        <testcase classname="src/services/api/auth.test.ts" name="authApi &gt; login &gt; throws with custom message when response has detail containing Invalid email or password" time="0.007513">
-        </testcase>
-        <testcase classname="src/services/api/auth.test.ts" name="authApi &gt; login &gt; throws with default message when response is not ok and not JSON" time="0.000292458">
-        </testcase>
-        <testcase classname="src/services/api/auth.test.ts" name="authApi &gt; getProfile &gt; returns null on 401" time="0.000152">
-        </testcase>
-        <testcase classname="src/services/api/auth.test.ts" name="authApi &gt; getProfile &gt; returns profile when ok" time="0.000226083">
-        </testcase>
-    </testsuite>
-    <testsuite name="src/services/api/http.test.ts" timestamp="2026-03-03T05:16:16.667Z" hostname="sais-MacBook-Pro-2.local" tests="5" failures="0" errors="0" skipped="0" time="0.01032225">
-        <testcase classname="src/services/api/http.test.ts" name="http &gt; API_BASE &gt; defaults to localhost:8080/api when VITE_API_URL unset" time="0.003720958">
-        </testcase>
-        <testcase classname="src/services/api/http.test.ts" name="http &gt; API_BASE &gt; strips trailing slashes from base" time="0.000166125">
-        </testcase>
-        <testcase classname="src/services/api/http.test.ts" name="http &gt; apiFetch &gt; calls fetch with correct URL and credentials" time="0.004070666">
-        </testcase>
-        <testcase classname="src/services/api/http.test.ts" name="http &gt; apiFetch &gt; sets Content-Type application/json when body is not FormData" time="0.000350833">
-        </testcase>
-        <testcase classname="src/services/api/http.test.ts" name="http &gt; apiFetch &gt; does not override Content-Type when provided" time="0.000399083">
+        <testcase classname="src/components/ui/input.test.tsx" name="Input &gt; applies custom className" time="0.00104875">
         </testcase>
     </testsuite>
 </testsuites>

@@ -9,6 +9,15 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    reporters: process.env.CI
+      ? ["default", "html", "junit"]
+      : ["default"],
+    outputFile: process.env.CI
+      ? {
+          html: "./test-results/html/index.html",
+          junit: "./test-results/junit.xml",
+        }
+      : undefined,
   },
   resolve: {
     alias: { "@": path.resolve(__dirname, "./src") },
