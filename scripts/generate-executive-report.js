@@ -157,7 +157,6 @@ function buildHtml(backend, frontend, coverage) {
     <div class="card" style="padding:20px">
       <h2 style="margin-bottom:12px">Report Links</h2>
       <div class="links">
-        <a href="../server/target/surefire-reports-html/surefire.html">Backend Test Report</a>
         <a href="../client/test-results/html/index.html">Frontend Test Report</a>
         ${coverage.backend ? '<a href="' + coverage.backend + '">Backend Coverage (JaCoCo)</a>' : ""}
         ${coverage.frontend ? '<a href="' + coverage.frontend + '">Frontend Coverage</a>' : ""}
