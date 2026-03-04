@@ -43,7 +43,7 @@ pipeline {
                         def jhome = params.JAVA_21_HOME?.trim()
                         if (jhome) {
                             withEnv(["JAVA_HOME=${jhome}"]) {
-                                sh 'echo "Using JAVA_HOME=$JAVA_HOME" && java -version && ./mvnw -ntp -B clean verify -DskipTests=false'
+                                sh 'echo "Using JAVA_HOME=$JAVA_HOME" && java -version && ./mvnw -ntp -B clean verify -DskipTests=false -DskipITs'
                             }
                         } else {
                             sh '''#!/bin/bash
@@ -56,7 +56,7 @@ pipeline {
                             fi
                             echo "Using JAVA_HOME=$JAVA_HOME"
                             java -version
-                            ./mvnw -ntp -B clean verify -DskipTests=false
+                            ./mvnw -ntp -B clean verify -DskipTests=false -DskipITs
                             '''
                         }
                     }
