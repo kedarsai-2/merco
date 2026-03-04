@@ -10,7 +10,7 @@ import com.mercotrace.repository.DeductionRuleRepository;
 import com.mercotrace.repository.DynamicChargeRepository;
 import com.mercotrace.repository.HamaliSlabRepository;
 import com.mercotrace.service.dto.FullCommodityConfigDTO;
-import com.mercotrace.web.rest.errors.BadRequestAlertException;
+import com.mercotrace.service.errors.BadRequestException;
 import jakarta.persistence.EntityManager;
 import java.util.List;
 import java.util.Optional;
@@ -60,7 +60,7 @@ class CommodityConfigServiceImplTest {
         when(commodityRepository.existsById(999L)).thenReturn(false);
 
         assertThatThrownBy(() -> service.getFullConfig(999L))
-            .isInstanceOf(BadRequestAlertException.class);
+            .isInstanceOf(BadRequestException.class);
     }
 
     @Test

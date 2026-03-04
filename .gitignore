@@ -7,3 +7,7 @@ client_origin
 
 # Liquibase local configuration (do not commit real credentials)
 server/src/main/resources/liquibase.properties
+
+# Allure reports (generated)
+allure-report/
+client/allure-results/

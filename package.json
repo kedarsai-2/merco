@@ -2,6 +2,10 @@
   "private": true,
   "description": "MercoTrace root – scripts for test report generation",
   "scripts": {
+    "allure:report": "node scripts/allure-report.js",
+    "allure:serve": "node scripts/allure-serve.js",
+    "allure:backend": "cd server && ./mvnw test -DskipITs allure:serve",
+    "allure:frontend": "cd client && npm run test:allure && npm run allure:report",
     "report:html:backend": "node scripts/generate-test-report.js server/target/surefire-reports server/target/test-report.html 'Backend Tests'",
     "report:html:frontend": "node scripts/generate-test-report.js client/test-results/junit.xml client/test-results/test-report.html 'Frontend Tests'",
     "report:spotbugs:server": "cd server && ./mvnw spotbugs:check -q && cd .. && node scripts/generate-spotbugs-report.js server/target/spotbugsXml.xml server/target/spotbugs-report.html 'SpotBugs Security Report'",
@@ -10,6 +14,7 @@
     "report:sast:all": "npm run report:spotbugs:server && npm run report:sast:client"
   },
   "devDependencies": {
+    "allure-commandline": "^2.37.0",
     "fast-xml-parser": "^4.3.2"
   }
 }

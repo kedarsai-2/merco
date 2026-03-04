@@ -4,7 +4,7 @@ import com.mercotrace.domain.*;
 import com.mercotrace.repository.*;
 import com.mercotrace.service.CommodityConfigService;
 import com.mercotrace.service.dto.*;
-import com.mercotrace.web.rest.errors.BadRequestAlertException;
+import com.mercotrace.service.errors.BadRequestException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.math.BigDecimal;
@@ -63,7 +63,7 @@ public class CommodityConfigServiceImpl implements CommodityConfigService {
     @Transactional(readOnly = true)
     public FullCommodityConfigDTO getFullConfig(Long commodityId) {
         if (!commodityRepository.existsById(commodityId)) {
-            throw new BadRequestAlertException("Commodity not found", ENTITY_NAME, "commoditynotfound");
+            throw new BadRequestException("Commodity not found", ENTITY_NAME, "commoditynotfound");
         }
         FullCommodityConfigDTO out = new FullCommodityConfigDTO();
         out.setCommodityId(commodityId);
@@ -103,10 +103,10 @@ public class CommodityConfigServiceImpl implements CommodityConfigService {
     public FullCommodityConfigDTO saveFullConfig(FullCommodityConfigDTO dto) {
         Long commodityId = dto.getCommodityId();
         if (commodityId == null) {
-            throw new BadRequestAlertException("commodityId is required", ENTITY_NAME, "idnull");
+            throw new BadRequestException("commodityId is required", ENTITY_NAME, "idnull");
         }
         if (!commodityRepository.existsById(commodityId)) {
-            throw new BadRequestAlertException("Commodity not found", ENTITY_NAME, "commoditynotfound");
+            throw new BadRequestException("Commodity not found", ENTITY_NAME, "commoditynotfound");
         }
 
         // Remove existing config and children

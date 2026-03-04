@@ -98,6 +98,16 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
         if (
             ex instanceof ErrorResponseException exp && exp.getBody() instanceof ProblemDetailWithCause problemDetailWithCause
         ) return problemDetailWithCause;
+        if (ex instanceof com.mercotrace.service.errors.BadRequestException bre) {
+            return ProblemDetailWithCauseBuilder.instance()
+                .withStatus(HttpStatus.BAD_REQUEST.value())
+                .withType(ErrorConstants.DEFAULT_TYPE)
+                .withTitle("Bad Request")
+                .withDetail(bre.getMessage())
+                .withProperty("message", "error." + bre.getErrorKey())
+                .withProperty("params", bre.getEntityName())
+                .build();
+        }
         return ProblemDetailWithCauseBuilder.instance().withStatus(toStatus(ex).value()).build();
     }
 
@@ -213,6 +223,7 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     }
 
     private HttpStatus getMappedStatus(Throwable err) {
+        if (err instanceof com.mercotrace.service.errors.BadRequestException) return HttpStatus.BAD_REQUEST;
         // Where we disagree with Spring defaults
         if (err instanceof AccessDeniedException) return HttpStatus.FORBIDDEN;
         if (err instanceof ConcurrencyFailureException) return HttpStatus.CONFLICT;
@@ -227,15 +238,25 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     }
 
     private HttpHeaders buildHeaders(Throwable err) {
-        return err instanceof BadRequestAlertException badRequestAlertException
-            ? HeaderUtil.createFailureAlert(
+        if (err instanceof BadRequestAlertException badRequestAlertException) {
+            return HeaderUtil.createFailureAlert(
                 applicationName,
                 true,
                 badRequestAlertException.getEntityName(),
                 badRequestAlertException.getErrorKey(),
                 badRequestAlertException.getMessage()
-            )
-            : null;
+            );
+        }
+        if (err instanceof com.mercotrace.service.errors.BadRequestException bre) {
+            return HeaderUtil.createFailureAlert(
+                applicationName,
+                true,
+                bre.getEntityName(),
+                bre.getErrorKey(),
+                bre.getMessage()
+            );
+        }
+        return null;
     }
 
     public Optional<ProblemDetailWithCause> buildCause(final Throwable throwable, NativeWebRequest request) {
