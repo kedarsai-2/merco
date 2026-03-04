@@ -123,6 +123,10 @@ pipeline {
                 expression { currentBuild.result == null || currentBuild.result == 'SUCCESS' }
             }
             steps {
+                script {
+                    def pathAdd = params.NODE_HOME?.trim() ? "export PATH=\"${params.NODE_HOME.trim()}/bin:\$PATH\" && " : ''
+                    sh "${pathAdd}node client/scripts/generate-backend-test-report-html.js"
+                }
                 dir('client') {
                     script {
                         def pathAdd = params.NODE_HOME?.trim() ? "export PATH=\"${params.NODE_HOME.trim()}/bin:\$PATH\" && " : ''

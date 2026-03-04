@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 /**
- * Generates a simple static HTML test report from JUnit XML.
- * Designed for Jenkins - no JavaScript, no external resources, works with strict CSP.
+ * Generates a styled HTML test report from Maven Surefire XML reports.
+ * Reads server/target/surefire-reports/*.xml and outputs server/target/surefire-reports-html/surefire.html
  */
-import { readFileSync, mkdirSync, writeFileSync } from "fs";
+import { readFileSync, readdirSync, mkdirSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const junitPath = join(__dirname, "..", "test-results", "junit.xml");
-const outPath = join(__dirname, "..", "test-results", "html", "index.html");
+const projectRoot = join(__dirname, "..", "..");
+const reportsDir = join(projectRoot, "server", "target", "surefire-reports");
+const outPath = join(projectRoot, "server", "target", "surefire-reports-html", "surefire.html");
 
 function escapeHtml(s) {
   if (!s) return "";
@@ -20,47 +21,56 @@ function escapeHtml(s) {
     .replace(/"/g, "&quot;");
 }
 
-function parseJunit(xml) {
-  const suites = [];
-  const tsMatch = xml.match(/<testsuites[^>]*\s+tests="(\d+)"[^>]*\s+failures="(\d+)"[^>]*\s+errors="(\d+)"[^>]*\s+time="([^"]*)"/);
-  const total = tsMatch ? { tests: +tsMatch[1], failures: +tsMatch[2], errors: +tsMatch[3], time: tsMatch[4] } : { tests: 0, failures: 0, errors: 0, time: "0" };
-
-  const suiteRegex = /<testsuite\s+name="([^"]*)"[^>]*\s+tests="(\d+)"[^>]*\s+failures="(\d+)"[^>]*\s+errors="(\d+)"[^>]*\s+skipped="(\d+)"[^>]*\s+time="([^"]*)"/g;
+function parseSurefireFile(xml) {
+  const getAttr = (str, key) => {
+    const m = str.match(new RegExp(`${key}="([^"]*)"`));
+    return m ? m[1] : "";
+  };
+  const suiteTag = xml.match(/<testsuite[^>]+>/);
+  if (!suiteTag) return null;
+  const tag = suiteTag[0];
+  const name = getAttr(tag, "name");
+  const tests = parseInt(getAttr(tag, "tests"), 10) || 0;
+  const failures = parseInt(getAttr(tag, "failures"), 10) || 0;
+  const errors = parseInt(getAttr(tag, "errors"), 10) || 0;
+  const skipped = parseInt(getAttr(tag, "skipped"), 10) || 0;
+  const time = getAttr(tag, "time") || "0";
+  const cases = [];
+  const caseRegex = /<testcase[^>]*\s+classname="([^"]*)"[^>]*\s+name="([^"]*)"[^>]*\s+time="([^"]*)"[^>]*>([\s\S]*?)<\/testcase>/g;
   let m;
-  while ((m = suiteRegex.exec(xml)) !== null) {
-    const suiteStart = m.index;
-    const suiteEnd = xml.indexOf("</testsuite>", suiteStart) + 12;
-    const suiteXml = xml.slice(suiteStart, suiteEnd);
-    const cases = [];
-    const caseRegex = /<testcase[^>]*\s+classname="([^"]*)"[^>]*\s+name="([^"]*)"[^>]*\s+time="([^"]*)"[^>]*>([\s\S]*?)<\/testcase>/g;
-    let cm;
-    while ((cm = caseRegex.exec(suiteXml)) !== null) {
-      const hasFailure = /<failure[^>]*>([\s\S]*?)<\/failure>/.exec(cm[4]);
-      const hasError = /<error[^>]*>([\s\S]*?)<\/error>/.exec(cm[4]);
-      cases.push({
-        classname: cm[1],
-        name: cm[2],
-        time: cm[3],
-        status: hasFailure || hasError ? "fail" : "pass",
-        message: (hasFailure && hasFailure[1]) || (hasError && hasError[1]) || "",
-      });
-    }
-    suites.push({
-      name: m[1],
-      tests: +m[2],
-      failures: +m[3],
-      errors: +m[4],
-      skipped: +m[5],
-      time: m[6],
-      cases,
+  while ((m = caseRegex.exec(xml)) !== null) {
+    const hasFailure = /<failure[^>]*>([\s\S]*?)<\/failure>/.exec(m[4]);
+    const hasError = /<error[^>]*>([\s\S]*?)<\/error>/.exec(m[4]);
+    cases.push({
+      classname: m[1],
+      name: m[2],
+      time: m[3],
+      status: hasFailure || hasError ? "fail" : "pass",
+      message: (hasFailure && hasFailure[1]) || (hasError && hasError[1]) || "",
     });
   }
-
-  return { total, suites };
+  return {
+    name: name.replace(/^com\.mercotrace\./, ""),
+    tests: +tests,
+    failures: +failures,
+    errors: +errors,
+    skipped: +skipped,
+    time,
+    cases,
+  };
 }
 
-function buildHtml(data) {
-  const { total, suites } = data;
+function buildHtml(suites) {
+  const total = suites.reduce(
+    (acc, s) => ({
+      tests: acc.tests + s.tests,
+      failures: acc.failures + s.failures,
+      errors: acc.errors + s.errors,
+      skipped: acc.skipped + s.skipped,
+      time: acc.time + parseFloat(s.time) || 0,
+    }),
+    { tests: 0, failures: 0, errors: 0, skipped: 0, time: 0 }
+  );
   const passed = total.tests - total.failures - total.errors;
   const failed = total.failures + total.errors;
 
@@ -98,25 +108,25 @@ function buildHtml(data) {
     }
   }
 
-  const passColor = failed === 0 ? "#059669" : "#dc2626";
+  const timeStr = total.time.toFixed(3);
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Frontend Test Report - MercoTrace</title>
+  <title>Backend Test Report - MercoTrace</title>
 </head>
 <body style="margin:0;padding:24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f3f4f6;color:#111827">
   <div style="max-width:1200px;margin:0 auto">
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:20px;border-bottom:2px solid #e5e7eb">
-      <h1 style="margin:0;font-size:24px;font-weight:700;color:#111827">Frontend Test Report</h1>
-      <span style="font-size:13px;color:#6b7280">MercoTrace</span>
+      <h1 style="margin:0;font-size:24px;font-weight:700;color:#111827">Backend Test Report</h1>
+      <span style="font-size:13px;color:#6b7280">MercoTrace · Spring Boot</span>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:24px">
       <span style="display:inline-block;padding:8px 16px;background:#3b82f6;color:#fff;border-radius:8px;font-weight:600;font-size:14px">Total: ${total.tests}</span>
       <span style="display:inline-block;padding:8px 16px;background:#059669;color:#fff;border-radius:8px;font-weight:600;font-size:14px">Passed: ${passed}</span>
       <span style="display:inline-block;padding:8px 16px;background:${failed > 0 ? "#dc2626" : "#9ca3af"};color:#fff;border-radius:8px;font-weight:600;font-size:14px">Failed: ${failed}</span>
-      <span style="display:inline-block;padding:8px 16px;background:#6b7280;color:#fff;border-radius:8px;font-weight:600;font-size:14px">Time: ${total.time}s</span>
+      <span style="display:inline-block;padding:8px 16px;background:#6b7280;color:#fff;border-radius:8px;font-weight:600;font-size:14px">Time: ${timeStr}s</span>
     </div>
     <div style="background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08);overflow:hidden">
       <table style="width:100%;border-collapse:collapse">
@@ -139,22 +149,37 @@ function buildHtml(data) {
 }
 
 try {
-  let xml;
+  let files;
   try {
-    xml = readFileSync(junitPath, "utf8");
+    files = readdirSync(reportsDir).filter((f) => f.startsWith("TEST-") && f.endsWith(".xml"));
   } catch {
     if (process.env.CI) {
-      console.error("junit.xml not found. Run tests with CI=true first.");
+      console.error("Backend surefire reports not found. Run backend tests first.");
       process.exit(1);
     }
     process.exit(0);
   }
-  const data = parseJunit(xml);
-  const html = buildHtml(data);
+
+  if (files.length === 0) {
+    if (process.env.CI) {
+      console.error("No TEST-*.xml files in", reportsDir);
+      process.exit(1);
+    }
+    process.exit(0);
+  }
+
+  const suites = [];
+  for (const f of files.sort()) {
+    const xml = readFileSync(join(reportsDir, f), "utf8");
+    const suite = parseSurefireFile(xml);
+    if (suite) suites.push(suite);
+  }
+
+  const html = buildHtml(suites);
   mkdirSync(dirname(outPath), { recursive: true });
   writeFileSync(outPath, html, "utf8");
-  console.log("Generated static HTML report at", outPath);
+  console.log("Generated backend test report at", outPath);
 } catch (err) {
-  console.error("Failed to generate report:", err.message);
+  console.error("Failed to generate backend report:", err.message);
   process.exit(1);
 }

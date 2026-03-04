@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1772617617664" clover="3.2.0">
-  <project timestamp="1772617617665" name="All files">
-    <metrics statements="19247" coveredstatements="164" conditionals="172" coveredconditionals="20" methods="158" coveredmethods="9" elements="19577" coveredelements="193" complexity="0" loc="19247" ncloc="19247" packages="20" files="161" classes="161"/>
+<coverage generated="1772620633873" clover="3.2.0">
+  <project timestamp="1772620633873" name="All files">
+    <metrics statements="19264" coveredstatements="164" conditionals="172" coveredconditionals="20" methods="158" coveredmethods="9" elements="19594" coveredelements="193" complexity="0" loc="19264" ncloc="19264" packages="20" files="161" classes="161"/>
     <package name="client">
       <metrics statements="152" coveredstatements="0" conditionals="3" coveredconditionals="2" methods="3" coveredmethods="2"/>
       <file name="capacitor.config.ts" path="/Users/saichaitanya/Desktop/MercoTrace/client/capacitor.config.ts">
@@ -851,9 +851,9 @@
       </file>
     </package>
     <package name="client.scripts">
-      <metrics statements="143" coveredstatements="0" conditionals="1" coveredconditionals="0" methods="1" coveredmethods="0"/>
+      <metrics statements="160" coveredstatements="0" conditionals="1" coveredconditionals="0" methods="1" coveredmethods="0"/>
       <file name="generate-test-report-html.js" path="/Users/saichaitanya/Desktop/MercoTrace/client/scripts/generate-test-report-html.js">
-        <metrics statements="143" coveredstatements="0" conditionals="1" coveredconditionals="0" methods="1" coveredmethods="0"/>
+        <metrics statements="160" coveredstatements="0" conditionals="1" coveredconditionals="0" methods="1" coveredmethods="0"/>
         <line num="1" count="0" type="cond" truecount="0" falsecount="1"/>
         <line num="2" count="0" type="stmt"/>
         <line num="3" count="0" type="stmt"/>
@@ -997,6 +997,23 @@
         <line num="141" count="0" type="stmt"/>
         <line num="142" count="0" type="stmt"/>
         <line num="143" count="0" type="stmt"/>
+        <line num="144" count="0" type="stmt"/>
+        <line num="145" count="0" type="stmt"/>
+        <line num="146" count="0" type="stmt"/>
+        <line num="147" count="0" type="stmt"/>
+        <line num="148" count="0" type="stmt"/>
+        <line num="149" count="0" type="stmt"/>
+        <line num="150" count="0" type="stmt"/>
+        <line num="151" count="0" type="stmt"/>
+        <line num="152" count="0" type="stmt"/>
+        <line num="153" count="0" type="stmt"/>
+        <line num="154" count="0" type="stmt"/>
+        <line num="155" count="0" type="stmt"/>
+        <line num="156" count="0" type="stmt"/>
+        <line num="157" count="0" type="stmt"/>
+        <line num="158" count="0" type="stmt"/>
+        <line num="159" count="0" type="stmt"/>
+        <line num="160" count="0" type="stmt"/>
       </file>
     </package>
     <package name="client.src">
