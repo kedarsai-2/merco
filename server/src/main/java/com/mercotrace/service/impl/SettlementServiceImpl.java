@@ -217,7 +217,7 @@ public class SettlementServiceImpl implements SettlementService {
         Optional<Patti> last = pattiRepository.findTopByPattiIdStartingWithOrderByIdDesc(datePrefix);
         int next = 1;
         if (last.isPresent()) {
-            String id = last.get().getPattiId();
+            String id = last.orElseThrow().getPattiId();
             if (id != null && id.length() > datePrefix.length()) {
                 try {
                     next = Integer.parseInt(id.substring(datePrefix.length())) + 1;

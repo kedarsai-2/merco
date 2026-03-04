@@ -156,9 +156,10 @@ public class AuctionService {
 
         Optional<Auction> latestAuction = lotAuctions.stream()
             .max(Comparator.comparing(Auction::getAuctionDatetime, Comparator.nullsLast(Comparator.naturalOrder())));
+        Auction latest = latestAuction.orElse(null);
         int soldBags = 0;
-        if (latestAuction.isPresent()) {
-            List<AuctionEntry> ent = auctionToEntries.getOrDefault(latestAuction.get().getId(), List.of());
+        if (latest != null) {
+            List<AuctionEntry> ent = auctionToEntries.getOrDefault(latest.getId(), List.of());
             soldBags = ent.stream().mapToInt(e -> e.getQuantity() != null ? e.getQuantity() : 0).sum();
         }
         dto.setSoldBags(soldBags);
@@ -166,9 +167,9 @@ public class AuctionService {
         int bagCount = lot.getBagCount() != null ? lot.getBagCount() : 0;
         int remaining = Math.max(0, bagCount - soldBags);
         String status;
-        if (latestAuction.isEmpty() || auctionToEntries.getOrDefault(latestAuction.get().getId(), List.of()).isEmpty()) {
+        if (latest == null || auctionToEntries.getOrDefault(latest.getId(), List.of()).isEmpty()) {
             status = "AVAILABLE";
-        } else if (latestAuction.get().getCompletedAt() != null) {
+        } else if (latest.getCompletedAt() != null) {
             status = remaining == 0 ? "SOLD" : "PARTIAL";
         } else {
             status = remaining == 0 ? "SOLD" : "PENDING";
@@ -405,29 +406,24 @@ public class AuctionService {
 
     @Transactional(readOnly = true)
     public Optional<AuctionResultDTO> getResultByLot(Long lotId) {
-        Optional<Auction> auctionOpt = auctionRepository.findFirstByLotIdOrderByAuctionDatetimeDesc(lotId);
-        if (auctionOpt.isEmpty()) {
-            return Optional.empty();
-        }
-        Auction auction = auctionOpt.get();
-        Lot lot = lotRepository.findById(lotId).orElse(null);
-        List<AuctionEntry> entries = auctionEntryRepository.findAllByAuctionId(auction.getId());
-        return Optional.of(buildResultDTO(auction, lot, entries));
+        return auctionRepository.findFirstByLotIdOrderByAuctionDatetimeDesc(lotId)
+            .map(auction -> {
+                Lot lot = lotRepository.findById(lotId).orElse(null);
+                List<AuctionEntry> entries = auctionEntryRepository.findAllByAuctionId(auction.getId());
+                return buildResultDTO(auction, lot, entries);
+            });
     }
 
     @Transactional(readOnly = true)
     public Optional<AuctionResultDTO> getResultByBidNumber(Integer bidNumber) {
-        Optional<AuctionEntry> entryOpt = auctionEntryRepository.findFirstByBidNumber(bidNumber);
-        if (entryOpt.isEmpty()) {
-            return Optional.empty();
-        }
-        AuctionEntry entry = entryOpt.get();
-        Auction auction = auctionRepository
-            .findById(entry.getAuctionId())
-            .orElseThrow(() -> new EntityNotFoundException("Auction not found for bid: " + bidNumber));
-        Lot lot = lotRepository.findById(auction.getLotId()).orElse(null);
-        List<AuctionEntry> entries = auctionEntryRepository.findAllByAuctionId(auction.getId());
-        return Optional.of(buildResultDTO(auction, lot, entries));
+        return auctionEntryRepository.findFirstByBidNumber(bidNumber)
+            .flatMap(entry -> {
+                Auction auction = auctionRepository.findById(entry.getAuctionId())
+                    .orElseThrow(() -> new EntityNotFoundException("Auction not found for bid: " + bidNumber));
+                Lot lot = lotRepository.findById(auction.getLotId()).orElse(null);
+                List<AuctionEntry> entries = auctionEntryRepository.findAllByAuctionId(auction.getId());
+                return Optional.of(buildResultDTO(auction, lot, entries));
+            });
     }
 
     private AuctionSessionDTO buildSessionDTO(Auction auction, Lot lot, List<AuctionEntry> entries) {

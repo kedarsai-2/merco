@@ -232,10 +232,10 @@ public class ModuleAuctionResource {
     public ResponseEntity<?> getResultByLot(@PathVariable("lotId") Long lotId) {
         LOG.debug("REST request to get Auction result for lot {}", lotId);
         Optional<AuctionResultDTO> resultOpt = auctionService.getResultByLot(lotId);
-        if (resultOpt.isPresent()) {
-            return ResponseEntity.ok(resultOpt.get());
+        if (resultOpt.isEmpty()) {
+            return buildErrorResponse(HttpStatus.NOT_FOUND, "Auction result not found for lot", "lotId");
         }
-        return buildErrorResponse(HttpStatus.NOT_FOUND, "Auction result not found for lot", "lotId");
+        return ResponseEntity.ok(resultOpt.orElseThrow());
     }
 
     /**
@@ -251,10 +251,10 @@ public class ModuleAuctionResource {
     public ResponseEntity<?> getResultByBidNumber(@PathVariable("bidNumber") Integer bidNumber) {
         LOG.debug("REST request to get Auction result for bidNumber {}", bidNumber);
         Optional<AuctionResultDTO> resultOpt = auctionService.getResultByBidNumber(bidNumber);
-        if (resultOpt.isPresent()) {
-            return ResponseEntity.ok(resultOpt.get());
+        if (resultOpt.isEmpty()) {
+            return buildErrorResponse(HttpStatus.NOT_FOUND, "Auction result not found for bid number", "bidNumber");
         }
-        return buildErrorResponse(HttpStatus.NOT_FOUND, "Auction result not found for bid number", "bidNumber");
+        return ResponseEntity.ok(resultOpt.orElseThrow());
     }
 
     private ResponseEntity<?> buildQuantityConflictResponse(AuctionConflictException conflict) {

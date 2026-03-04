@@ -94,12 +94,11 @@ public class CdnServiceImpl implements CdnService {
             }
         } else if (receivingPartyName != null && !receivingPartyName.isBlank()) {
             final String nameToMatch = receivingPartyName.trim();
-            Optional<Contact> found = contactRepository.findAllByTraderId(traderId).stream()
+            receivingPartyId = contactRepository.findAllByTraderId(traderId).stream()
                 .filter(c -> nameToMatch.equalsIgnoreCase(c.getName()))
-                .findFirst();
-            if (found.isPresent()) {
-                receivingPartyId = found.get().getId();
-            }
+                .findFirst()
+                .map(Contact::getId)
+                .orElse(receivingPartyId);
         }
 
         Cdn cdn = new Cdn();
@@ -156,10 +155,9 @@ public class CdnServiceImpl implements CdnService {
     @Transactional(readOnly = true)
     public CDNResponseDTO getById(Long id) {
         Long traderId = traderContextService.getCurrentTraderId();
-        Optional<Cdn> opt = cdnRepository.findByIdAndTraderIdAndIsDeletedFalse(id, traderId);
-        if (opt.isEmpty()) return null;
-        Cdn cdn = opt.get();
-        return toFullDto(cdn);
+        return cdnRepository.findByIdAndTraderIdAndIsDeletedFalse(id, traderId)
+            .map(this::toFullDto)
+            .orElse(null);
     }
 
     @Override
@@ -256,13 +254,12 @@ public class CdnServiceImpl implements CdnService {
         dto.setItems(cdnMapper.toLineItemDtos(cdnItemRepository.findAllByCdnIdAndIsDeletedFalse(cdn.getId())));
         dto.setDispatchingParty(cdn.getDispatchingPartyName());
         dto.setReceivingParty(cdn.getReceivingPartyName());
-        Optional<CdnTransfer> transferOpt = cdnTransferRepository.findFirstByCdnIdAndIsDeletedFalse(cdn.getId());
-        if (transferOpt.isPresent() && !transferOpt.get().getIsUsed() && transferOpt.get().getPinExpiry().isAfter(Instant.now())) {
-            dto.setPinUsed(false);
-            dto.setPinExpiresAt(transferOpt.get().getPinExpiry());
-        } else {
-            dto.setPinUsed(true);
-        }
+        cdnTransferRepository.findFirstByCdnIdAndIsDeletedFalse(cdn.getId())
+            .filter(t -> !t.getIsUsed() && t.getPinExpiry().isAfter(Instant.now()))
+            .ifPresentOrElse(
+                t -> { dto.setPinUsed(false); dto.setPinExpiresAt(t.getPinExpiry()); },
+                () -> dto.setPinUsed(true)
+            );
         return dto;
     }
 }

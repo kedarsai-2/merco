@@ -107,6 +107,6 @@ class WeighingSessionServiceImplTest {
         Optional<WeighingSessionDTO> result = service.getByBidNumber(5);
 
         assertThat(result).isPresent();
-        assertThat(result.get().getBidNumber()).isEqualTo(5);
+        assertThat(result.orElseThrow().getBidNumber()).isEqualTo(5);
     }
 }

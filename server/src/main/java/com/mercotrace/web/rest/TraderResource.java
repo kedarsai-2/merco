@@ -8,6 +8,7 @@ import com.mercotrace.service.dto.TraderDTO;
 import com.mercotrace.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import java.nio.file.Path;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
@@ -210,21 +211,18 @@ public class TraderResource {
     @PostMapping("/{id}/photos")
     public ResponseEntity<String[]> uploadTraderPhotos(@PathVariable("id") Long id, @RequestParam("files") MultipartFile[] files) {
         LOG.debug("REST request to upload photos for Trader : {}", id);
-        Optional<TraderDTO> existingOpt = traderService.findOne(id);
-        if (existingOpt.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-        TraderDTO existing = existingOpt.get();
+        TraderDTO existing = traderService.findOne(id)
+            .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Trader not found: " + id));
         java.util.List<String> paths = new java.util.ArrayList<>();
 
-        java.nio.file.Path baseDir = java.nio.file.Paths.get("uploads", "traders", id.toString());
+        Path baseDir = Path.of("uploads", "traders", id.toString());
         try {
             java.nio.file.Files.createDirectories(baseDir);
             for (MultipartFile file : files) {
                 if (file.isEmpty()) continue;
                 String original = file.getOriginalFilename() != null ? file.getOriginalFilename() : "photo";
                 String sanitized = original.replaceAll("[^a-zA-Z0-9._-]", "_");
-                java.nio.file.Path target = baseDir.resolve(System.currentTimeMillis() + "_" + sanitized);
+                Path target = baseDir.resolve(System.currentTimeMillis() + "_" + sanitized);
                 java.nio.file.Files.copy(file.getInputStream(), target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
                 String url = "/api/traders/" + id + "/photos/" + target.getFileName();
                 paths.add(url);
@@ -251,7 +249,7 @@ public class TraderResource {
     @GetMapping("/{id}/photos/{filename}")
     public ResponseEntity<Resource> getTraderPhoto(@PathVariable("id") Long id, @PathVariable("filename") String filename) {
         try {
-            java.nio.file.Path file = java.nio.file.Paths.get("uploads", "traders", id.toString()).resolve(filename);
+            Path file = Path.of("uploads", "traders", id.toString()).resolve(filename);
             Resource resource = new UrlResource(file.toUri());
             if (!resource.exists() || !resource.isReadable()) {
                 return ResponseEntity.notFound().build();
@@ -289,11 +287,8 @@ public class TraderResource {
         @RequestBody com.mercotrace.service.dto.TraderConfigDTO configDTO
     ) {
         LOG.debug("REST request to patch Trader config : {}", id);
-        Optional<TraderDTO> existing = traderService.findOne(id);
-        if (existing.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-        TraderDTO toUpdate = existing.get();
+        TraderDTO toUpdate = traderService.findOne(id)
+            .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Trader not found: " + id));
         if (configDTO.getBusinessMode() != null) toUpdate.setBusinessMode(configDTO.getBusinessMode());
         if (configDTO.getBillPrefix() != null) toUpdate.setBillPrefix(configDTO.getBillPrefix());
         toUpdate = traderService.update(toUpdate);

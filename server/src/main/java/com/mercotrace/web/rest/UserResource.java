@@ -149,14 +149,13 @@ public class UserResource {
             throw new BadRequestAlertException("User id or login required for update", "userManagement", "idnull");
         }
         userDTO.setId(currentUserId);
-        Optional<User> existingByEmail = userRepository.findOneByEmailIgnoreCase(userDTO.getEmail());
-        if (existingByEmail.isPresent() && !existingByEmail.get().getId().equals(currentUserId)) {
-            throw new EmailAlreadyUsedException();
-        }
-        Optional<User> existingByLogin = userRepository.findOneByLogin(userDTO.getLogin().toLowerCase());
-        if (existingByLogin.isPresent() && !existingByLogin.get().getId().equals(currentUserId)) {
-            throw new LoginAlreadyUsedException();
-        }
+        final Long userId = currentUserId;
+        userRepository.findOneByEmailIgnoreCase(userDTO.getEmail())
+            .filter(u -> !u.getId().equals(userId))
+            .ifPresent(u -> { throw new EmailAlreadyUsedException(); });
+        userRepository.findOneByLogin(userDTO.getLogin().toLowerCase())
+            .filter(u -> !u.getId().equals(userId))
+            .ifPresent(u -> { throw new LoginAlreadyUsedException(); });
         Optional<AdminUserDTO> updatedUser = userService.updateUser(userDTO);
 
         return ResponseUtil.wrapOrNotFound(

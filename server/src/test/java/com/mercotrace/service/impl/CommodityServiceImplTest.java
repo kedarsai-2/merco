@@ -106,7 +106,7 @@ class CommodityServiceImplTest {
         Optional<CommodityDTO> result = service.findOne(1L);
 
         assertThat(result).isPresent();
-        assertThat(result.get().getCommodityName()).isEqualTo("Rice");
+        assertThat(result.orElseThrow().getCommodityName()).isEqualTo("Rice");
     }
 
     @Test

@@ -105,8 +105,9 @@ class ContactServiceImplTest {
         Optional<ContactDTO> result = service.findOne(1L);
 
         assertThat(result).isPresent();
-        assertThat(result.get().getId()).isEqualTo(1L);
-        assertThat(result.get().getName()).isEqualTo("C1");
+        ContactDTO dtoResult = result.orElseThrow();
+        assertThat(dtoResult.getId()).isEqualTo(1L);
+        assertThat(dtoResult.getName()).isEqualTo("C1");
     }
 
     @Test

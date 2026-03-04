@@ -70,8 +70,9 @@ public class CommodityConfigServiceImpl implements CommodityConfigService {
 
         Optional<CommodityConfig> configOpt = commodityConfigRepository.findOneByCommodityId(commodityId);
         if (configOpt.isPresent()) {
-            out.setConfig(toConfigDTO(configOpt.get()));
-            out.getConfig().setHamaliEnabled(configOpt.get().getHamaliEnabled());
+            CommodityConfig config = configOpt.orElseThrow();
+            out.setConfig(toConfigDTO(config));
+            out.getConfig().setHamaliEnabled(config.getHamaliEnabled());
         } else {
             CommodityConfigDTO defaultConfig = new CommodityConfigDTO();
             defaultConfig.setCommodityId(commodityId);
