@@ -91,4 +91,23 @@ class CommodityConfigServiceImplTest {
 
         assertThat(result).isEmpty();
     }
+
+    @Test
+    void saveFullConfigThrowsWhenCommodityIdNull() {
+        FullCommodityConfigDTO dto = new FullCommodityConfigDTO();
+        dto.setCommodityId(null);
+
+        assertThatThrownBy(() -> service.saveFullConfig(dto))
+            .isInstanceOf(BadRequestException.class);
+    }
+
+    @Test
+    void saveFullConfigThrowsWhenCommodityNotFound() {
+        FullCommodityConfigDTO dto = new FullCommodityConfigDTO();
+        dto.setCommodityId(999L);
+        when(commodityRepository.existsById(999L)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.saveFullConfig(dto))
+            .isInstanceOf(BadRequestException.class);
+    }
 }

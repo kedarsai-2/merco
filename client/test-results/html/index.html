@@ -4,373 +4,389 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Frontend Test Report - MercoTrace</title>
+  <style type="text/css">
+    body{margin:0;padding:24px;font-family:system-ui,sans-serif;background:#e2e8f0}
+    .wrap{max-width:1200px;margin:0 auto}
+    .header{display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:20px;border-bottom:3px solid #7c3aed}
+    h1{margin:0;font-size:26px;font-weight:700;color:#1e293b}
+    .subtitle{font-size:14px;color:#64748b}
+    .badges{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:24px}
+    .badge{display:inline-block;padding:10px 18px;border-radius:8px;font-weight:700;font-size:15px;color:#fff}
+    .badge-total{background:#7c3aed}
+    .badge-pass{background:#059669}
+    .badge-fail{background:#64748b}
+    .badge-time{background:#475569}
+    .card{background:#fff;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.1);overflow:hidden;border:1px solid #cbd5e1}
+    table{width:100%;border-collapse:collapse}
+    th{padding:14px 16px;text-align:left;font-weight:700;font-size:14px;background:#7c3aed;color:#fff;border:1px solid #6d28d9}
+  </style>
 </head>
-<body style="margin:0;padding:24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f3f4f6;color:#111827">
-  <div style="max-width:1200px;margin:0 auto">
-    <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:20px;border-bottom:2px solid #e5e7eb">
-      <h1 style="margin:0;font-size:24px;font-weight:700;color:#111827">Frontend Test Report</h1>
-      <span style="font-size:13px;color:#6b7280">MercoTrace</span>
+<body bgcolor="#e2e8f0" style="margin:0;padding:24px;background:#e2e8f0;font-family:system-ui,sans-serif;color:#1e293b">
+  <div class="wrap">
+    <div class="header" style="margin-bottom:24px;padding-bottom:20px;border-bottom:3px solid #7c3aed">
+      <h1 style="margin:0;font-size:26px;font-weight:700;color:#1e293b">Frontend Test Report</h1>
+      <span class="subtitle" style="font-size:14px;color:#64748b">MercoTrace · Vitest</span>
     </div>
-    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:24px">
-      <span style="display:inline-block;padding:8px 16px;background:#3b82f6;color:#fff;border-radius:8px;font-weight:600;font-size:14px">Total: 40</span>
-      <span style="display:inline-block;padding:8px 16px;background:#059669;color:#fff;border-radius:8px;font-weight:600;font-size:14px">Passed: 40</span>
-      <span style="display:inline-block;padding:8px 16px;background:#9ca3af;color:#fff;border-radius:8px;font-weight:600;font-size:14px">Failed: 0</span>
-      <span style="display:inline-block;padding:8px 16px;background:#6b7280;color:#fff;border-radius:8px;font-weight:600;font-size:14px">Time: 1.038129418s</span>
+    <div class="badges">
+      <span class="badge badge-total" bgcolor="#7c3aed" style="background:#7c3aed;color:#fff;padding:10px 18px;border-radius:8px;font-weight:700;font-size:15px"><font color="#fff">Total: 40</font></span>
+      <span class="badge badge-pass" bgcolor="#059669" style="background:#059669;color:#fff;padding:10px 18px;border-radius:8px;font-weight:700;font-size:15px"><font color="#fff">Passed: 40</font></span>
+      <span class="badge badge-fail" bgcolor="#64748b" style="background:#64748b;color:#fff;padding:10px 18px;border-radius:8px;font-weight:700;font-size:15px"><font color="#fff">Failed: 0</font></span>
+      <span class="badge badge-time" bgcolor="#475569" style="background:#475569;color:#fff;padding:10px 18px;border-radius:8px;font-weight:700;font-size:15px"><font color="#fff">Time: 1.032499583s</font></span>
     </div>
-    <div style="background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08);overflow:hidden">
-      <table style="width:100%;border-collapse:collapse">
+    <div class="card" style="background:#fff;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.1);overflow:hidden;border:1px solid #cbd5e1">
+      <table border="1" cellpadding="0" cellspacing="0" bordercolor="#cbd5e1">
         <thead>
-          <tr style="background:#f9fafb">
-            <th style="padding:12px 14px;text-align:left;font-weight:600;font-size:13px;color:#374151;border-bottom:2px solid #e5e7eb">Test</th>
-            <th style="padding:12px 14px;text-align:center;font-weight:600;font-size:13px;color:#374151;border-bottom:2px solid #e5e7eb">Tests</th>
-            <th style="padding:12px 14px;text-align:center;font-weight:600;font-size:13px;color:#374151;border-bottom:2px solid #e5e7eb">Failures</th>
-            <th style="padding:12px 14px;text-align:center;font-weight:600;font-size:13px;color:#374151;border-bottom:2px solid #e5e7eb">Skipped</th>
-            <th style="padding:12px 14px;text-align:right;font-weight:600;font-size:13px;color:#374151;border-bottom:2px solid #e5e7eb">Time</th>
+          <tr bgcolor="#7c3aed">
+            <th style="padding:14px 16px;background:#7c3aed;color:#fff" bgcolor="#7c3aed"><font color="#fff">Test</font></th>
+            <th style="padding:14px 16px;background:#7c3aed;color:#fff;text-align:center" bgcolor="#7c3aed" align="center"><font color="#fff">Tests</font></th>
+            <th style="padding:14px 16px;background:#7c3aed;color:#fff;text-align:center" bgcolor="#7c3aed" align="center"><font color="#fff">Failures</font></th>
+            <th style="padding:14px 16px;background:#7c3aed;color:#fff;text-align:center" bgcolor="#7c3aed" align="center"><font color="#fff">Skipped</font></th>
+            <th style="padding:14px 16px;background:#7c3aed;color:#fff;text-align:right" bgcolor="#7c3aed" align="right"><font color="#fff">Time</font></th>
           </tr>
         </thead>
         <tbody>
-    <tr style="background:#ecfdf5;font-weight:600">
-      <td style="padding:10px 14px;border:1px solid #e5e7eb">src/components/MercotraceLogo.test.tsx</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center">7</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669">0</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:right">0.100071042s</td>
+    <tr bgcolor="#d1fae5" style="background:#d1fae5;font-weight:600">
+      <td style="padding:10px 14px;border:1px solid #9ca3af" bgcolor="#d1fae5">src/components/MercotraceLogo.test.tsx</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center" bgcolor="#d1fae5" align="center">7</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center;color:#047857" bgcolor="#d1fae5" align="center"><font color="#047857">0</font></td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center" bgcolor="#d1fae5" align="center">0</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:right" bgcolor="#d1fae5" align="right">0.101907167s</td>
     </tr>
-    <tr style="background:#ffffff">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">MercotraceLogo &amp;gt; renders with text by default</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.087580208s</td>
+    <tr bgcolor="#ffffff" style="background:#ffffff">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#ffffff">MercotraceLogo &amp;gt; renders with text by default</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#ffffff" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#ffffff" align="right"><font color="#64748b">0.076249084s</font></td>
     </tr>
-    <tr style="background:#f9fafb">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">MercotraceLogo &amp;gt; hides text when showText is false</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.00154175s</td>
+    <tr bgcolor="#f1f5f9" style="background:#f1f5f9">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#f1f5f9">MercotraceLogo &amp;gt; hides text when showText is false</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#f1f5f9" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#f1f5f9" align="right"><font color="#64748b">0.004146625s</font></td>
     </tr>
-    <tr style="background:#ffffff">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">MercotraceLogo &amp;gt; renders with different sizes</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.002821875s</td>
+    <tr bgcolor="#ffffff" style="background:#ffffff">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#ffffff">MercotraceLogo &amp;gt; renders with different sizes</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#ffffff" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#ffffff" align="right"><font color="#64748b">0.004978209s</font></td>
     </tr>
-    <tr style="background:#f9fafb">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">MercotraceLogo &amp;gt; applies custom className</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.00147225s</td>
+    <tr bgcolor="#f1f5f9" style="background:#f1f5f9">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#f1f5f9">MercotraceLogo &amp;gt; applies custom className</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#f1f5f9" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#f1f5f9" align="right"><font color="#64748b">0.003218166s</font></td>
     </tr>
-    <tr style="background:#ffffff">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">MercotraceIcon &amp;gt; renders SVG with default size</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.003368542s</td>
+    <tr bgcolor="#ffffff" style="background:#ffffff">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#ffffff">MercotraceIcon &amp;gt; renders SVG with default size</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#ffffff" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#ffffff" align="right"><font color="#64748b">0.005131833s</font></td>
     </tr>
-    <tr style="background:#f9fafb">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">MercotraceIcon &amp;gt; renders with custom size</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.001016667s</td>
+    <tr bgcolor="#f1f5f9" style="background:#f1f5f9">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#f1f5f9">MercotraceIcon &amp;gt; renders with custom size</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#f1f5f9" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#f1f5f9" align="right"><font color="#64748b">0.001145042s</font></td>
     </tr>
-    <tr style="background:#ffffff">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">MercotraceIcon &amp;gt; renders with custom color</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.001186625s</td>
+    <tr bgcolor="#ffffff" style="background:#ffffff">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#ffffff">MercotraceIcon &amp;gt; renders with custom color</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#ffffff" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#ffffff" align="right"><font color="#64748b">0.003789125s</font></td>
     </tr>
-    <tr style="background:#ecfdf5;font-weight:600">
-      <td style="padding:10px 14px;border:1px solid #e5e7eb">src/components/MobileBackButton.test.tsx</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center">3</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669">0</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:right">0.139660333s</td>
+    <tr bgcolor="#d1fae5" style="background:#d1fae5;font-weight:600">
+      <td style="padding:10px 14px;border:1px solid #9ca3af" bgcolor="#d1fae5">src/components/MobileBackButton.test.tsx</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center" bgcolor="#d1fae5" align="center">3</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center;color:#047857" bgcolor="#d1fae5" align="center"><font color="#047857">0</font></td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center" bgcolor="#d1fae5" align="center">0</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:right" bgcolor="#d1fae5" align="right">0.128357s</td>
     </tr>
-    <tr style="background:#f9fafb">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">MobileBackButton &amp;gt; renders with aria-label for accessibility</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.124122708s</td>
+    <tr bgcolor="#f1f5f9" style="background:#f1f5f9">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#f1f5f9">MobileBackButton &amp;gt; renders with aria-label for accessibility</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#f1f5f9" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#f1f5f9" align="right"><font color="#64748b">0.077598208s</font></td>
     </tr>
-    <tr style="background:#ffffff">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">MobileBackButton &amp;gt; calls onClick when clicked</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.008815708s</td>
+    <tr bgcolor="#ffffff" style="background:#ffffff">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#ffffff">MobileBackButton &amp;gt; calls onClick when clicked</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#ffffff" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#ffffff" align="right"><font color="#64748b">0.0280805s</font></td>
     </tr>
-    <tr style="background:#f9fafb">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">MobileBackButton &amp;gt; applies custom className</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.005645708s</td>
+    <tr bgcolor="#f1f5f9" style="background:#f1f5f9">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#f1f5f9">MobileBackButton &amp;gt; applies custom className</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#f1f5f9" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#f1f5f9" align="right"><font color="#64748b">0.021418416s</font></td>
     </tr>
-    <tr style="background:#ecfdf5;font-weight:600">
-      <td style="padding:10px 14px;border:1px solid #e5e7eb">src/components/PortraitLock.test.tsx</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center">4</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669">0</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:right">0.129494917s</td>
+    <tr bgcolor="#d1fae5" style="background:#d1fae5;font-weight:600">
+      <td style="padding:10px 14px;border:1px solid #9ca3af" bgcolor="#d1fae5">src/components/PortraitLock.test.tsx</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center" bgcolor="#d1fae5" align="center">4</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center;color:#047857" bgcolor="#d1fae5" align="center"><font color="#047857">0</font></td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center" bgcolor="#d1fae5" align="center">0</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:right" bgcolor="#d1fae5" align="right">0.137681375s</td>
     </tr>
-    <tr style="background:#ffffff">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">PortraitLock &amp;gt; returns null when not in landscape (desktop size)</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.025485542s</td>
+    <tr bgcolor="#ffffff" style="background:#ffffff">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#ffffff">PortraitLock &amp;gt; returns null when not in landscape (desktop size)</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#ffffff" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#ffffff" align="right"><font color="#64748b">0.032833584s</font></td>
     </tr>
-    <tr style="background:#f9fafb">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">PortraitLock &amp;gt; returns null when height is large (not mobile landscape)</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.002934916s</td>
+    <tr bgcolor="#f1f5f9" style="background:#f1f5f9">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#f1f5f9">PortraitLock &amp;gt; returns null when height is large (not mobile landscape)</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#f1f5f9" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#f1f5f9" align="right"><font color="#64748b">0.00238125s</font></td>
     </tr>
-    <tr style="background:#ffffff">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">PortraitLock &amp;gt; shows overlay when in mobile landscape</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.091289584s</td>
+    <tr bgcolor="#ffffff" style="background:#ffffff">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#ffffff">PortraitLock &amp;gt; shows overlay when in mobile landscape</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#ffffff" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#ffffff" align="right"><font color="#64748b">0.08912125s</font></td>
     </tr>
-    <tr style="background:#f9fafb">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">PortraitLock &amp;gt; adds and removes resize listener</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.007683292s</td>
+    <tr bgcolor="#f1f5f9" style="background:#f1f5f9">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#f1f5f9">PortraitLock &amp;gt; adds and removes resize listener</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#f1f5f9" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#f1f5f9" align="right"><font color="#64748b">0.011215041s</font></td>
     </tr>
-    <tr style="background:#ecfdf5;font-weight:600">
-      <td style="padding:10px 14px;border:1px solid #e5e7eb">src/components/ProtectedRoute.test.tsx</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center">3</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669">0</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:right">0.068893334s</td>
+    <tr bgcolor="#d1fae5" style="background:#d1fae5;font-weight:600">
+      <td style="padding:10px 14px;border:1px solid #9ca3af" bgcolor="#d1fae5">src/components/ProtectedRoute.test.tsx</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center" bgcolor="#d1fae5" align="center">3</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center;color:#047857" bgcolor="#d1fae5" align="center"><font color="#047857">0</font></td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center" bgcolor="#d1fae5" align="center">0</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:right" bgcolor="#d1fae5" align="right">0.088079625s</td>
     </tr>
-    <tr style="background:#ffffff">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">ProtectedRoute &amp;gt; shows loading spinner when not bootstrapped</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.053198416s</td>
+    <tr bgcolor="#ffffff" style="background:#ffffff">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#ffffff">ProtectedRoute &amp;gt; shows loading spinner when not bootstrapped</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#ffffff" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#ffffff" align="right"><font color="#64748b">0.076403042s</font></td>
     </tr>
-    <tr style="background:#f9fafb">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">ProtectedRoute &amp;gt; redirects to login when bootstrapped but not authenticated</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.0090545s</td>
+    <tr bgcolor="#f1f5f9" style="background:#f1f5f9">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#f1f5f9">ProtectedRoute &amp;gt; redirects to login when bootstrapped but not authenticated</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#f1f5f9" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#f1f5f9" align="right"><font color="#64748b">0.006654667s</font></td>
     </tr>
-    <tr style="background:#ffffff">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">ProtectedRoute &amp;gt; renders children when authenticated</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.004687916s</td>
+    <tr bgcolor="#ffffff" style="background:#ffffff">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#ffffff">ProtectedRoute &amp;gt; renders children when authenticated</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#ffffff" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#ffffff" align="right"><font color="#64748b">0.003296417s</font></td>
     </tr>
-    <tr style="background:#ecfdf5;font-weight:600">
-      <td style="padding:10px 14px;border:1px solid #e5e7eb">src/pages/NotFound.test.tsx</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center">4</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669">0</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:right">0.145488167s</td>
+    <tr bgcolor="#d1fae5" style="background:#d1fae5;font-weight:600">
+      <td style="padding:10px 14px;border:1px solid #9ca3af" bgcolor="#d1fae5">src/pages/NotFound.test.tsx</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center" bgcolor="#d1fae5" align="center">4</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center;color:#047857" bgcolor="#d1fae5" align="center"><font color="#047857">0</font></td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center" bgcolor="#d1fae5" align="center">0</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:right" bgcolor="#d1fae5" align="right">0.189559375s</td>
     </tr>
-    <tr style="background:#f9fafb">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">NotFound &amp;gt; renders 404 heading</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.096452333s</td>
+    <tr bgcolor="#f1f5f9" style="background:#f1f5f9">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#f1f5f9">NotFound &amp;gt; renders 404 heading</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#f1f5f9" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#f1f5f9" align="right"><font color="#64748b">0.155316791s</font></td>
     </tr>
-    <tr style="background:#ffffff">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">NotFound &amp;gt; renders page not found message</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.013374s</td>
+    <tr bgcolor="#ffffff" style="background:#ffffff">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#ffffff">NotFound &amp;gt; renders page not found message</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#ffffff" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#ffffff" align="right"><font color="#64748b">0.0030595s</font></td>
     </tr>
-    <tr style="background:#f9fafb">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">NotFound &amp;gt; renders link to home</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.028134083s</td>
+    <tr bgcolor="#f1f5f9" style="background:#f1f5f9">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#f1f5f9">NotFound &amp;gt; renders link to home</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#f1f5f9" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#f1f5f9" align="right"><font color="#64748b">0.017090417s</font></td>
     </tr>
-    <tr style="background:#ffffff">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">NotFound &amp;gt; logs 404 error on mount</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.005501292s</td>
+    <tr bgcolor="#ffffff" style="background:#ffffff">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#ffffff">NotFound &amp;gt; logs 404 error on mount</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#ffffff" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#ffffff" align="right"><font color="#64748b">0.012090208s</font></td>
     </tr>
-    <tr style="background:#ecfdf5;font-weight:600">
-      <td style="padding:10px 14px;border:1px solid #e5e7eb">src/test/example.test.ts</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669">0</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:right">0.001368542s</td>
+    <tr bgcolor="#d1fae5" style="background:#d1fae5;font-weight:600">
+      <td style="padding:10px 14px;border:1px solid #9ca3af" bgcolor="#d1fae5">src/test/example.test.ts</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center" bgcolor="#d1fae5" align="center">1</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center;color:#047857" bgcolor="#d1fae5" align="center"><font color="#047857">0</font></td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center" bgcolor="#d1fae5" align="center">0</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:right" bgcolor="#d1fae5" align="right">0.001318125s</td>
     </tr>
-    <tr style="background:#f9fafb">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">example &amp;gt; should pass</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.000717833s</td>
+    <tr bgcolor="#f1f5f9" style="background:#f1f5f9">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#f1f5f9">example &amp;gt; should pass</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#f1f5f9" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#f1f5f9" align="right"><font color="#64748b">0.000702958s</font></td>
     </tr>
-    <tr style="background:#ecfdf5;font-weight:600">
-      <td style="padding:10px 14px;border:1px solid #e5e7eb">src/components/ui/button.test.tsx</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center">8</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669">0</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:right">0.241865333s</td>
+    <tr bgcolor="#d1fae5" style="background:#d1fae5;font-weight:600">
+      <td style="padding:10px 14px;border:1px solid #9ca3af" bgcolor="#d1fae5">src/components/ui/button.test.tsx</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center" bgcolor="#d1fae5" align="center">8</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center;color:#047857" bgcolor="#d1fae5" align="center"><font color="#047857">0</font></td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center" bgcolor="#d1fae5" align="center">0</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:right" bgcolor="#d1fae5" align="right">0.216417s</td>
     </tr>
-    <tr style="background:#ffffff">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">Button &amp;gt; renders with default variant and size</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.077958s</td>
+    <tr bgcolor="#ffffff" style="background:#ffffff">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#ffffff">Button &amp;gt; renders with default variant and size</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#ffffff" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#ffffff" align="right"><font color="#64748b">0.1161625s</font></td>
     </tr>
-    <tr style="background:#f9fafb">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">Button &amp;gt; calls onClick when clicked</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.014929458s</td>
+    <tr bgcolor="#f1f5f9" style="background:#f1f5f9">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#f1f5f9">Button &amp;gt; calls onClick when clicked</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#f1f5f9" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#f1f5f9" align="right"><font color="#64748b">0.023814958s</font></td>
     </tr>
-    <tr style="background:#ffffff">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">Button &amp;gt; renders destructive variant</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.035678875s</td>
+    <tr bgcolor="#ffffff" style="background:#ffffff">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#ffffff">Button &amp;gt; renders destructive variant</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#ffffff" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#ffffff" align="right"><font color="#64748b">0.01310125s</font></td>
     </tr>
-    <tr style="background:#f9fafb">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">Button &amp;gt; renders outline variant</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.025644125s</td>
+    <tr bgcolor="#f1f5f9" style="background:#f1f5f9">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#f1f5f9">Button &amp;gt; renders outline variant</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#f1f5f9" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#f1f5f9" align="right"><font color="#64748b">0.012936084s</font></td>
     </tr>
-    <tr style="background:#ffffff">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">Button &amp;gt; renders small size</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.049495959s</td>
+    <tr bgcolor="#ffffff" style="background:#ffffff">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#ffffff">Button &amp;gt; renders small size</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#ffffff" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#ffffff" align="right"><font color="#64748b">0.016368875s</font></td>
     </tr>
-    <tr style="background:#f9fafb">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">Button &amp;gt; renders large size</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.018192958s</td>
+    <tr bgcolor="#f1f5f9" style="background:#f1f5f9">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#f1f5f9">Button &amp;gt; renders large size</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#f1f5f9" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#f1f5f9" align="right"><font color="#64748b">0.008708042s</font></td>
     </tr>
-    <tr style="background:#ffffff">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">Button &amp;gt; is disabled when disabled prop is true</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.0083895s</td>
+    <tr bgcolor="#ffffff" style="background:#ffffff">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#ffffff">Button &amp;gt; is disabled when disabled prop is true</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#ffffff" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#ffffff" align="right"><font color="#64748b">0.01571325s</font></td>
     </tr>
-    <tr style="background:#f9fafb">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">Button &amp;gt; applies custom className</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.01051425s</td>
+    <tr bgcolor="#f1f5f9" style="background:#f1f5f9">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#f1f5f9">Button &amp;gt; applies custom className</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#f1f5f9" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#f1f5f9" align="right"><font color="#64748b">0.008446167s</font></td>
     </tr>
-    <tr style="background:#ecfdf5;font-weight:600">
-      <td style="padding:10px 14px;border:1px solid #e5e7eb">src/components/ui/card.test.tsx</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center">4</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669">0</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:right">0.185185875s</td>
+    <tr bgcolor="#d1fae5" style="background:#d1fae5;font-weight:600">
+      <td style="padding:10px 14px;border:1px solid #9ca3af" bgcolor="#d1fae5">src/components/ui/card.test.tsx</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center" bgcolor="#d1fae5" align="center">4</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center;color:#047857" bgcolor="#d1fae5" align="center"><font color="#047857">0</font></td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center" bgcolor="#d1fae5" align="center">0</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:right" bgcolor="#d1fae5" align="right">0.141745208s</td>
     </tr>
-    <tr style="background:#ffffff">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">Card &amp;gt; renders Card with children</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.048764875s</td>
+    <tr bgcolor="#ffffff" style="background:#ffffff">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#ffffff">Card &amp;gt; renders Card with children</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#ffffff" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#ffffff" align="right"><font color="#64748b">0.043930958s</font></td>
     </tr>
-    <tr style="background:#f9fafb">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">Card &amp;gt; renders full card structure</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.055099542s</td>
+    <tr bgcolor="#f1f5f9" style="background:#f1f5f9">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#f1f5f9">Card &amp;gt; renders full card structure</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#f1f5f9" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#f1f5f9" align="right"><font color="#64748b">0.016101125s</font></td>
     </tr>
-    <tr style="background:#ffffff">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">Card &amp;gt; CardTitle renders as heading</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.068972541s</td>
+    <tr bgcolor="#ffffff" style="background:#ffffff">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#ffffff">Card &amp;gt; CardTitle renders as heading</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#ffffff" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#ffffff" align="right"><font color="#64748b">0.07208625s</font></td>
     </tr>
-    <tr style="background:#f9fafb">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">Card &amp;gt; applies custom className to Card</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.010335958s</td>
+    <tr bgcolor="#f1f5f9" style="background:#f1f5f9">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#f1f5f9">Card &amp;gt; applies custom className to Card</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#f1f5f9" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#f1f5f9" align="right"><font color="#64748b">0.004389541s</font></td>
     </tr>
-    <tr style="background:#ecfdf5;font-weight:600">
-      <td style="padding:10px 14px;border:1px solid #e5e7eb">src/components/ui/input.test.tsx</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center">6</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669">0</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:10px 14px;border:1px solid #e5e7eb;text-align:right">0.026101875s</td>
+    <tr bgcolor="#d1fae5" style="background:#d1fae5;font-weight:600">
+      <td style="padding:10px 14px;border:1px solid #9ca3af" bgcolor="#d1fae5">src/components/ui/input.test.tsx</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center" bgcolor="#d1fae5" align="center">6</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center;color:#047857" bgcolor="#d1fae5" align="center"><font color="#047857">0</font></td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:center" bgcolor="#d1fae5" align="center">0</td>
+      <td style="padding:10px 14px;border:1px solid #9ca3af;text-align:right" bgcolor="#d1fae5" align="right">0.027434708s</td>
     </tr>
-    <tr style="background:#ffffff">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">Input &amp;gt; renders with placeholder</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.016569292s</td>
+    <tr bgcolor="#ffffff" style="background:#ffffff">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#ffffff">Input &amp;gt; renders with placeholder</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#ffffff" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#ffffff" align="right"><font color="#64748b">0.01709075s</font></td>
     </tr>
-    <tr style="background:#f9fafb">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">Input &amp;gt; accepts and displays value</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.002142292s</td>
+    <tr bgcolor="#f1f5f9" style="background:#f1f5f9">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#f1f5f9">Input &amp;gt; accepts and displays value</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#f1f5f9" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#f1f5f9" align="right"><font color="#64748b">0.001822792s</font></td>
     </tr>
-    <tr style="background:#ffffff">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">Input &amp;gt; calls onChange when user types</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.003261417s</td>
+    <tr bgcolor="#ffffff" style="background:#ffffff">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#ffffff">Input &amp;gt; calls onChange when user types</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#ffffff" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#ffffff" align="right"><font color="#64748b">0.00418s</font></td>
     </tr>
-    <tr style="background:#f9fafb">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">Input &amp;gt; is disabled when disabled prop is true</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.000927084s</td>
+    <tr bgcolor="#f1f5f9" style="background:#f1f5f9">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#f1f5f9">Input &amp;gt; is disabled when disabled prop is true</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#f1f5f9" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#f1f5f9" align="right"><font color="#64748b">0.001150375s</font></td>
     </tr>
-    <tr style="background:#ffffff">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">Input &amp;gt; renders with type password</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.00105925s</td>
+    <tr bgcolor="#ffffff" style="background:#ffffff">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#ffffff">Input &amp;gt; renders with type password</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#ffffff" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#ffffff" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#ffffff" align="right"><font color="#64748b">0.001076792s</font></td>
     </tr>
-    <tr style="background:#f9fafb">
-      <td style="padding:8px 14px 8px 28px;border:1px solid #e5e7eb;color:#374151">Input &amp;gt; applies custom className</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">1</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center;color:#059669;font-weight:500">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:center">0</td>
-      <td style="padding:8px 14px;border:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:13px">0.001164s</td>
+    <tr bgcolor="#f1f5f9" style="background:#f1f5f9">
+      <td style="padding:8px 14px 8px 28px;border:1px solid #cbd5e1;color:#334155" bgcolor="#f1f5f9">Input &amp;gt; applies custom className</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">1</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center;color:#047857" bgcolor="#f1f5f9" align="center"><font color="#047857">0</font></td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:center" bgcolor="#f1f5f9" align="center">0</td>
+      <td style="padding:8px 14px;border:1px solid #cbd5e1;text-align:right;color:#64748b" bgcolor="#f1f5f9" align="right"><font color="#64748b">0.001148208s</font></td>
     </tr>
         </tbody>
       </table>

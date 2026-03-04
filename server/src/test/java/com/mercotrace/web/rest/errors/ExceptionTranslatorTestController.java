@@ -1,5 +1,6 @@
 package com.mercotrace.web.rest.errors;
 
+import com.mercotrace.service.errors.BadRequestException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.dao.ConcurrencyFailureException;
@@ -50,6 +51,11 @@ public class ExceptionTranslatorTestController {
     @GetMapping("/internal-server-error")
     public void internalServerError() {
         throw new RuntimeException();
+    }
+
+    @GetMapping("/bad-request")
+    public void badRequest() {
+        throw new BadRequestException("Commodity not found", "commodityConfig", "commoditynotfound");
     }
 
     public static class TestDTO {

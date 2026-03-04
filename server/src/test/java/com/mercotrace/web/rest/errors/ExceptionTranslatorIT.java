@@ -114,4 +114,15 @@ class ExceptionTranslatorIT {
             .andExpect(jsonPath("$.message").value("error.http.500"))
             .andExpect(jsonPath("$.title").value("Internal Server Error"));
     }
+
+    @Test
+    void testBadRequestException() throws Exception {
+        mockMvc
+            .perform(get("/api/exception-translator-test/bad-request"))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.title").value("Bad Request"))
+            .andExpect(jsonPath("$.detail").value("Commodity not found"))
+            .andExpect(jsonPath("$.message").value("error.commoditynotfound"));
+    }
 }

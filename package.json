@@ -1,5 +1,6 @@
 {
   "private": true,
+  "type": "module",
   "description": "MercoTrace root – scripts for test report generation",
   "scripts": {
     "allure:report": "node scripts/allure-report.js",
@@ -11,7 +12,8 @@
     "report:spotbugs:server": "cd server && ./mvnw spotbugs:check -q && cd .. && node scripts/generate-spotbugs-report.js server/target/spotbugsXml.xml server/target/spotbugs-report.html 'SpotBugs Security Report'",
     "report:spotbugs": "npm run report:spotbugs:server",
     "report:sast:client": "cd client && npx eslint src --format json -o test-results/sast-report.json 2>/dev/null; cd .. && node scripts/generate-eslint-report.js client/test-results/sast-report.json client/test-results/sast-report.html 'ESLint SAST Report'",
-    "report:sast:all": "npm run report:spotbugs:server && npm run report:sast:client"
+    "report:sast:all": "npm run report:spotbugs:server && npm run report:sast:client",
+    "report:executive": "node scripts/generate-executive-report.js"
   },
   "devDependencies": {
     "allure-commandline": "^2.37.0",
